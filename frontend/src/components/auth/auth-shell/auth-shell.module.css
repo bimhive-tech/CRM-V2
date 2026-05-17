@@ -1,0 +1,140 @@
+.page {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(420px, 0.95fr);
+  background: #f7f8fb;
+}
+
+.brandPanel {
+  position: relative;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  padding: clamp(36px, 8vw, 96px);
+  background:
+    radial-gradient(circle at 78% 6%, rgba(202, 164, 73, 0.2), transparent 0 13%, transparent 14%),
+    linear-gradient(135deg, #050403 0%, #181208 52%, #080604 100%);
+  color: var(--text-inverse);
+}
+
+.copyWrap {
+  position: relative;
+  z-index: 1;
+  max-width: 520px;
+}
+
+.eyebrow {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.62);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.heading {
+  max-width: 520px;
+  margin: 26px 0 24px;
+  font-size: clamp(2.4rem, 5vw, 4.7rem);
+  font-weight: 700;
+  line-height: 0.98;
+  letter-spacing: -0.06em;
+}
+
+.tagRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.line {
+  display: block;
+  width: 58px;
+  height: 4px;
+  margin-bottom: 34px;
+  border-radius: 999px;
+  background: var(--accent);
+}
+
+.tagRow span {
+  padding: 8px 16px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.78);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.gridLayer,
+.gridLayerSecondary {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.gridLayer::before,
+.gridLayerSecondary::before {
+  content: "";
+  position: absolute;
+  inset: -18%;
+  background-image:
+    linear-gradient(rgba(202, 164, 73, 0.12) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(202, 164, 73, 0.12) 1px, transparent 1px);
+  background-size: 34px 34px;
+  background-position: 0 0;
+  mask-image:
+    radial-gradient(circle at 22% 32%, #000 0 13%, transparent 24%),
+    radial-gradient(circle at 72% 18%, #000 0 10%, transparent 22%),
+    radial-gradient(circle at 62% 72%, #000 0 14%, transparent 28%);
+  mask-composite: add;
+  opacity: 0.64;
+  animation: gridReveal 10s ease-in-out infinite;
+}
+
+.gridLayerSecondary::before {
+  content: none;
+}
+
+.formPanel {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: clamp(32px, 8vw, 88px);
+}
+
+@keyframes gridReveal {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+    opacity: 0.26;
+  }
+
+  50% {
+    transform: translate3d(18px, -14px, 0);
+    opacity: 0.78;
+  }
+}
+
+@media (max-width: 900px) {
+  .page {
+    grid-template-columns: 1fr;
+  }
+
+  .brandPanel {
+    min-height: 42vh;
+    padding: 42px 28px;
+  }
+
+  .formPanel {
+    min-height: auto;
+    padding: 38px 24px 54px;
+  }
+
+  .heading {
+    font-size: clamp(2.4rem, 9vw, 4rem);
+  }
+}

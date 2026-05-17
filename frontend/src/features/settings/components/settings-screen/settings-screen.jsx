@@ -1,0 +1,733 @@
+"use client";
+
+import { useMemo, useState } from "react";
+
+import { DashboardShell } from "@/components/dashboard/dashboard-shell/dashboard-shell";
+import { Sidebar } from "@/components/dashboard/sidebar/sidebar";
+import { Topbar } from "@/components/dashboard/topbar/topbar";
+import {
+  createCompany,
+  createRole,
+  createUser,
+  deleteCompany,
+  deleteRole,
+  deleteUser,
+  listCompanies,
+  listRoles,
+  listUsers,
+  updateCompany,
+  updateRole,
+  updateUser,
+} from "@/lib/api/admin";
+import { getAccessToken } from "@/lib/session";
+
+import { SettingsModal } from "./settings-modal";
+import styles from "./settings-screen.module.css";
+
+const tabs = [
+  { id: "company-info", label: "Company Info" },
+  { id: "users", label: "User Management" },
+  { id: "roles", label: "Roles" },
+  { id: "companies", label: "Companies" },
+];
+
+const companyInitialState = { name: "", email: "", phone_number: "", website: "", address: "", is_active: true };
+const roleInitialState = { name: "", description: "" };
+const userInitialState = {
+  email: "",
+  full_name: "",
+  password: "",
+  role: "user",
+  primary_company_id: "",
+  company_ids: [],
+  role_ids: [],
+  is_active: true,
+};
+
+function StatusBadge({ tone = "neutral", children }) {
+  return (
+    <span className={`${styles.statusBadge} ${tone === "danger" ? styles.statusBadgeDanger : styles.statusBadgeNeutral}`}>
+      <span className={styles.statusDot} />
+      {children}
+    </span>
+  );
+}
+
+function formatRoleName(value) {
+  return value.replaceAll("_", " ");
+}
+
+function toCompanyForm(company) {
+  return {
+    name: company.name || "",
+    email: company.email || "",
+    phone_number: company.phone_number || "",
+    website: company.website || "",
+    address: company.address || "",
+    is_active: company.is_active,
+  };
+}
+
+function toRoleForm(role) {
+  return { name: role.name, description: role.description || "" };
+}
+
+function toUserForm(user) {
+  return {
+    email: user.email,
+    full_name: user.full_name,
+    password: "",
+    role: user.role || "user",
+    primary_company_id: user.company?.id ? String(user.company.id) : "",
+    company_ids: user.companies.map((company) => String(company.id)),
+    role_ids: user.roles.map((role) => String(role.id)),
+    is_active: user.is_active,
+  };
+}
+
+function getSelectedCompanyId(user, companies) {
+  if (user?.company?.id) {
+    return String(user.company.id);
+  }
+  if (user?.companies?.[0]?.id) {
+    return String(user.companies[0].id);
+  }
+  if (companies[0]?.id) {
+    return String(companies[0].id);
+  }
+  return "";
+}
+
+function CompanyFormFields({ form, onChange, includeLogoPlaceholder = false }) {
+  return (
+    <>
+      <div className={styles.formGrid}>
+        <label className={styles.field}>
+          <span>Company name</span>
+          <input name="name" value={form.name} onChange={onChange} placeholder="Ember Construction" required />
+        </label>
+        <label className={styles.field}>
+          <span>Email</span>
+          <input name="email" type="email" value={form.email} onChange={onChange} placeholder="hello@company.com" />
+        </label>
+        <label className={styles.field}>
+          <span>Phone number</span>
+          <input name="phone_number" value={form.phone_number} onChange={onChange} placeholder="+1 555 123 4567" />
+        </label>
+        <label className={styles.field}>
+          <span>Website</span>
+          <input name="website" type="url" value={form.website} onChange={onChange} placeholder="https://company.com" />
+        </label>
+      </div>
+      <label className={styles.field}>
+        <span>Address</span>
+        <textarea name="address" value={form.address} onChange={onChange} placeholder="Street, city, state, postal code" rows={4} />
+      </label>
+      {includeLogoPlaceholder ? (
+        <label className={styles.field}>
+          <span>Logo upload</span>
+          <input type="file" disabled />
+          <small className={styles.helperText}>Logo upload UI is reserved here for the next pass and is not wired yet.</small>
+        </label>
+      ) : null}
+      <label className={styles.check}>
+        <input name="is_active" type="checkbox" checked={form.is_active} onChange={onChange} />
+        <span>Active company</span>
+      </label>
+    </>
+  );
+}
+
+export function SettingsScreen({
+  user,
+  companies: initialCompanies,
+  users: initialUsers,
+  roles: initialRoles,
+}) {
+  const token = getAccessToken();
+  const [activeTab, setActiveTab] = useState("company-info");
+  const [companies, setCompanies] = useState(initialCompanies);
+  const [users, setUsers] = useState(initialUsers);
+  const [roles, setRoles] = useState(initialRoles);
+  const [status, setStatus] = useState({ error: "", success: "" });
+  const [modalState, setModalState] = useState({ type: null, mode: "create", itemId: null });
+  const [companyForm, setCompanyForm] = useState(companyInitialState);
+  const [selectedCompanyId, setSelectedCompanyId] = useState(getSelectedCompanyId(user, initialCompanies));
+  const [companyInfoForm, setCompanyInfoForm] = useState(() => {
+    const initialCompany = initialCompanies.find((company) => String(company.id) === getSelectedCompanyId(user, initialCompanies));
+    return initialCompany ? toCompanyForm(initialCompany) : companyInitialState;
+  });
+  const [roleForm, setRoleForm] = useState(roleInitialState);
+  const [userForm, setUserForm] = useState(userInitialState);
+
+  const activeCompanies = companies.filter((company) => company.is_active);
+  const activeUsers = users.filter((targetUser) => targetUser.is_active);
+  const currentCompanyName = user?.company?.name || user?.companies?.[0]?.name || "No company assigned";
+  const currentRoleNames = user?.roles?.length
+    ? user.roles.map((role) => role.name).join(", ")
+    : formatRoleName(user?.role || "platform_admin");
+  const selectedCompany = companies.find((company) => String(company.id) === selectedCompanyId) || null;
+
+  const companyOptions = useMemo(
+    () => companies.map((company) => ({ value: String(company.id), label: company.name, is_active: company.is_active })),
+    [companies],
+  );
+  const roleOptions = useMemo(
+    () => roles.map((role) => ({ value: String(role.id), label: role.name, is_system: role.is_system })),
+    [roles],
+  );
+
+  function setMessage(error = "", success = "") {
+    setStatus({ error, success });
+  }
+
+  async function refreshAll() {
+    const [nextCompanies, nextUsers, nextRoles] = await Promise.all([
+      listCompanies(token),
+      listUsers(token),
+      listRoles(token),
+    ]);
+    setCompanies(nextCompanies);
+    setUsers(nextUsers);
+    setRoles(nextRoles);
+    const nextSelectedCompanyId =
+      nextCompanies.find((company) => String(company.id) === selectedCompanyId)?.id
+        ? selectedCompanyId
+        : getSelectedCompanyId(user, nextCompanies);
+    const nextSelectedCompany = nextCompanies.find((company) => String(company.id) === nextSelectedCompanyId);
+    setSelectedCompanyId(nextSelectedCompanyId);
+    setCompanyInfoForm(nextSelectedCompany ? toCompanyForm(nextSelectedCompany) : companyInitialState);
+  }
+
+  function closeModal() {
+    setModalState({ type: null, mode: "create", itemId: null });
+    setCompanyForm(companyInitialState);
+    setRoleForm(roleInitialState);
+    setUserForm(userInitialState);
+  }
+
+  function openCompanyModal(mode, company = null) {
+    setModalState({ type: "company", mode, itemId: company?.id || null });
+    setCompanyForm(company ? toCompanyForm(company) : companyInitialState);
+    setMessage();
+  }
+
+  function openRoleModal(mode, role = null) {
+    setModalState({ type: "role", mode, itemId: role?.id || null });
+    setRoleForm(role ? toRoleForm(role) : roleInitialState);
+    setMessage();
+  }
+
+  function openUserModal(mode, targetUser = null) {
+    setModalState({ type: "user", mode, itemId: targetUser?.id || null });
+    setUserForm(targetUser ? toUserForm(targetUser) : userInitialState);
+    setMessage();
+  }
+
+  function updateCompanyForm(event) {
+    const { name, value, type, checked } = event.target;
+    setCompanyForm((current) => ({ ...current, [name]: type === "checkbox" ? checked : value }));
+  }
+
+  function updateCompanyInfoForm(event) {
+    const { name, value, type, checked } = event.target;
+    setCompanyInfoForm((current) => ({ ...current, [name]: type === "checkbox" ? checked : value }));
+  }
+
+  function updateRoleForm(event) {
+    const { name, value } = event.target;
+    setRoleForm((current) => ({ ...current, [name]: value }));
+  }
+
+  function updateUserForm(event) {
+    const { name, value, type, checked } = event.target;
+    setUserForm((current) => {
+      if (name === "primary_company_id") {
+        const nextCompanyIds = value && !current.company_ids.includes(value) ? [...current.company_ids, value] : current.company_ids;
+        return { ...current, primary_company_id: value, company_ids: nextCompanyIds };
+      }
+
+      return { ...current, [name]: type === "checkbox" ? checked : value };
+    });
+  }
+
+  function toggleUserAssignment(field, value) {
+    setUserForm((current) => {
+      const nextValues = current[field].includes(value)
+        ? current[field].filter((item) => item !== value)
+        : [...current[field], value];
+
+      return {
+        ...current,
+        [field]: nextValues,
+        primary_company_id:
+          field === "company_ids" && current.primary_company_id === value && !nextValues.includes(value)
+            ? ""
+            : current.primary_company_id,
+      };
+    });
+  }
+
+  async function handleCompanySubmit(event) {
+    event.preventDefault();
+    setMessage();
+
+    try {
+      const payload = {
+        name: companyForm.name.trim(),
+        email: companyForm.email.trim(),
+        phone_number: companyForm.phone_number.trim(),
+        website: companyForm.website.trim(),
+        address: companyForm.address.trim(),
+        is_active: companyForm.is_active,
+      };
+      if (modalState.mode === "edit" && modalState.itemId) {
+        await updateCompany(token, modalState.itemId, payload);
+        setMessage("", "Company updated.");
+      } else {
+        await createCompany(token, payload);
+        setMessage("", "Company created.");
+      }
+      await refreshAll();
+      closeModal();
+    } catch (error) {
+      setMessage(error.message || "Unable to save company.");
+    }
+  }
+
+  async function handleCompanyInfoSubmit(event) {
+    event.preventDefault();
+    setMessage();
+
+    if (!selectedCompanyId) {
+      setMessage("No company selected.");
+      return;
+    }
+
+    try {
+      await updateCompany(token, selectedCompanyId, {
+        name: companyInfoForm.name.trim(),
+        email: companyInfoForm.email.trim(),
+        phone_number: companyInfoForm.phone_number.trim(),
+        website: companyInfoForm.website.trim(),
+        address: companyInfoForm.address.trim(),
+        is_active: companyInfoForm.is_active,
+      });
+      await refreshAll();
+      setMessage("", "Company info updated.");
+    } catch (error) {
+      setMessage(error.message || "Unable to save company info.");
+    }
+  }
+
+  async function handleRoleSubmit(event) {
+    event.preventDefault();
+    setMessage();
+
+    try {
+      const payload = { name: roleForm.name.trim(), description: roleForm.description.trim() };
+      if (modalState.mode === "edit" && modalState.itemId) {
+        await updateRole(token, modalState.itemId, payload);
+        setMessage("", "Role updated.");
+      } else {
+        await createRole(token, payload);
+        setMessage("", "Role created.");
+      }
+      await refreshAll();
+      closeModal();
+    } catch (error) {
+      setMessage(error.message || "Unable to save role.");
+    }
+  }
+
+  async function handleUserSubmit(event) {
+    event.preventDefault();
+    setMessage();
+
+    try {
+      const payload = {
+        email: userForm.email.trim(),
+        full_name: userForm.full_name.trim(),
+        role: userForm.role,
+        company_id: userForm.primary_company_id || null,
+        company_ids: userForm.company_ids,
+        role_ids: userForm.role_ids,
+        is_active: userForm.is_active,
+      };
+
+      if (userForm.password.trim()) {
+        payload.password = userForm.password.trim();
+      }
+
+      if (modalState.mode === "edit" && modalState.itemId) {
+        await updateUser(token, modalState.itemId, payload);
+        setMessage("", "User updated.");
+      } else {
+        if (!payload.password) {
+          throw new Error("Password is required.");
+        }
+        await createUser(token, payload);
+        setMessage("", "User created.");
+      }
+
+      await refreshAll();
+      closeModal();
+    } catch (error) {
+      setMessage(error.message || "Unable to save user.");
+    }
+  }
+
+  async function handleDelete(kind, itemId, label) {
+    const confirmed = window.confirm(`Delete ${label}?`);
+    if (!confirmed) {
+      return;
+    }
+
+    setMessage();
+
+    try {
+      if (kind === "company") {
+        await deleteCompany(token, itemId);
+      } else if (kind === "role") {
+        await deleteRole(token, itemId);
+      } else {
+        await deleteUser(token, itemId);
+      }
+
+      await refreshAll();
+      setMessage("", `${label} deleted.`);
+      if (modalState.itemId === itemId) {
+        closeModal();
+      }
+    } catch (error) {
+      setMessage(error.message || `Unable to delete ${label}.`);
+    }
+  }
+
+  return (
+    <DashboardShell sidebar={<Sidebar user={user} />} topbar={<Topbar user={user} />}>
+      <div className={styles.stack}>
+        <section className={styles.hero}>
+          <div>
+            <p className={styles.eyebrow}>Administration</p>
+            <h1>Settings</h1>
+            <p className={styles.copy}>
+              Manage companies, reusable roles, and user access from one warm, structured admin workspace.
+            </p>
+          </div>
+        </section>
+
+        {status.error ? <p className={styles.error}>{status.error}</p> : null}
+        {status.success ? <p className={styles.success}>{status.success}</p> : null}
+
+        <section className={styles.tabBar} aria-label="Settings sections">
+          {tabs.map((tab) => (
+            <button
+              key={tab.id}
+              className={`${styles.tabButton} ${activeTab === tab.id ? styles.tabButtonActive : ""}`}
+              type="button"
+              onClick={() => setActiveTab(tab.id)}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </section>
+
+        {activeTab === "company-info" ? (
+          <section className={styles.panel}>
+            <div className={styles.panelHeader}>
+              <div>
+                <p className={styles.panelEyebrow}>Company Info</p>
+                <h2>Edit company details</h2>
+              </div>
+            </div>
+
+            <form className={styles.panelBody} onSubmit={handleCompanyInfoSubmit}>
+              <CompanyFormFields form={companyInfoForm} onChange={updateCompanyInfoForm} includeLogoPlaceholder />
+
+              <div className={styles.modalActions}>
+                <button className={styles.primaryButton} type="submit" disabled={!selectedCompany}>
+                  Save company info
+                </button>
+              </div>
+            </form>
+          </section>
+        ) : null}
+
+        {activeTab === "users" ? (
+          <section className={styles.panel}>
+            <div className={styles.panelHeader}>
+              <div>
+                <p className={styles.panelEyebrow}>User Management</p>
+                <h2>Users and assignments</h2>
+              </div>
+              <button className={styles.primaryButton} type="button" onClick={() => openUserModal("create")}>
+                Create user
+              </button>
+            </div>
+
+            <div className={styles.tableWrap}>
+              <table className={styles.table}>
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Email</th>
+                    <th>Roles</th>
+                    <th>Companies</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {users.map((targetUser) => (
+                    <tr key={targetUser.id}>
+                      <td>{targetUser.full_name}</td>
+                      <td className={styles.monoCell}>{targetUser.email}</td>
+                      <td>{targetUser.roles.map((role) => role.name).join(", ") || formatRoleName(targetUser.role)}</td>
+                      <td>{targetUser.companies.map((company) => company.name).join(", ") || "None"}</td>
+                      <td>
+                        <StatusBadge tone={targetUser.is_active ? "neutral" : "danger"}>
+                          {targetUser.is_active ? "Active" : "Inactive"}
+                        </StatusBadge>
+                      </td>
+                      <td className={styles.actionsCell}>
+                        <button className={styles.inlineButton} type="button" onClick={() => openUserModal("edit", targetUser)}>
+                          Edit
+                        </button>
+                        <button
+                          className={styles.inlineDanger}
+                          type="button"
+                          onClick={() => handleDelete("user", targetUser.id, targetUser.full_name)}
+                        >
+                          Delete
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </section>
+        ) : null}
+
+        {activeTab === "roles" ? (
+          <section className={styles.panel}>
+            <div className={styles.panelHeader}>
+              <div>
+                <p className={styles.panelEyebrow}>Roles</p>
+                <h2>Reusable permission labels</h2>
+              </div>
+              <button className={styles.primaryButton} type="button" onClick={() => openRoleModal("create")}>
+                Create role
+              </button>
+            </div>
+
+            <div className={styles.listGrid}>
+              {roles.map((role) => (
+                <article key={role.id} className={styles.listCard}>
+                  <div className={styles.listCardHeader}>
+                    <div>
+                      <p className={styles.listTitle}>{role.name}</p>
+                      <p className={styles.listMeta}>{role.slug}</p>
+                    </div>
+                    {role.is_system ? <StatusBadge>System</StatusBadge> : <StatusBadge>Custom</StatusBadge>}
+                  </div>
+                  <p className={styles.bodyCopy}>{role.description || "No description yet."}</p>
+                  <div className={styles.cardActions}>
+                    <button className={styles.inlineButton} type="button" onClick={() => openRoleModal("edit", role)}>
+                      Edit
+                    </button>
+                    <button
+                      className={styles.inlineDanger}
+                      type="button"
+                      disabled={role.is_system}
+                      onClick={() => handleDelete("role", role.id, role.name)}
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </article>
+              ))}
+            </div>
+          </section>
+        ) : null}
+
+        {activeTab === "companies" ? (
+          <section className={styles.panel}>
+            <div className={styles.panelHeader}>
+              <div>
+                <p className={styles.panelEyebrow}>Companies</p>
+                <h2>Company records</h2>
+              </div>
+              <button className={styles.primaryButton} type="button" onClick={() => openCompanyModal("create")}>
+                Create company
+              </button>
+            </div>
+
+            <div className={styles.tableWrap}>
+              <table className={styles.table}>
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Slug</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {companies.map((company) => (
+                    <tr key={company.id}>
+                      <td>{company.name}</td>
+                      <td className={styles.monoCell}>{company.slug}</td>
+                      <td>
+                        <StatusBadge tone={company.is_active ? "neutral" : "danger"}>
+                          {company.is_active ? "Active" : "Inactive"}
+                        </StatusBadge>
+                      </td>
+                      <td className={styles.actionsCell}>
+                        <button className={styles.inlineButton} type="button" onClick={() => openCompanyModal("edit", company)}>
+                          Edit
+                        </button>
+                        <button
+                          className={styles.inlineDanger}
+                          type="button"
+                          onClick={() => handleDelete("company", company.id, company.name)}
+                        >
+                          Delete
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </section>
+        ) : null}
+
+        {modalState.type === "company" ? (
+          <SettingsModal
+            title={modalState.mode === "edit" ? "Edit company" : "Create company"}
+            description="Use the same modal for creation and editing so company records stay consistent."
+            onClose={closeModal}
+            onSubmit={handleCompanySubmit}
+            submitLabel={modalState.mode === "edit" ? "Save company" : "Create company"}
+          >
+            <CompanyFormFields form={companyForm} onChange={updateCompanyForm} />
+          </SettingsModal>
+        ) : null}
+
+        {modalState.type === "role" ? (
+          <SettingsModal
+            title={modalState.mode === "edit" ? "Edit role" : "Create role"}
+            description="Roles are reusable and can be assigned to many users."
+            onClose={closeModal}
+            onSubmit={handleRoleSubmit}
+            submitLabel={modalState.mode === "edit" ? "Save role" : "Create role"}
+          >
+            <label className={styles.field}>
+              <span>Role name</span>
+              <input name="name" value={roleForm.name} onChange={updateRoleForm} placeholder="Sales Manager" required />
+            </label>
+            <label className={styles.field}>
+              <span>Description</span>
+              <textarea
+                name="description"
+                value={roleForm.description}
+                onChange={updateRoleForm}
+                placeholder="What this role is responsible for."
+                rows={4}
+              />
+            </label>
+          </SettingsModal>
+        ) : null}
+
+        {modalState.type === "user" ? (
+          <SettingsModal
+            title={modalState.mode === "edit" ? "Edit user" : "Create user"}
+            description="Users can have multiple roles and belong to multiple companies."
+            onClose={closeModal}
+            onSubmit={handleUserSubmit}
+            submitLabel={modalState.mode === "edit" ? "Save user" : "Create user"}
+          >
+            <div className={styles.formGrid}>
+              <label className={styles.field}>
+                <span>Full name</span>
+                <input name="full_name" value={userForm.full_name} onChange={updateUserForm} placeholder="Maya Patel" required />
+              </label>
+              <label className={styles.field}>
+                <span>Email</span>
+                <input name="email" type="email" value={userForm.email} onChange={updateUserForm} placeholder="maya@embercrm.com" required />
+              </label>
+              <label className={styles.field}>
+                <span>Password</span>
+                <input
+                  name="password"
+                  type="password"
+                  value={userForm.password}
+                  onChange={updateUserForm}
+                  placeholder={modalState.mode === "edit" ? "Leave blank to keep current password" : "Minimum 8 characters"}
+                />
+              </label>
+              <label className={styles.field}>
+                <span>Fallback role</span>
+                <select name="role" value={userForm.role} onChange={updateUserForm}>
+                  <option value="platform_admin">Platform admin</option>
+                  <option value="company_admin">Company admin</option>
+                  <option value="user">User</option>
+                </select>
+              </label>
+              <label className={styles.field}>
+                <span>Primary company</span>
+                <select name="primary_company_id" value={userForm.primary_company_id} onChange={updateUserForm}>
+                  <option value="">No primary company</option>
+                  {companyOptions.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+
+            <div className={styles.assignmentSection}>
+              <p className={styles.assignmentTitle}>Assigned roles</p>
+              <div className={styles.optionGrid}>
+                {roleOptions.map((option) => (
+                  <label key={option.value} className={styles.optionCard}>
+                    <input
+                      type="checkbox"
+                      checked={userForm.role_ids.includes(option.value)}
+                      onChange={() => toggleUserAssignment("role_ids", option.value)}
+                    />
+                    <span>{option.label}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            <div className={styles.assignmentSection}>
+              <p className={styles.assignmentTitle}>Assigned companies</p>
+              <div className={styles.optionGrid}>
+                {companyOptions.map((option) => (
+                  <label key={option.value} className={styles.optionCard}>
+                    <input
+                      type="checkbox"
+                      checked={userForm.company_ids.includes(option.value)}
+                      onChange={() => toggleUserAssignment("company_ids", option.value)}
+                    />
+                    <span>{option.label}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            <label className={styles.check}>
+              <input name="is_active" type="checkbox" checked={userForm.is_active} onChange={updateUserForm} />
+              <span>Active user</span>
+            </label>
+          </SettingsModal>
+        ) : null}
+      </div>
+    </DashboardShell>
+  );
+}
