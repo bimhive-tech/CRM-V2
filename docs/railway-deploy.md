@@ -44,13 +44,13 @@ PLATFORM_ADMIN_PASSWORD=strong-password
 PLATFORM_ADMIN_NAME=Platform Admin
 NEXT_PUBLIC_API_BASE_URL=/api
 NEXT_TELEMETRY_DISABLED=1
-R2_ACCOUNT_ID=your-account-id
-R2_ACCESS_KEY_ID=your-access-key-id
-R2_SECRET_ACCESS_KEY=your-secret-access-key
+R2_ACCOUNT_ID=<your-account-id>
+R2_ACCESS_KEY_ID=<your-access-key-id>
+R2_SECRET_ACCESS_KEY=<your-secret-access-key>
 R2_BUCKET_NAME=bh-crm
-R2_ENDPOINT_URL=https://your-account-id.r2.cloudflarestorage.com
-R2_API_TOKEN=your-api-token
-R2_TOKEN_NAME=your-token-name
+R2_ENDPOINT_URL=<your-r2-endpoint-url>
+R2_API_TOKEN=<set-in-railway>
+R2_TOKEN_NAME=<your-token-name>
 ```
 
 ## Railway Postgres Service
