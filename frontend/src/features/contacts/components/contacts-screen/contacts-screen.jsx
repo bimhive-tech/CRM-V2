@@ -1,7 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { startTransition, useCallback, useDeferredValue, useEffect, useMemo, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 
 import { DashboardShell } from "@/components/dashboard/dashboard-shell/dashboard-shell";
 import { ClipboardIcon, EditIcon, PlusIcon, SearchIcon, TrashIcon } from "@/components/dashboard/dashboard-icons";
@@ -48,12 +48,30 @@ const emptyCompanyForm = {
   ownerName: "",
   email: "",
   website: "",
+  linkedinUrl: "",
   employeeCount: "",
   phoneNumbers: [""],
   addressCountry: "",
   addressState: "",
   addressLine: "",
 };
+
+const DIRECTORY_PAGE_SIZE = 10;
+const COMPANY_OPTIONS_PAGE_SIZE = 200;
+
+function getInitialViewMode(searchParams) {
+  const requestedView = searchParams.get("view");
+  return requestedView === "contacts" || requestedView === "companies" ? requestedView : "companies";
+}
+
+function getInitialFilters(searchParams) {
+  return {
+    search: "",
+    status: "All statuses",
+    owner: "All owners",
+    companyId: searchParams.get("companyId") || "All companies",
+  };
+}
 
 function formatDateForInput(value) {
   if (!value) {
@@ -71,6 +89,24 @@ function formatDateForDisplay(value) {
     return value;
   }
   return new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric" }).format(date);
+}
+
+function normalizePaginatedResponse(data) {
+  if (Array.isArray(data)) {
+    return {
+      count: data.length,
+      next: null,
+      previous: null,
+      results: data,
+    };
+  }
+
+  return {
+    count: data?.count || 0,
+    next: data?.next || null,
+    previous: data?.previous || null,
+    results: data?.results || [],
+  };
 }
 
 function normalizeStatusLabel(value) {
@@ -108,6 +144,7 @@ function mapCompanyFromApi(company) {
     ownerName: company.owner_name || "No owner listed",
     email: company.email || "No email",
     website: company.website || "No website",
+    linkedinUrl: company.linkedin_url || "",
     phoneNumbers: company.phone_numbers?.length ? company.phone_numbers : company.phone_number ? [company.phone_number] : [],
     employeeCount: company.employee_count || null,
     address: company.address || "No address",
@@ -147,6 +184,7 @@ function mapCompanyToPayload(form) {
     owner_name: form.ownerName.trim(),
     email: form.email.trim(),
     website: form.website.trim(),
+    linkedin_url: form.linkedinUrl.trim(),
     phone_numbers: phoneNumbers,
     phone_number: phoneNumbers[0] || "",
     address_country: form.addressCountry.trim(),
@@ -176,6 +214,7 @@ function toCompanyFormState(company) {
     ownerName: company.ownerName || "",
     email: company.email === "No email" ? "" : company.email,
     website: company.website === "No website" ? "" : company.website,
+    linkedinUrl: company.linkedinUrl || "",
     employeeCount: company.employeeCount ? String(company.employeeCount) : "",
     phoneNumbers: company.phoneNumbers.length ? company.phoneNumbers : [""],
     addressCountry: company.addressCountry || "",
@@ -250,17 +289,47 @@ function ContactStatus({ value }) {
   );
 }
 
+function PaginationControls({ page, totalPages, count, onPageChange }) {
+  if (totalPages <= 1) {
+    return null;
+  }
+
+  return (
+    <div className={styles.paginationBar}>
+      <p className={styles.paginationMeta}>
+        {count} total · Page {page} of {totalPages}
+      </p>
+      <div className={styles.paginationActions}>
+        <button className={styles.secondaryButton} type="button" onClick={() => onPageChange(page - 1)} disabled={page <= 1}>
+          Previous
+        </button>
+        <button className={styles.secondaryButton} type="button" onClick={() => onPageChange(page + 1)} disabled={page >= totalPages}>
+          Next
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export function ContactsScreen({ user }) {
   const token = getAccessToken();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [contacts, setContacts] = useState([]);
   const [companies, setCompanies] = useState([]);
+  const [allCompanies, setAllCompanies] = useState([]);
   const [owners, setOwners] = useState([]);
   const [pipelineStatuses, setPipelineStatuses] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [viewMode, setViewMode] = useState("companies");
+  const [initialLoading, setInitialLoading] = useState(true);
+  const [directoryLoading, setDirectoryLoading] = useState(true);
+  const [viewMode, setViewMode] = useState(() => getInitialViewMode(searchParams));
   const [statusMessage, setStatusMessage] = useState({ error: "", success: "" });
-  const [filters, setFilters] = useState({ search: "", status: "All statuses", owner: "All owners" });
+  const [filters, setFilters] = useState(() => getInitialFilters(searchParams));
+  const deferredSearch = useDeferredValue(filters.search);
+  const [contactPage, setContactPage] = useState(1);
+  const [companyPage, setCompanyPage] = useState(1);
+  const [contactsPagination, setContactsPagination] = useState({ count: 0, next: null, previous: null, totalPages: 1 });
+  const [companiesPagination, setCompaniesPagination] = useState({ count: 0, next: null, previous: null, totalPages: 1 });
   const [contactModalState, setContactModalState] = useState({ open: false, mode: "create", contactId: null });
   const [contactForm, setContactForm] = useState(emptyContactForm);
   const [companyModalState, setCompanyModalState] = useState({ open: false, mode: "create", companyId: null });
@@ -271,102 +340,119 @@ export function ContactsScreen({ user }) {
     return ["All statuses", ...(uniqueStatuses.length ? uniqueStatuses : ["Lead"])];
   }, [pipelineStatuses]);
   const contactStatusOptions = statusOptions.filter((option) => option !== "All statuses");
-  const companyOptions = useMemo(() => companies.map((company) => ({ value: String(company.id), label: company.name })), [companies]);
+  const companyOptions = useMemo(() => allCompanies.map((company) => ({ value: String(company.id), label: company.name })), [allCompanies]);
+  const contactCompanyFilterOptions = useMemo(
+    () => [{ value: "All companies", label: "All companies" }, ...allCompanies.map((company) => ({ value: String(company.id), label: company.name }))],
+    [allCompanies],
+  );
   const ownerOptions = useMemo(
     () => [{ value: "", label: "Unassigned" }, ...owners.map((owner) => ({ value: String(owner.id), label: owner.full_name }))],
     [owners],
   );
-  const ownerFilterOptions = useMemo(() => ["All owners", ...owners.map((owner) => owner.full_name)], [owners]);
-
-  const filteredContacts = useMemo(() => {
-    return contacts.filter((contact) => {
-      const matchesSearch =
-        !filters.search ||
-        [contact.fullName, contact.email, contact.company, contact.title].some((value) =>
-          value.toLowerCase().includes(filters.search.toLowerCase()),
-        );
-      const matchesStatus = filters.status === "All statuses" || contact.status === filters.status;
-      const matchesOwner = filters.owner === "All owners" || contact.owner === filters.owner;
-
-      return matchesSearch && matchesStatus && matchesOwner;
-    });
-  }, [contacts, filters]);
-
-  const filteredCompanies = useMemo(() => {
-    return companies.filter((company) => {
-      if (!filters.search) {
-        return true;
-      }
-
-      const haystack = [
-        company.name,
-        company.ownerName,
-        company.email,
-        company.website,
-        company.address,
-        ...company.phoneNumbers,
-        ...company.contacts.map((contact) => `${contact.fullName} ${contact.email} ${contact.phone}`),
-      ]
-        .join(" ")
-        .toLowerCase();
-
-      return haystack.includes(filters.search.toLowerCase());
-    });
-  }, [companies, filters.search]);
+  const ownerFilterOptions = useMemo(
+    () => [{ value: "All owners", label: "All owners" }, ...owners.map((owner) => ({ value: String(owner.id), label: owner.full_name }))],
+    [owners],
+  );
 
   const heroMeta = useMemo(() => {
     if (viewMode === "companies") {
-      return `${companies.length} companies`;
+      return `${companiesPagination.count} companies`;
     }
-    return `${contacts.length} contacts`;
-  }, [companies.length, contacts.length, viewMode]);
+    return `${contactsPagination.count} contacts`;
+  }, [companiesPagination.count, contactsPagination.count, viewMode]);
+  const loading = initialLoading || directoryLoading;
 
-  const fetchContactsData = useCallback(async () => {
-    const [contactsData, companiesData, usersData, pipelinesData] = await Promise.all([
-      listContacts(token),
-      listCrmCompanies(token),
+  const fetchStaticData = useCallback(async () => {
+    const [companiesData, usersData, pipelinesData] = await Promise.all([
+      listCrmCompanies(token, { page: 1, page_size: COMPANY_OPTIONS_PAGE_SIZE }),
       listUsers(token),
       listPipelines(token),
     ]);
 
+    const normalizedCompanies = normalizePaginatedResponse(companiesData);
     return {
-      contactsData: contactsData.map(mapContactFromApi),
-      companiesData: companiesData.map(mapCompanyFromApi),
+      allCompaniesData: normalizedCompanies.results.map(mapCompanyFromApi),
       usersData,
       pipelineStatusesData: [...new Set(pipelinesData.flatMap((pipeline) => (pipeline.statuses || []).map((status) => status.name)))],
     };
   }, [token]);
 
-  async function loadData() {
-    setLoading(true);
+  const loadContactsPage = useCallback(
+    async (page = contactPage) => {
+      const response = normalizePaginatedResponse(
+        await listContacts(token, {
+          page,
+          page_size: DIRECTORY_PAGE_SIZE,
+          search: deferredSearch,
+          status: filters.status !== "All statuses" ? filters.status : undefined,
+          owner_id: filters.owner !== "All owners" ? filters.owner : undefined,
+          company_id: filters.companyId !== "All companies" ? filters.companyId : undefined,
+        }),
+      );
+
+      startTransition(() => {
+        setContacts(response.results.map(mapContactFromApi));
+        setContactsPagination({
+          count: response.count,
+          next: response.next,
+          previous: response.previous,
+          totalPages: Math.max(1, Math.ceil(response.count / DIRECTORY_PAGE_SIZE)),
+        });
+      });
+    },
+    [contactPage, deferredSearch, filters.companyId, filters.owner, filters.status, token],
+  );
+
+  const loadCompaniesPage = useCallback(
+    async (page = companyPage) => {
+      const response = normalizePaginatedResponse(
+        await listCrmCompanies(token, {
+          page,
+          page_size: DIRECTORY_PAGE_SIZE,
+          search: deferredSearch,
+        }),
+      );
+
+      startTransition(() => {
+        setCompanies(response.results.map(mapCompanyFromApi));
+        setCompaniesPagination({
+          count: response.count,
+          next: response.next,
+          previous: response.previous,
+          totalPages: Math.max(1, Math.ceil(response.count / DIRECTORY_PAGE_SIZE)),
+        });
+      });
+    },
+    [companyPage, deferredSearch, token],
+  );
+
+  async function loadStaticData() {
     try {
-      const { contactsData, companiesData, usersData, pipelineStatusesData } = await fetchContactsData();
-      setContacts(contactsData);
-      setCompanies(companiesData);
+      const { allCompaniesData, usersData, pipelineStatusesData } = await fetchStaticData();
+      setAllCompanies(allCompaniesData);
       setOwners(usersData);
       setPipelineStatuses(pipelineStatusesData);
       setStatusMessage({ error: "", success: "" });
     } catch (error) {
       setStatusMessage({ error: error.message || "Unable to load contacts.", success: "" });
-    } finally {
-      setLoading(false);
     }
   }
 
   useEffect(() => {
     let active = true;
 
-    async function hydrateContacts() {
+    async function hydrateStaticData() {
       try {
-        const { contactsData, companiesData, usersData, pipelineStatusesData } = await fetchContactsData();
+        const { allCompaniesData, usersData, pipelineStatusesData } = await fetchStaticData();
         if (!active) {
           return;
         }
-        setContacts(contactsData);
-        setCompanies(companiesData);
-        setOwners(usersData);
-        setPipelineStatuses(pipelineStatusesData);
-        setStatusMessage({ error: "", success: "" });
+        startTransition(() => {
+          setAllCompanies(allCompaniesData);
+          setOwners(usersData);
+          setPipelineStatuses(pipelineStatusesData);
+          setStatusMessage({ error: "", success: "" });
+        });
       } catch (error) {
         if (!active) {
           return;
@@ -374,21 +460,60 @@ export function ContactsScreen({ user }) {
         setStatusMessage({ error: error.message || "Unable to load contacts.", success: "" });
       } finally {
         if (active) {
-          setLoading(false);
+          setInitialLoading(false);
         }
       }
     }
 
-    hydrateContacts();
+    hydrateStaticData();
 
     return () => {
       active = false;
     };
-  }, [fetchContactsData]);
+  }, [fetchStaticData]);
+
+  useEffect(() => {
+    let active = true;
+
+    async function hydrateDirectory() {
+      setDirectoryLoading(true);
+      try {
+        if (viewMode === "contacts") {
+          await loadContactsPage(contactPage);
+        } else {
+          await loadCompaniesPage(companyPage);
+        }
+        if (!active) {
+          return;
+        }
+        setStatusMessage((current) => ({ ...current, error: "" }));
+      } catch (error) {
+        if (!active) {
+          return;
+        }
+        setStatusMessage((current) => ({ ...current, error: error.message || "Unable to load contacts." }));
+      } finally {
+        if (active) {
+          setDirectoryLoading(false);
+        }
+      }
+    }
+
+    hydrateDirectory();
+
+    return () => {
+      active = false;
+    };
+  }, [companyPage, contactPage, loadCompaniesPage, loadContactsPage, viewMode]);
 
   function updateFilters(event) {
     const { name, value } = event.target;
     setFilters((current) => ({ ...current, [name]: value }));
+    if (viewMode === "contacts") {
+      setContactPage(1);
+    } else {
+      setCompanyPage(1);
+    }
   }
 
   function updateContactForm(event) {
@@ -474,7 +599,7 @@ export function ContactsScreen({ user }) {
         setStatusMessage({ error: "", success: "Contact created." });
       }
 
-      await loadData();
+      await Promise.all([loadContactsPage(contactPage), loadStaticData()]);
       closeContactModal();
     } catch (error) {
       setStatusMessage({ error: error.message || "Unable to save contact.", success: "" });
@@ -493,7 +618,7 @@ export function ContactsScreen({ user }) {
         setStatusMessage({ error: "", success: "Company created." });
       }
 
-      await loadData();
+      await Promise.all([loadCompaniesPage(companyPage), loadStaticData()]);
       closeCompanyModal();
     } catch (error) {
       setStatusMessage({ error: error.message || "Unable to save company.", success: "" });
@@ -508,7 +633,7 @@ export function ContactsScreen({ user }) {
 
     try {
       await deleteContact(token, contactId);
-      await loadData();
+      await Promise.all([loadContactsPage(contactPage), loadStaticData()]);
       setStatusMessage({ error: "", success: "Contact deleted." });
     } catch (error) {
       setStatusMessage({ error: error.message || "Unable to delete contact.", success: "" });
@@ -522,7 +647,7 @@ export function ContactsScreen({ user }) {
 
     try {
       await deleteCrmCompany(token, companyId);
-      await loadData();
+      await Promise.all([loadCompaniesPage(companyPage), loadStaticData()]);
       setStatusMessage({ error: "", success: "Company deleted." });
     } catch (error) {
       setStatusMessage({ error: error.message || "Unable to delete company.", success: "" });
@@ -608,8 +733,19 @@ export function ContactsScreen({ user }) {
                 <span>Owner</span>
                 <select name="owner" value={filters.owner} onChange={updateFilters}>
                   {ownerFilterOptions.map((option) => (
-                    <option key={option} value={option}>
-                      {option}
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <label className={styles.filterField}>
+                <span>Company</span>
+                <select name="companyId" value={filters.companyId} onChange={updateFilters}>
+                  {contactCompanyFilterOptions.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
                     </option>
                   ))}
                 </select>
@@ -620,7 +756,14 @@ export function ContactsScreen({ user }) {
           <button
             className={styles.secondaryButton}
             type="button"
-            onClick={() => setFilters({ search: "", status: "All statuses", owner: "All owners" })}
+            onClick={() => {
+              setFilters({ search: "", status: "All statuses", owner: "All owners", companyId: "All companies" });
+              if (viewMode === "contacts") {
+                setContactPage(1);
+              } else {
+                setCompanyPage(1);
+              }
+            }}
           >
             Reset
           </button>
@@ -636,7 +779,7 @@ export function ContactsScreen({ user }) {
               <p>Please wait while we load your workspace records.</p>
             </div>
           ) : viewMode === "contacts" ? (
-            filteredContacts.length ? (
+            contacts.length ? (
               <>
                 <div className={styles.tableWrap}>
                   <table className={styles.table}>
@@ -651,7 +794,7 @@ export function ContactsScreen({ user }) {
                       </tr>
                     </thead>
                     <tbody>
-                      {filteredContacts.map((contact) => (
+                      {contacts.map((contact) => (
                         <tr key={contact.id}>
                           <td>
                             <div className={styles.contactMeta}>
@@ -693,8 +836,15 @@ export function ContactsScreen({ user }) {
                   </table>
                 </div>
 
+                <PaginationControls
+                  page={contactPage}
+                  totalPages={contactsPagination.totalPages}
+                  count={contactsPagination.count}
+                  onPageChange={setContactPage}
+                />
+
                 <div className={styles.mobileList}>
-                  {filteredContacts.map((contact) => (
+                  {contacts.map((contact) => (
                     <article key={contact.id} className={styles.mobileCard}>
                       <div className={styles.mobileCardHeader}>
                         <div className={styles.mobileCardLead}>
@@ -752,7 +902,7 @@ export function ContactsScreen({ user }) {
                 <p>Create your first contact to start building your directory.</p>
               </div>
             )
-          ) : filteredCompanies.length ? (
+          ) : companies.length ? (
             <>
               <div className={styles.tableWrap}>
                 <table className={styles.table}>
@@ -768,7 +918,7 @@ export function ContactsScreen({ user }) {
                     </tr>
                   </thead>
                   <tbody>
-                    {filteredCompanies.map((company) => (
+                    {companies.map((company) => (
                       <tr key={company.id} className={styles.clickableRow} onClick={() => openCompanyDetails(company.id)}>
                         <td>
                           <div className={styles.companyCell}>
@@ -836,8 +986,15 @@ export function ContactsScreen({ user }) {
                 </table>
               </div>
 
+              <PaginationControls
+                page={companyPage}
+                totalPages={companiesPagination.totalPages}
+                count={companiesPagination.count}
+                onPageChange={setCompanyPage}
+              />
+
               <div className={styles.mobileList}>
-                {filteredCompanies.map((company) => (
+                {companies.map((company) => (
                   <article key={company.id} className={`${styles.mobileCard} ${styles.clickableCard}`} onClick={() => openCompanyDetails(company.id)}>
                     <div className={styles.mobileCardHeader}>
                       <div className={styles.mobileCardLead}>

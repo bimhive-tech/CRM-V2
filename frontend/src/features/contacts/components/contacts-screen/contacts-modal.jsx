@@ -134,6 +134,10 @@ export function CompanyModal({ mode = "create", form, onChange, onPhoneChange, o
               <input name="website" type="url" value={form.website} onChange={onChange} placeholder="https://northstar.com" />
             </label>
             <label className={styles.field}>
+              <span>LinkedIn</span>
+              <input name="linkedinUrl" type="url" value={form.linkedinUrl} onChange={onChange} placeholder="https://linkedin.com/company/northstar" />
+            </label>
+            <label className={styles.field}>
               <span>Company size</span>
               <input name="employeeCount" type="number" min="1" value={form.employeeCount} onChange={onChange} placeholder="250" />
             </label>

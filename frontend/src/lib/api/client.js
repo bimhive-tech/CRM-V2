@@ -35,6 +35,20 @@ async function refreshSessionToken() {
   return refreshPromise;
 }
 
+export function buildApiPath(path, query = {}) {
+  const searchParams = new URLSearchParams();
+
+  Object.entries(query).forEach(([key, value]) => {
+    if (value === undefined || value === null || value === "") {
+      return;
+    }
+    searchParams.set(key, String(value));
+  });
+
+  const queryString = searchParams.toString();
+  return queryString ? `${path}?${queryString}` : path;
+}
+
 export async function apiRequest(path, options = {}, retry = true) {
   const isFormData = typeof FormData !== "undefined" && options.body instanceof FormData;
   const response = await fetch(`${API_BASE_URL}${path}`, {

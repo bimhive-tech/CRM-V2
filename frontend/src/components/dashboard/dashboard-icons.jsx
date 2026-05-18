@@ -135,6 +135,46 @@ export function BellIcon() {
   );
 }
 
+export function MailIcon() {
+  return (
+    <DashboardIcon>
+      <rect x="3" y="5" width="18" height="14" rx="2" />
+      <path d="m4 7 8 6 8-6" />
+    </DashboardIcon>
+  );
+}
+
+export function GlobeIcon() {
+  return (
+    <DashboardIcon>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M3 12h18" />
+      <path d="M12 3a15 15 0 0 1 0 18" />
+      <path d="M12 3a15 15 0 0 0 0 18" />
+    </DashboardIcon>
+  );
+}
+
+export function PhoneIcon() {
+  return (
+    <DashboardIcon>
+      <path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.7 19.7 0 0 1-8.6-3.1 19.3 19.3 0 0 1-6-6A19.7 19.7 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7l.4 2.9a2 2 0 0 1-.6 1.8L7.1 10a16 16 0 0 0 6.9 6.9l1.6-1.8a2 2 0 0 1 1.8-.6l2.9.4a2 2 0 0 1 1.7 2Z" />
+    </DashboardIcon>
+  );
+}
+
+export function LinkedInIcon() {
+  return (
+    <DashboardIcon>
+      <rect x="3" y="3" width="18" height="18" rx="3" />
+      <path d="M8 10v7" />
+      <path d="M8 7.5h.01" />
+      <path d="M12 17v-4.2a2 2 0 0 1 4 0V17" />
+      <path d="M12 10v7" />
+    </DashboardIcon>
+  );
+}
+
 export function PlusIcon() {
   return (
     <DashboardIcon>

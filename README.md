@@ -43,5 +43,6 @@ Expected Railway variables later:
 
 - The database URL provided for Railway should be stored in Railway variables, not committed in code.
 - The design reference source lives outside this repo and is being used only for UI direction, not copied as-is.
+- Railway deployment steps live in [docs/railway-deploy.md](/D:/Youssef/Work/BIM%20Hive/CRM%20V2/docs/railway-deploy.md).
 
 Rules followed.

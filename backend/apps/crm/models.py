@@ -8,6 +8,7 @@ class CRMCompany(models.Model):
     owner_name = models.CharField(max_length=255, blank=True)
     email = models.EmailField(blank=True)
     website = models.URLField(blank=True)
+    linkedin_url = models.URLField(blank=True)
     phone_number = models.CharField(max_length=64, blank=True)
     phone_numbers = models.JSONField(default=list, blank=True)
     address = models.TextField(blank=True)

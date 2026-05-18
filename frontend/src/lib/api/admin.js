@@ -1,4 +1,4 @@
-import { apiRequest } from "@/lib/api/client";
+import { apiRequest, buildApiPath } from "@/lib/api/client";
 
 function authHeaders(token) {
   return {
@@ -36,8 +36,8 @@ export function deleteCompany(token, companyId) {
   });
 }
 
-export function listCrmCompanies(token) {
-  return apiRequest("/crm-companies/", {
+export function listCrmCompanies(token, query = {}) {
+  return apiRequest(buildApiPath("/crm-companies/", query), {
     method: "GET",
     headers: authHeaders(token),
   });
@@ -151,8 +151,8 @@ export function deleteUser(token, userId) {
   });
 }
 
-export function listContacts(token) {
-  return apiRequest("/contacts/", {
+export function listContacts(token, query = {}) {
+  return apiRequest(buildApiPath("/contacts/", query), {
     method: "GET",
     headers: authHeaders(token),
   });
