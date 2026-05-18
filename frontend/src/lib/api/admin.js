@@ -36,6 +36,61 @@ export function deleteCompany(token, companyId) {
   });
 }
 
+export function listCrmCompanies(token) {
+  return apiRequest("/crm-companies/", {
+    method: "GET",
+    headers: authHeaders(token),
+  });
+}
+
+export function createCrmCompany(token, payload) {
+  return apiRequest("/crm-companies/", {
+    method: "POST",
+    headers: authHeaders(token),
+    body: JSON.stringify(payload),
+  });
+}
+
+export function getCrmCompany(token, companyId) {
+  return apiRequest(`/crm-companies/${companyId}/`, {
+    method: "GET",
+    headers: authHeaders(token),
+  });
+}
+
+export function updateCrmCompany(token, companyId, payload) {
+  return apiRequest(`/crm-companies/${companyId}/`, {
+    method: "PATCH",
+    headers: authHeaders(token),
+    body: JSON.stringify(payload),
+  });
+}
+
+export function deleteCrmCompany(token, companyId) {
+  return apiRequest(`/crm-companies/${companyId}/`, {
+    method: "DELETE",
+    headers: authHeaders(token),
+  });
+}
+
+export function uploadCompanyLogo(token, companyId, file) {
+  const body = new FormData();
+  body.append("logo", file);
+
+  return apiRequest(`/companies/${companyId}/logo/`, {
+    method: "POST",
+    headers: authHeaders(token),
+    body,
+  });
+}
+
+export function deleteCompanyLogo(token, companyId) {
+  return apiRequest(`/companies/${companyId}/logo/`, {
+    method: "DELETE",
+    headers: authHeaders(token),
+  });
+}
+
 export function listUsers(token) {
   return apiRequest("/auth/users/", {
     method: "GET",
@@ -91,6 +146,74 @@ export function updateUser(token, userId, payload) {
 
 export function deleteUser(token, userId) {
   return apiRequest(`/auth/users/${userId}/`, {
+    method: "DELETE",
+    headers: authHeaders(token),
+  });
+}
+
+export function listContacts(token) {
+  return apiRequest("/contacts/", {
+    method: "GET",
+    headers: authHeaders(token),
+  });
+}
+
+export function createContact(token, payload) {
+  return apiRequest("/contacts/", {
+    method: "POST",
+    headers: authHeaders(token),
+    body: JSON.stringify(payload),
+  });
+}
+
+export function updateContact(token, contactId, payload) {
+  return apiRequest(`/contacts/${contactId}/`, {
+    method: "PATCH",
+    headers: authHeaders(token),
+    body: JSON.stringify(payload),
+  });
+}
+
+export function deleteContact(token, contactId) {
+  return apiRequest(`/contacts/${contactId}/`, {
+    method: "DELETE",
+    headers: authHeaders(token),
+  });
+}
+
+export function listPipelines(token) {
+  return apiRequest("/pipelines/", {
+    method: "GET",
+    headers: authHeaders(token),
+  });
+}
+
+export function createPipeline(token, payload) {
+  return apiRequest("/pipelines/", {
+    method: "POST",
+    headers: authHeaders(token),
+    body: JSON.stringify(payload),
+  });
+}
+
+export function createPipelineStatus(token, pipelineId, payload) {
+  return apiRequest(`/pipelines/${pipelineId}/statuses/`, {
+    method: "POST",
+    headers: authHeaders(token),
+    body: JSON.stringify(payload),
+  });
+}
+
+export function updatePipelineStatus(token, statusId, payload) {
+  return apiRequest(`/pipelines/statuses/${statusId}/`, {
+    method: "PATCH",
+    headers: authHeaders(token),
+    body: JSON.stringify(payload),
+  });
+}
+
+export function deletePipelineStatus(token, statusId) {
+  return apiRequest(`/pipelines/statuses/${statusId}/`, {
     method: "DELETE",
     headers: authHeaders(token),
   });

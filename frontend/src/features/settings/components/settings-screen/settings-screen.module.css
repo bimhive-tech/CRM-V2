@@ -238,6 +238,7 @@
 .secondaryButton,
 .inlineButton,
 .inlineDanger,
+.inlineDangerButton,
 .iconButton {
   font: inherit;
 }
@@ -269,7 +270,8 @@
 }
 
 .inlineButton,
-.inlineDanger {
+.inlineDanger,
+.inlineDangerButton {
   padding: 0;
   border: 0;
   background: transparent;
@@ -283,6 +285,11 @@
 }
 
 .inlineDanger {
+  color: var(--danger);
+}
+
+.inlineDangerButton {
+  width: fit-content;
   color: var(--danger);
 }
 
@@ -403,6 +410,41 @@
   line-height: 1.5;
 }
 
+.logoSection {
+  display: grid;
+  grid-template-columns: 180px minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.logoPreviewWrap,
+.logoPlaceholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 180px;
+  height: 96px;
+}
+
+.logoPreview {
+  width: auto;
+  max-width: 180px;
+  height: auto;
+  max-height: 96px;
+  object-fit: contain;
+}
+
+.logoPlaceholder {
+  color: var(--ink-3);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  border: 1px dashed var(--border);
+  border-radius: 12px;
+  background: transparent;
+}
+
 .field input,
 .field select,
 .field textarea {
@@ -497,6 +539,10 @@
 @media (max-width: 720px) {
   .formGrid,
   .optionGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .logoSection {
     grid-template-columns: 1fr;
   }
 

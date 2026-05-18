@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useMemo, useState } from "react";
 
 import { DashboardShell } from "@/components/dashboard/dashboard-shell/dashboard-shell";
@@ -15,6 +16,8 @@ import {
   listCompanies,
   listRoles,
   listUsers,
+  deleteCompanyLogo,
+  uploadCompanyLogo,
   updateCompany,
   updateRole,
   updateUser,
@@ -98,7 +101,15 @@ function getSelectedCompanyId(user, companies) {
   return "";
 }
 
-function CompanyFormFields({ form, onChange, includeLogoPlaceholder = false }) {
+function CompanyFormFields({
+  form,
+  onChange,
+  logoUrl = "",
+  onLogoChange = null,
+  onLogoRemove = null,
+  logoUploading = false,
+  showActiveToggle = true,
+}) {
   return (
     <>
       <div className={styles.formGrid}>
@@ -123,17 +134,43 @@ function CompanyFormFields({ form, onChange, includeLogoPlaceholder = false }) {
         <span>Address</span>
         <textarea name="address" value={form.address} onChange={onChange} placeholder="Street, city, state, postal code" rows={4} />
       </label>
-      {includeLogoPlaceholder ? (
+      <div className={styles.logoSection}>
+        {logoUrl ? (
+          <div className={styles.logoPreviewWrap}>
+            <Image
+              className={styles.logoPreview}
+              src={logoUrl}
+              alt="Company logo preview"
+              width={180}
+              height={96}
+              style={{ width: "auto", height: "auto" }}
+              unoptimized
+            />
+          </div>
+        ) : (
+          <div className={styles.logoPlaceholder}>No logo yet</div>
+        )}
         <label className={styles.field}>
           <span>Logo upload</span>
-          <input type="file" disabled />
-          <small className={styles.helperText}>Logo upload UI is reserved here for the next pass and is not wired yet.</small>
+          <input type="file" accept="image/*" onChange={onLogoChange} disabled={!onLogoChange || logoUploading} />
+            <small className={styles.helperText}>
+              {logoUploading
+                ? "Uploading logo..."
+                : "PNG, JPG, or WEBP only. Max 15MB. Max dimensions 2400px by 2400px. The logo keeps its natural shape in the sidebar."}
+            </small>
+          {logoUrl && onLogoRemove ? (
+            <button className={styles.inlineDangerButton} type="button" onClick={onLogoRemove} disabled={logoUploading}>
+              Remove logo
+            </button>
+          ) : null}
+        </label>
+      </div>
+      {showActiveToggle ? (
+        <label className={styles.check}>
+          <input name="is_active" type="checkbox" checked={form.is_active} onChange={onChange} />
+          <span>Active company</span>
         </label>
       ) : null}
-      <label className={styles.check}>
-        <input name="is_active" type="checkbox" checked={form.is_active} onChange={onChange} />
-        <span>Active company</span>
-      </label>
     </>
   );
 }
@@ -152,6 +189,7 @@ export function SettingsScreen({
   const [status, setStatus] = useState({ error: "", success: "" });
   const [modalState, setModalState] = useState({ type: null, mode: "create", itemId: null });
   const [companyForm, setCompanyForm] = useState(companyInitialState);
+  const [logoUploading, setLogoUploading] = useState(false);
   const [selectedCompanyId, setSelectedCompanyId] = useState(getSelectedCompanyId(user, initialCompanies));
   const [companyInfoForm, setCompanyInfoForm] = useState(() => {
     const initialCompany = initialCompanies.find((company) => String(company.id) === getSelectedCompanyId(user, initialCompanies));
@@ -160,13 +198,22 @@ export function SettingsScreen({
   const [roleForm, setRoleForm] = useState(roleInitialState);
   const [userForm, setUserForm] = useState(userInitialState);
 
-  const activeCompanies = companies.filter((company) => company.is_active);
-  const activeUsers = users.filter((targetUser) => targetUser.is_active);
-  const currentCompanyName = user?.company?.name || user?.companies?.[0]?.name || "No company assigned";
-  const currentRoleNames = user?.roles?.length
-    ? user.roles.map((role) => role.name).join(", ")
-    : formatRoleName(user?.role || "platform_admin");
   const selectedCompany = companies.find((company) => String(company.id) === selectedCompanyId) || null;
+  const shellUser = useMemo(() => {
+    if (!selectedCompany) {
+      return user;
+    }
+
+    const nextCompanies = (user.companies || []).map((company) =>
+      company.id === selectedCompany.id ? { ...company, ...selectedCompany } : company,
+    );
+
+    return {
+      ...user,
+      company: user.company?.id === selectedCompany.id ? { ...user.company, ...selectedCompany } : user.company,
+      companies: nextCompanies,
+    };
+  }, [selectedCompany, user]);
 
   const companyOptions = useMemo(
     () => companies.map((company) => ({ value: String(company.id), label: company.name, is_active: company.is_active })),
@@ -404,8 +451,53 @@ export function SettingsScreen({
     }
   }
 
+  async function handleLogoChange(event) {
+    const file = event.target.files?.[0];
+    if (!file || !selectedCompanyId) {
+      return;
+    }
+
+    setLogoUploading(true);
+    setMessage();
+
+    try {
+      await uploadCompanyLogo(token, selectedCompanyId, file);
+      await refreshAll();
+      setMessage("", "Company logo uploaded.");
+    } catch (error) {
+      setMessage(error.message || "Unable to upload company logo.");
+    } finally {
+      setLogoUploading(false);
+      event.target.value = "";
+    }
+  }
+
+  async function handleLogoRemove() {
+    if (!selectedCompanyId || !selectedCompany?.logo_url) {
+      return;
+    }
+
+    const confirmed = window.confirm("Remove this company logo?");
+    if (!confirmed) {
+      return;
+    }
+
+    setLogoUploading(true);
+    setMessage();
+
+    try {
+      await deleteCompanyLogo(token, selectedCompanyId);
+      await refreshAll();
+      setMessage("", "Company logo removed.");
+    } catch (error) {
+      setMessage(error.message || "Unable to remove company logo.");
+    } finally {
+      setLogoUploading(false);
+    }
+  }
+
   return (
-    <DashboardShell sidebar={<Sidebar user={user} />} topbar={<Topbar user={user} />}>
+    <DashboardShell sidebar={<Sidebar user={shellUser} />} topbar={<Topbar user={shellUser} title="Settings" />}>
       <div className={styles.stack}>
         <section className={styles.hero}>
           <div>
@@ -443,7 +535,15 @@ export function SettingsScreen({
             </div>
 
             <form className={styles.panelBody} onSubmit={handleCompanyInfoSubmit}>
-              <CompanyFormFields form={companyInfoForm} onChange={updateCompanyInfoForm} includeLogoPlaceholder />
+              <CompanyFormFields
+                form={companyInfoForm}
+                onChange={updateCompanyInfoForm}
+                logoUrl={selectedCompany?.logo_url || ""}
+                onLogoChange={handleLogoChange}
+                onLogoRemove={handleLogoRemove}
+                logoUploading={logoUploading}
+                showActiveToggle={false}
+              />
 
               <div className={styles.modalActions}>
                 <button className={styles.primaryButton} type="submit" disabled={!selectedCompany}>

@@ -11,16 +11,13 @@ export function DashboardScreen({ user }) {
   const todayLabel = new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric" }).format(new Date());
 
   return (
-    <DashboardShell sidebar={<Sidebar user={user} />} topbar={<Topbar user={user} />}>
+    <DashboardShell sidebar={<Sidebar user={user} />} topbar={<Topbar user={user} title="Dashboard" />}>
       <div className={styles.stack}>
         <section className={styles.hero}>
           <div>
             <p className={styles.eyebrow}>{todayLabel}</p>
             <h1>Good morning, {user.full_name.split(" ")[0]}</h1>
-            <p className={styles.copy}>
-              The new CRM V2 workspace now matches the reference layout. Real deals, contacts, activity, and reports
-              will appear here once the backend domains are connected.
-            </p>
+            <p className={styles.copy}>Keep an eye on your pipeline, team activity, and the deals that need attention first.</p>
           </div>
           <div className={styles.heroActions}>
             <button type="button" className={styles.secondaryButton}>
@@ -44,24 +41,24 @@ export function DashboardScreen({ user }) {
             title="Weighted Pipeline - Last 12 weeks"
             actionLabel="12w"
             emptyTitle="No revenue trend yet"
-            emptyCopy="Weighted pipeline trend will render here after deals and stage probabilities are connected."
+            emptyCopy="Your pipeline trend will appear here as deals move through each stage."
           />
           <DataPanel
             title="Quota Attainment"
             emptyTitle="No quota data yet"
-            emptyCopy="Rep quota progress will appear here when users, deals, and goals are connected."
+            emptyCopy="Quota progress will appear here once goals and deal activity are in place."
           />
           <DataPanel
             title="Highest-value deals to close"
             actionLabel="View pipeline"
             emptyTitle="No deals yet"
-            emptyCopy="The most important opportunities will be listed here once deal records are available."
+            emptyCopy="Your highest-value opportunities will appear here as new deals are added."
           />
           <DataPanel
             title="Recent activity"
             actionLabel="All"
             emptyTitle="No activity yet"
-            emptyCopy="Calls, notes, meetings, and other CRM activity will show here once the app is wired to live data."
+            emptyCopy="Calls, notes, meetings, and other updates will appear here as your team starts working."
           />
         </section>
       </div>

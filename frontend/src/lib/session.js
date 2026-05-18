@@ -9,6 +9,16 @@ export function saveSession(payload) {
   localStorage.setItem(USER_KEY, JSON.stringify(payload.user));
 }
 
+export function updateAccessToken(accessToken) {
+  if (typeof window === "undefined") return;
+  localStorage.setItem(ACCESS_KEY, accessToken);
+}
+
+export function updateStoredUser(user) {
+  if (typeof window === "undefined") return;
+  localStorage.setItem(USER_KEY, JSON.stringify(user));
+}
+
 export function clearSession() {
   if (typeof window === "undefined") return;
   localStorage.removeItem(ACCESS_KEY);
@@ -32,4 +42,9 @@ export function getStoredUser() {
 export function getAccessToken() {
   if (typeof window === "undefined") return "";
   return localStorage.getItem(ACCESS_KEY) || "";
+}
+
+export function getRefreshToken() {
+  if (typeof window === "undefined") return "";
+  return localStorage.getItem(REFRESH_KEY) || "";
 }

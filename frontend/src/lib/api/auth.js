@@ -15,3 +15,10 @@ export function getCurrentUser(token) {
     },
   });
 }
+
+export function refreshAccessToken(refresh) {
+  return apiRequest("/auth/refresh/", {
+    method: "POST",
+    body: JSON.stringify({ refresh }),
+  });
+}

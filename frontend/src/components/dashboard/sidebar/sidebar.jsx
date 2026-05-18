@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 
@@ -23,8 +24,8 @@ const navSections = [
     title: "Workspace",
     items: [
       { id: "dashboard", label: "Dashboard", icon: <OverviewIcon />, href: "/dashboard", match: ["/dashboard"] },
-      { id: "pipeline", label: "Pipeline", icon: <PipelineIcon />, href: "/dashboard" },
-      { id: "contacts", label: "Contacts", icon: <PeopleIcon />, href: "/dashboard" },
+      { id: "pipeline", label: "Pipeline", icon: <PipelineIcon />, href: "/pipeline", match: ["/pipeline"] },
+      { id: "contacts", label: "Contacts", icon: <PeopleIcon />, href: "/contacts", match: ["/contacts"] },
       { id: "deals", label: "Deals", icon: <DealsIcon />, href: "/dashboard" },
       { id: "activity", label: "Activity", icon: <ActivityIcon />, href: "/dashboard" },
     ],
@@ -39,7 +40,7 @@ const navSections = [
   },
 ];
 
-export function Sidebar({ user }) {
+export function Sidebar({ user, onNavigate }) {
   const router = useRouter();
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -58,6 +59,7 @@ export function Sidebar({ user }) {
 
   function handleLogout() {
     clearSession();
+    onNavigate?.();
     router.push("/");
   }
 
@@ -75,7 +77,13 @@ export function Sidebar({ user }) {
 
   function handleProfileOpen() {
     setMenuOpen(false);
+    onNavigate?.();
     router.push("/profile");
+  }
+
+  function handleRouteChange(href) {
+    onNavigate?.();
+    router.push(href);
   }
 
   function isItemActive(item) {
@@ -88,7 +96,21 @@ export function Sidebar({ user }) {
   return (
     <div className={styles.sidebar}>
       <div className={styles.brand}>
-        <div className={styles.brandMark}>CRM</div>
+        <div className={user?.company?.logo_url || user?.companies?.[0]?.logo_url ? styles.brandLogo : styles.brandMark}>
+          {user?.company?.logo_url || user?.companies?.[0]?.logo_url ? (
+            <Image
+              className={styles.brandLogoImage}
+              src={user?.company?.logo_url || user?.companies?.[0]?.logo_url}
+              alt={`${companyName} logo`}
+              width={160}
+              height={72}
+              style={{ width: "auto", height: "auto" }}
+              unoptimized
+            />
+          ) : (
+            "CRM"
+          )}
+        </div>
         <div className={styles.brandTitle}>{companyName}</div>
         <div className={styles.brandSubtitle}>CRM</div>
       </div>
@@ -109,7 +131,7 @@ export function Sidebar({ user }) {
                   key={item.id}
                   className={`${styles.navItem} ${isItemActive(item) ? styles.navItemActive : ""}`}
                   type="button"
-                  onClick={() => router.push(item.href)}
+                  onClick={() => handleRouteChange(item.href)}
                 >
                   <span className={styles.navIcon}>{item.icon}</span>
                   <span>{item.label}</span>

@@ -2,15 +2,15 @@ import { BellIcon, PlusIcon } from "@/components/dashboard/dashboard-icons";
 
 import styles from "./topbar.module.css";
 
-export function Topbar({ user }) {
+export function Topbar({ user, title = "Dashboard" }) {
   const companyName = user?.company?.name || user?.companies?.[0]?.name || "No company assigned";
 
   return (
     <div className={styles.topbar}>
       <div className={styles.crumbs}>
         <span>Workspace</span>
-        <span className={styles.separator}>/</span>
-        <strong>Dashboard</strong>
+        <span className={styles.separator}>&gt;</span>
+        <strong>{title}</strong>
       </div>
 
       <div className={styles.actions}>

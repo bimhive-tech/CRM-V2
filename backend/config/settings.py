@@ -8,6 +8,25 @@ from datetime import timedelta
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 
+def load_env_file():
+    env_path = BASE_DIR.parent / ".env"
+    if not env_path.exists():
+        return
+
+    for raw_line in env_path.read_text(encoding="utf-8").splitlines():
+        line = raw_line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+
+        key, value = line.split("=", 1)
+        key = key.strip()
+        value = value.strip().strip('"').strip("'")
+        os.environ.setdefault(key, value)
+
+
+load_env_file()
+
+
 def get_env(name, default=None):
     return os.getenv(name, default)
 
@@ -55,6 +74,9 @@ INSTALLED_APPS = [
     "rest_framework_simplejwt.token_blacklist",
     "apps.companies",
     "apps.accounts",
+    "apps.contacts",
+    "apps.pipelines",
+    "apps.crm",
 ]
 
 MIDDLEWARE = [
@@ -130,4 +152,14 @@ SIMPLE_JWT = {
     "ROTATE_REFRESH_TOKENS": True,
     "BLACKLIST_AFTER_ROTATION": True,
     "AUTH_HEADER_TYPES": ("Bearer",),
+}
+
+R2_STORAGE = {
+    "ACCOUNT_ID": get_env("R2_ACCOUNT_ID", ""),
+    "ACCESS_KEY_ID": get_env("R2_ACCESS_KEY_ID", ""),
+    "SECRET_ACCESS_KEY": get_env("R2_SECRET_ACCESS_KEY", ""),
+    "BUCKET_NAME": get_env("R2_BUCKET_NAME", ""),
+    "ENDPOINT_URL": get_env("R2_ENDPOINT_URL", ""),
+    "TOKEN": get_env("R2_API_TOKEN", ""),
+    "TOKEN_NAME": get_env("R2_TOKEN_NAME", ""),
 }

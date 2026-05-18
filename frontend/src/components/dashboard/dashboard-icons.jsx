@@ -116,6 +116,16 @@ export function SearchIcon() {
   );
 }
 
+export function MenuIcon() {
+  return (
+    <DashboardIcon>
+      <path d="M4 7h16" />
+      <path d="M4 12h16" />
+      <path d="M4 17h16" />
+    </DashboardIcon>
+  );
+}
+
 export function BellIcon() {
   return (
     <DashboardIcon>
@@ -148,6 +158,35 @@ export function ClipboardIcon() {
     <DashboardIcon size={34} className="">
       <rect x="7" y="4" width="10" height="16" rx="2" />
       <path d="M9 4.5h6" />
+    </DashboardIcon>
+  );
+}
+
+export function EditIcon() {
+  return (
+    <DashboardIcon>
+      <path d="M12 20h9" />
+      <path d="m16.5 3.5 4 4L8 20l-5 1 1-5 12.5-12.5Z" />
+    </DashboardIcon>
+  );
+}
+
+export function TrashIcon() {
+  return (
+    <DashboardIcon>
+      <path d="M3 6h18" />
+      <path d="M8 6V4h8v2" />
+      <path d="M19 6l-1 14H6L5 6" />
+      <path d="M10 11v5" />
+      <path d="M14 11v5" />
+    </DashboardIcon>
+  );
+}
+
+export function CheckIcon() {
+  return (
+    <DashboardIcon>
+      <path d="m5 12 4 4L19 6" />
     </DashboardIcon>
   );
 }

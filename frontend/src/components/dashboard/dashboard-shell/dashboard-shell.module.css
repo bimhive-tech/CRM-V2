@@ -12,6 +12,10 @@
   background: var(--bg);
 }
 
+.sidebarOverlay {
+  display: none;
+}
+
 .content {
   min-width: 0;
   display: flex;
@@ -20,8 +24,17 @@
   overflow: hidden;
 }
 
+.topbarWrap {
+  position: relative;
+  flex-shrink: 0;
+}
+
 .topbar {
   flex-shrink: 0;
+}
+
+.mobileMenuButton {
+  display: none;
 }
 
 .body {
@@ -32,24 +45,73 @@
 
 @media (max-width: 980px) {
   .page {
-    height: auto;
+    height: 100vh;
     grid-template-columns: 1fr;
-    overflow: visible;
+    overflow: hidden;
   }
 
   .sidebar {
-    height: auto;
-    border-right: 0;
-    border-bottom: 1px solid var(--border);
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    z-index: 30;
+    width: min(280px, calc(100vw - 40px));
+    height: 100vh;
+    border-right: 1px solid var(--border);
+    border-bottom: 0;
+    background: var(--bg);
+    transform: translateX(-100%);
+    transition: transform 0.18s ease;
   }
 
   .content {
-    min-height: auto;
-    overflow: visible;
+    min-height: 100vh;
+    overflow: hidden;
+  }
+
+  .topbarWrap {
+    padding-left: 56px;
+  }
+
+  .mobileMenuButton {
+    position: absolute;
+    top: 12px;
+    left: 18px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-button);
+    background: var(--surface);
+    color: var(--ink);
+    cursor: pointer;
+    z-index: 5;
+  }
+
+  .sidebarOpen {
+    transform: translateX(0);
+  }
+
+  .sidebarOverlay {
+    position: fixed;
+    inset: 0;
+    display: block;
+    background: rgba(30, 18, 6, 0);
+    pointer-events: none;
+    transition: background 0.18s ease;
+    z-index: 20;
+  }
+
+  .sidebarOverlayVisible {
+    background: rgba(30, 18, 6, 0.36);
+    pointer-events: auto;
   }
 
   .body {
     padding: 18px 18px 32px;
-    overflow: visible;
+    overflow: auto;
   }
 }

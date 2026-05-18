@@ -29,6 +29,23 @@
   font-size: 15px;
   font-weight: 800;
   letter-spacing: 0.06em;
+  overflow: hidden;
+}
+
+.brandLogo {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  max-width: 160px;
+  min-height: 40px;
+}
+
+.brandLogoImage {
+  width: auto;
+  max-width: 160px;
+  height: auto;
+  max-height: 72px;
+  object-fit: contain;
 }
 
 .brandTitle {

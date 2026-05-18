@@ -1,5 +1,6 @@
 from rest_framework import generics, permissions
 from rest_framework.exceptions import ValidationError
+from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.views import TokenObtainPairView
@@ -17,6 +18,7 @@ from apps.accounts.serializers import (
 from apps.accounts.services import user_queryset
 from apps.companies.models import Company
 from apps.companies.serializers import CompanySerializer
+from apps.companies.storage import delete_object, upload_company_logo
 
 
 class LoginView(TokenObtainPairView):
@@ -40,6 +42,38 @@ class CompanyDetailView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Company.objects.all()
     serializer_class = CompanySerializer
     permission_classes = [permissions.IsAuthenticated, IsPlatformAdmin]
+
+
+class CompanyLogoUploadView(APIView):
+    permission_classes = [permissions.IsAuthenticated, IsPlatformAdmin]
+    parser_classes = [MultiPartParser, FormParser]
+
+    def post(self, request, pk):
+        company = generics.get_object_or_404(Company, pk=pk)
+        logo_file = request.FILES.get("logo")
+
+        if not logo_file:
+            raise ValidationError({"detail": "Logo file is required."})
+
+        previous_key = company.logo_key
+        company.logo_key = upload_company_logo(file_obj=logo_file, company_id=company.id)
+        company.save(update_fields=["logo_key"])
+
+        if previous_key and previous_key != company.logo_key:
+            delete_object(previous_key)
+
+        return Response(CompanySerializer(company).data)
+
+    def delete(self, request, pk):
+        company = generics.get_object_or_404(Company, pk=pk)
+        previous_key = company.logo_key
+        company.logo_key = ""
+        company.save(update_fields=["logo_key"])
+
+        if previous_key:
+            delete_object(previous_key)
+
+        return Response(CompanySerializer(company).data)
 
 
 class UserListCreateView(generics.ListCreateAPIView):

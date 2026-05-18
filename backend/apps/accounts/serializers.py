@@ -4,12 +4,34 @@ from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
 from apps.accounts.models import Role, User, UserRole
 from apps.companies.models import Company
+from apps.companies.storage import signed_logo_url
 
 
 class CompanySummarySerializer(serializers.ModelSerializer):
+    logo_url = serializers.SerializerMethodField()
+
+    def get_logo_url(self, obj):
+        return signed_logo_url(obj.logo_key)
+
     class Meta:
         model = Company
-        fields = ["id", "name", "slug", "email", "phone_number", "website", "address", "is_active"]
+        fields = [
+            "id",
+            "name",
+            "slug",
+            "owner_name",
+            "email",
+            "phone_number",
+            "phone_numbers",
+            "website",
+            "address",
+            "address_country",
+            "address_state",
+            "address_line",
+            "employee_count",
+            "logo_url",
+            "is_active",
+        ]
 
 
 class RoleSerializer(serializers.ModelSerializer):

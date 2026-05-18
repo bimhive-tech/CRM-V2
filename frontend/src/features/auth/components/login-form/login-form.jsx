@@ -31,7 +31,7 @@ export function LoginForm() {
     try {
       const payload = await loginUser(form);
       saveSession(payload);
-      router.push("/dashboard");
+      router.replace("/dashboard");
     } catch (error) {
       setStatus({ loading: false, error: error.message || "Unable to sign in." });
     }
