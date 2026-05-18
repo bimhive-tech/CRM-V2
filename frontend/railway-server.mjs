@@ -72,7 +72,7 @@ async function waitForBackend(maxAttempts = 60) {
 
 async function proxyToBackend(req, res) {
   const controller = new AbortController();
-  req.on("close", () => controller.abort());
+  req.on("aborted", () => controller.abort());
 
   const headers = new Headers();
   Object.entries(req.headers).forEach(([key, value]) => {
@@ -141,6 +141,13 @@ const server = http.createServer(async (req, res) => {
     await handle(req, res);
   } catch (error) {
     console.error(error);
+    if (error?.name === "AbortError") {
+      if (!res.headersSent) {
+        res.statusCode = 499;
+      }
+      res.end("Client closed request");
+      return;
+    }
     if (!res.headersSent) {
       res.statusCode = 500;
     }
