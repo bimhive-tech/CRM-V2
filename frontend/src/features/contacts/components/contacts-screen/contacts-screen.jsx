@@ -345,10 +345,6 @@ export function ContactsScreen({ user }) {
     () => [{ value: "All companies", label: "All companies" }, ...allCompanies.map((company) => ({ value: String(company.id), label: company.name }))],
     [allCompanies],
   );
-  const ownerOptions = useMemo(
-    () => [{ value: "", label: "Unassigned" }, ...owners.map((owner) => ({ value: String(owner.id), label: owner.full_name }))],
-    [owners],
-  );
   const ownerFilterOptions = useMemo(
     () => [{ value: "All owners", label: "All owners" }, ...owners.map((owner) => ({ value: String(owner.id), label: owner.full_name }))],
     [owners],
@@ -548,7 +544,7 @@ export function ContactsScreen({ user }) {
     setContactForm({
       ...emptyContactForm,
       companyId: companyOptions[0]?.value || "",
-      ownerId: ownerOptions[0]?.value || "",
+      ownerId: "",
       status: contactStatusOptions[0] || "Lead",
       lastTouch: new Date().toISOString().slice(0, 10),
     });
@@ -659,7 +655,18 @@ export function ContactsScreen({ user }) {
   }
 
   return (
-    <DashboardShell sidebar={<Sidebar user={user} />} topbar={<Topbar user={user} title="Contacts" />}>
+    <DashboardShell
+      sidebar={<Sidebar user={user} />}
+      topbar={
+        <Topbar
+          user={user}
+          breadcrumbs={[
+            { label: "Workspace", href: "/dashboard" },
+            { label: viewMode === "companies" ? "Companies" : "Contacts" },
+          ]}
+        />
+      }
+    >
       <div className={styles.stack}>
         <section className={styles.hero}>
           <div>
@@ -1088,7 +1095,6 @@ export function ContactsScreen({ user }) {
           onClose={closeContactModal}
           onSubmit={handleContactSubmit}
           companyOptions={companyOptions}
-          ownerOptions={ownerOptions}
           statusOptions={contactStatusOptions}
         />
       ) : null}

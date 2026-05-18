@@ -1,6 +1,6 @@
 import styles from "./contacts-screen.module.css";
 
-export function ContactsModal({ mode, form, onChange, onClose, onSubmit, companyOptions, ownerOptions, statusOptions }) {
+export function ContactsModal({ mode, form, onChange, onClose, onSubmit, companyOptions, statusOptions }) {
   return (
     <div className={styles.modalOverlay} role="presentation" onClick={onClose}>
       <div
@@ -55,16 +55,6 @@ export function ContactsModal({ mode, form, onChange, onClose, onSubmit, company
                 {statusOptions.map((option) => (
                   <option key={option} value={option}>
                     {option}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className={styles.field}>
-              <span>Owner</span>
-              <select name="ownerId" value={form.ownerId} onChange={onChange}>
-                {ownerOptions.map((option) => (
-                  <option key={option.value || "unassigned"} value={option.value}>
-                    {option.label}
                   </option>
                 ))}
               </select>

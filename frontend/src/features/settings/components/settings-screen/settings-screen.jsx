@@ -497,7 +497,10 @@ export function SettingsScreen({
   }
 
   return (
-    <DashboardShell sidebar={<Sidebar user={shellUser} />} topbar={<Topbar user={shellUser} title="Settings" />}>
+    <DashboardShell
+      sidebar={<Sidebar user={shellUser} />}
+      topbar={<Topbar user={shellUser} breadcrumbs={[{ label: "Workspace", href: "/dashboard" }, { label: "Settings" }]} />}
+    >
       <div className={styles.stack}>
         <section className={styles.hero}>
           <div>

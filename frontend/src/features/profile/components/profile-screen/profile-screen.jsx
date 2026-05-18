@@ -10,7 +10,10 @@ export function ProfileScreen({ user }) {
     user?.roles?.map((role) => role.name).join(", ") || (user?.role || "platform_admin").replaceAll("_", " ");
 
   return (
-    <DashboardShell sidebar={<Sidebar user={user} />} topbar={<Topbar user={user} title="Profile" />}>
+    <DashboardShell
+      sidebar={<Sidebar user={user} />}
+      topbar={<Topbar user={user} breadcrumbs={[{ label: "Workspace", href: "/dashboard" }, { label: "Profile" }]} />}
+    >
       <div className={styles.stack}>
         <section className={styles.hero}>
           <p className={styles.eyebrow}>Profile</p>

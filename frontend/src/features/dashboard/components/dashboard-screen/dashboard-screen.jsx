@@ -11,7 +11,10 @@ export function DashboardScreen({ user }) {
   const todayLabel = new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric" }).format(new Date());
 
   return (
-    <DashboardShell sidebar={<Sidebar user={user} />} topbar={<Topbar user={user} title="Dashboard" />}>
+    <DashboardShell
+      sidebar={<Sidebar user={user} />}
+      topbar={<Topbar user={user} breadcrumbs={[{ label: "Workspace", href: "/dashboard" }, { label: "Dashboard" }]} />}
+    >
       <div className={styles.stack}>
         <section className={styles.hero}>
           <div>

@@ -290,7 +290,19 @@ export default function CompanyDetailPage() {
   const visibleContacts = (company?.contacts || []).slice(0, 4);
 
   return (
-    <DashboardShell sidebar={<Sidebar user={authState.user} />} topbar={<Topbar user={authState.user} title={company?.name || "Company"} />}>
+    <DashboardShell
+      sidebar={<Sidebar user={authState.user} />}
+      topbar={
+        <Topbar
+          user={authState.user}
+          breadcrumbs={[
+            { label: "Workspace", href: "/dashboard" },
+            { label: "Companies", href: "/contacts" },
+            { label: company?.name || "Company" },
+          ]}
+        />
+      }
+    >
       <div className={styles.page}>
         {state.error ? <p className={styles.error}>{state.error}</p> : null}
         {saveMessage.error ? <p className={styles.error}>{saveMessage.error}</p> : null}

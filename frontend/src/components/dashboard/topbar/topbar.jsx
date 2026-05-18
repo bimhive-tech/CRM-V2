@@ -1,16 +1,33 @@
+import Link from "next/link";
+
 import { BellIcon, PlusIcon } from "@/components/dashboard/dashboard-icons";
 
 import styles from "./topbar.module.css";
 
-export function Topbar({ user, title = "Dashboard" }) {
+export function Topbar({ user, title = "Dashboard", breadcrumbs = null }) {
   const companyName = user?.company?.name || user?.companies?.[0]?.name || "No company assigned";
+  const crumbItems = breadcrumbs?.length ? breadcrumbs : [{ label: "Workspace" }, { label: title }];
 
   return (
     <div className={styles.topbar}>
       <div className={styles.crumbs}>
-        <span>Workspace</span>
-        <span className={styles.separator}>&gt;</span>
-        <strong>{title}</strong>
+        {crumbItems.map((item, index) => {
+          const isLast = index === crumbItems.length - 1;
+          return (
+            <span key={`${item.label}-${index}`} className={styles.crumbItem}>
+              {item.href && !isLast ? (
+                <Link className={styles.crumbLink} href={item.href}>
+                  {item.label}
+                </Link>
+              ) : isLast ? (
+                <strong>{item.label}</strong>
+              ) : (
+                <span>{item.label}</span>
+              )}
+              {!isLast ? <span className={styles.separator}>&gt;</span> : null}
+            </span>
+          );
+        })}
       </div>
 
       <div className={styles.actions}>

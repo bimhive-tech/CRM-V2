@@ -201,7 +201,19 @@ export function PipelineScreen({ user }) {
   }
 
   return (
-    <DashboardShell sidebar={<Sidebar user={user} />} topbar={<Topbar user={user} title="Pipeline" />}>
+    <DashboardShell
+      sidebar={<Sidebar user={user} />}
+      topbar={
+        <Topbar
+          user={user}
+          breadcrumbs={[
+            { label: "Workspace", href: "/dashboard" },
+            { label: "Pipeline", href: "/pipeline" },
+            ...(selectedPipeline?.name ? [{ label: selectedPipeline.name }] : []),
+          ]}
+        />
+      }
+    >
       <div className={styles.stack}>
         <section className={styles.hero}>
           <div>
