@@ -74,3 +74,44 @@ img {
   background: var(--accent-tint);
   color: var(--accent-deep);
 }
+
+.routeLoader {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg);
+  opacity: 1;
+  transform: translateY(0);
+  transition:
+    opacity 0.22s ease,
+    transform 0.22s ease;
+  pointer-events: none;
+}
+
+.routeLoaderExiting {
+  opacity: 0;
+  transform: translateY(-32px);
+}
+
+.routeLoaderSpinner {
+  width: 42px;
+  height: 42px;
+  border: 2px solid var(--accent-tint);
+  border-top-color: var(--accent);
+  border-radius: 999px;
+  animation: routeLoaderSpin 0.8s linear infinite;
+  box-shadow: 0 0 0 1px rgba(120, 60, 0, 0.05);
+}
+
+@keyframes routeLoaderSpin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}

@@ -7,6 +7,7 @@ import { DashboardShell } from "@/components/dashboard/dashboard-shell/dashboard
 import { ClipboardIcon, GlobeIcon, LinkedInIcon, MailIcon, PhoneIcon } from "@/components/dashboard/dashboard-icons";
 import { Sidebar } from "@/components/dashboard/sidebar/sidebar";
 import { Topbar } from "@/components/dashboard/topbar/topbar";
+import { useRouteTransition } from "@/components/app/route-transition-provider";
 import { CompanyModal } from "@/features/contacts/components/contacts-screen/contacts-modal";
 import { getCrmCompany, updateCrmCompany } from "@/lib/api/admin";
 import { useAuthenticatedUser } from "@/lib/hooks/use-authenticated-user";
@@ -184,6 +185,7 @@ function ExternalActionRow({ label, value, href, icon, external = false }) {
 export default function CompanyDetailPage() {
   const params = useParams();
   const router = useRouter();
+  const { startTransition } = useRouteTransition();
   const authState = useAuthenticatedUser();
   const [state, setState] = useState({ loading: true, company: null, error: "" });
   const [activeTab, setActiveTab] = useState("all");
@@ -425,7 +427,10 @@ export default function CompanyDetailPage() {
                   <button
                     className={styles.secondaryButton}
                     type="button"
-                    onClick={() => router.push(`/contacts?view=contacts&companyId=${company.id}`)}
+                    onClick={() => {
+                      startTransition();
+                      router.push(`/contacts?view=contacts&companyId=${company.id}`);
+                    }}
                   >
                     Show all associated contacts
                   </button>
