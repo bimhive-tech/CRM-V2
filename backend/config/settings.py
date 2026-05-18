@@ -31,6 +31,10 @@ def get_env(name, default=None):
     return os.getenv(name, default)
 
 
+def get_csv_env(name, default=""):
+    return [item.strip() for item in get_env(name, default).split(",") if item.strip()]
+
+
 def database_config():
     database_url = get_env("DATABASE_URL")
     if not database_url:
@@ -60,7 +64,10 @@ def database_config():
 
 SECRET_KEY = get_env("DJANGO_SECRET_KEY", "dev-only-secret-key")
 DEBUG = get_env("DJANGO_DEBUG", "true").lower() == "true"
-ALLOWED_HOSTS = [host.strip() for host in get_env("ALLOWED_HOSTS", "127.0.0.1,localhost,testserver").split(",") if host.strip()]
+ALLOWED_HOSTS = get_csv_env("ALLOWED_HOSTS", "127.0.0.1,localhost,testserver")
+RAILWAY_PUBLIC_DOMAIN = get_env("RAILWAY_PUBLIC_DOMAIN", "").strip()
+if RAILWAY_PUBLIC_DOMAIN and RAILWAY_PUBLIC_DOMAIN not in ALLOWED_HOSTS:
+    ALLOWED_HOSTS.append(RAILWAY_PUBLIC_DOMAIN)
 
 INSTALLED_APPS = [
     "django.contrib.admin",
@@ -140,16 +147,14 @@ STORAGES = {
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 AUTH_USER_MODEL = "accounts.User"
 
-CORS_ALLOWED_ORIGINS = [
-    origin.strip()
-    for origin in get_env("CORS_ALLOWED_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000").split(",")
-    if origin.strip()
-]
-CSRF_TRUSTED_ORIGINS = [
-    origin.strip()
-    for origin in get_env("CSRF_TRUSTED_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000").split(",")
-    if origin.strip()
-]
+CORS_ALLOWED_ORIGINS = get_csv_env("CORS_ALLOWED_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000")
+CSRF_TRUSTED_ORIGINS = get_csv_env("CSRF_TRUSTED_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000")
+if RAILWAY_PUBLIC_DOMAIN:
+    railway_origin = f"https://{RAILWAY_PUBLIC_DOMAIN}"
+    if railway_origin not in CORS_ALLOWED_ORIGINS:
+        CORS_ALLOWED_ORIGINS.append(railway_origin)
+    if railway_origin not in CSRF_TRUSTED_ORIGINS:
+        CSRF_TRUSTED_ORIGINS.append(railway_origin)
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 USE_X_FORWARDED_HOST = True
 
