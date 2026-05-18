@@ -1,0 +1,19 @@
+[phases.setup]
+nixPkgs = ["python311", "nodejs_20", "gcc"]
+
+[phases.install]
+cmds = [
+  "python -m pip install --upgrade pip",
+  "pip install -r backend/requirements.txt",
+  "cd frontend && npm ci"
+]
+
+[phases.build]
+cmds = [
+  "cd frontend && npm run build",
+  "cd backend && python manage.py collectstatic --noinput",
+  "cd backend && python manage.py migrate"
+]
+
+[start]
+cmd = "cd frontend && node railway-server.mjs"
