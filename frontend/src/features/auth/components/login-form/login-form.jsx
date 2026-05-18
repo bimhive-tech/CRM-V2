@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
-import { useRouteTransition } from "@/components/app/route-transition-provider";
 import { loginUser } from "@/lib/api/auth";
 import { saveSession } from "@/lib/session";
 
@@ -17,7 +16,6 @@ const initialState = {
 
 export function LoginForm() {
   const router = useRouter();
-  const { startTransition } = useRouteTransition();
   const [form, setForm] = useState(initialState);
   const [status, setStatus] = useState({ loading: false, error: "" });
 
@@ -33,7 +31,6 @@ export function LoginForm() {
     try {
       const payload = await loginUser(form);
       saveSession(payload);
-      startTransition();
       router.replace("/dashboard");
     } catch (error) {
       setStatus({ loading: false, error: error.message || "Unable to sign in." });

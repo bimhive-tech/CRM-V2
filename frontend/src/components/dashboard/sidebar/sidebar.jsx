@@ -7,7 +7,6 @@ import { usePathname, useRouter } from "next/navigation";
 import {
   ActivityIcon,
   AnalyticsIcon,
-  DealsIcon,
   InboxIcon,
   OverviewIcon,
   PipelineIcon,
@@ -15,7 +14,6 @@ import {
   SearchIcon,
   SettingsIcon,
 } from "@/components/dashboard/dashboard-icons";
-import { useRouteTransition } from "@/components/app/route-transition-provider";
 import { clearSession } from "@/lib/session";
 
 import styles from "./sidebar.module.css";
@@ -27,7 +25,6 @@ const navSections = [
       { id: "dashboard", label: "Dashboard", icon: <OverviewIcon />, href: "/dashboard", match: ["/dashboard"] },
       { id: "pipeline", label: "Pipeline", icon: <PipelineIcon />, href: "/pipeline", match: ["/pipeline"] },
       { id: "contacts", label: "Contacts", icon: <PeopleIcon />, href: "/contacts", match: ["/contacts"] },
-      { id: "deals", label: "Deals", icon: <DealsIcon />, href: "/dashboard" },
       { id: "activity", label: "Activity", icon: <ActivityIcon />, href: "/dashboard" },
     ],
   },
@@ -44,7 +41,6 @@ const navSections = [
 export function Sidebar({ user, onNavigate }) {
   const router = useRouter();
   const pathname = usePathname();
-  const { startTransition } = useRouteTransition();
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef(null);
 
@@ -62,7 +58,6 @@ export function Sidebar({ user, onNavigate }) {
   function handleLogout() {
     clearSession();
     onNavigate?.();
-    startTransition();
     router.push("/");
   }
 
@@ -81,7 +76,6 @@ export function Sidebar({ user, onNavigate }) {
   function handleProfileOpen() {
     setMenuOpen(false);
     onNavigate?.();
-    startTransition();
     router.push("/profile");
   }
 
@@ -91,7 +85,6 @@ export function Sidebar({ user, onNavigate }) {
       return;
     }
     onNavigate?.();
-    startTransition();
     router.push(href);
   }
 

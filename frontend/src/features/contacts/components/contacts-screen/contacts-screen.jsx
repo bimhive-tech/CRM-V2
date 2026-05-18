@@ -7,7 +7,6 @@ import { DashboardShell } from "@/components/dashboard/dashboard-shell/dashboard
 import { ClipboardIcon, EditIcon, PlusIcon, SearchIcon, TrashIcon } from "@/components/dashboard/dashboard-icons";
 import { Sidebar } from "@/components/dashboard/sidebar/sidebar";
 import { Topbar } from "@/components/dashboard/topbar/topbar";
-import { useRouteTransition } from "@/components/app/route-transition-provider";
 import {
   createContact,
   createCrmCompany,
@@ -316,7 +315,6 @@ export function ContactsScreen({ user }) {
   const token = getAccessToken();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { startTransition } = useRouteTransition();
   const [contacts, setContacts] = useState([]);
   const [companies, setCompanies] = useState([]);
   const [allCompanies, setAllCompanies] = useState([]);
@@ -402,7 +400,7 @@ export function ContactsScreen({ user }) {
         });
       });
     },
-    [contactPage, deferredSearch, filters.companyId, filters.owner, filters.status, startTransition, token],
+    [contactPage, deferredSearch, filters.companyId, filters.owner, filters.status, token],
   );
 
   const loadCompaniesPage = useCallback(
@@ -425,7 +423,7 @@ export function ContactsScreen({ user }) {
         });
       });
     },
-    [companyPage, deferredSearch, startTransition, token],
+    [companyPage, deferredSearch, token],
   );
 
   async function loadStaticData() {
@@ -472,7 +470,7 @@ export function ContactsScreen({ user }) {
     return () => {
       active = false;
     };
-  }, [fetchStaticData, startTransition]);
+  }, [fetchStaticData]);
 
   useEffect(() => {
     let active = true;
@@ -657,7 +655,6 @@ export function ContactsScreen({ user }) {
   }
 
   function openCompanyDetails(companyId) {
-    startTransition();
     router.push(`/contacts/companies/${companyId}`);
   }
 
