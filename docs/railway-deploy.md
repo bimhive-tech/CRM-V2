@@ -18,14 +18,18 @@ Root directory:
 /
 ```
 
-The root [`nixpacks.toml`](/D:/Youssef/Work/BIM%20Hive/CRM%20V2/nixpacks.toml) will:
+Railway should detect the root [`Dockerfile`](/D:/Youssef/Work/BIM%20Hive/CRM%20V2/Dockerfile) and build from that directly.
+
+The container will:
 
 - install backend Python dependencies
 - install frontend Node dependencies
 - build Next.js
-- collect Django static files
-- run Django migrations
-- start the unified Node server in [`frontend/railway-server.mjs`](/D:/Youssef/Work/BIM%20Hive/CRM%20V2/frontend/railway-server.mjs)
+- start through [`start.sh`](/D:/Youssef/Work/BIM%20Hive/CRM%20V2/start.sh), which runs:
+  - `python manage.py collectstatic --noinput`
+  - `python manage.py migrate`
+  - `python manage.py bootstrap_platform_admin` when the admin env vars are present
+  - the unified Node server in [`frontend/railway-server.mjs`](/D:/Youssef/Work/BIM%20Hive/CRM%20V2/frontend/railway-server.mjs)
 
 ## Required Railway Variables
 
@@ -59,16 +63,7 @@ Use your existing Railway Postgres service and link its `DATABASE_URL` into the 
 
 ## First Deploy
 
-The deploy build already runs:
-
-- `python manage.py migrate`
-- `python manage.py collectstatic --noinput`
-
-After the first successful deploy, run this once in the app service shell if needed:
-
-```text
-python manage.py bootstrap_platform_admin
-```
+If `PLATFORM_ADMIN_EMAIL`, `PLATFORM_ADMIN_PASSWORD`, and `PLATFORM_ADMIN_NAME` are set, the bootstrap command will run on startup automatically.
 
 ## Notes
 

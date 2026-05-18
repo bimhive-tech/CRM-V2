@@ -17,7 +17,9 @@ const backendOrigin = `http://127.0.0.1:${backendPort}`;
 const dev = false;
 
 function startBackend() {
-  const command = process.platform === "win32" ? "python" : "python";
+  const command =
+    process.env.PYTHON_BIN ||
+    (process.platform === "win32" ? "python" : "python3");
   const args = [
     "-m",
     "gunicorn",
