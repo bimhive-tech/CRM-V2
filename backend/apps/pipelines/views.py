@@ -4,6 +4,7 @@ from rest_framework.exceptions import ValidationError
 from apps.crm.models import CRMContact
 
 from apps.companies.models import Company
+from apps.masterdata.models import PipelineStatusTemplate
 from apps.pipelines.models import Pipeline, PipelineStatus
 from apps.pipelines.serializers import (
     PipelineSerializer,
@@ -76,6 +77,23 @@ def resolve_requested_company_for_user(user, requested_company=None):
 
 
 def create_default_statuses(pipeline):
+    templates = list(
+        PipelineStatusTemplate.objects.filter(company=pipeline.company).order_by("position", "id")
+    )
+    if templates:
+        PipelineStatus.objects.bulk_create(
+            [
+                PipelineStatus(
+                    pipeline=pipeline,
+                    name=template.name,
+                    color=template.color,
+                    position=index,
+                )
+                for index, template in enumerate(templates)
+            ]
+        )
+        return
+
     PipelineStatus.objects.bulk_create(
         [
             PipelineStatus(

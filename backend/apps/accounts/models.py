@@ -14,6 +14,7 @@ class UserRole(models.TextChoices):
 class Role(models.Model):
     name = models.CharField(max_length=255, unique=True)
     slug = models.SlugField(max_length=255, unique=True)
+    company = models.ForeignKey("companies.Company", on_delete=models.CASCADE, null=True, blank=True, related_name="roles")
     description = models.TextField(blank=True)
     is_system = models.BooleanField(default=False)
     created_at = models.DateTimeField(default=timezone.now, editable=False)
@@ -98,3 +99,14 @@ class User(AbstractUser):
             or self.is_superuser
             or self.roles.filter(slug=UserRole.PLATFORM_ADMIN).exists()
         )
+
+    @property
+    def is_company_admin(self):
+        return (
+            self.role == UserRole.COMPANY_ADMIN
+            or self.roles.filter(slug=UserRole.COMPANY_ADMIN).exists()
+        )
+
+    @property
+    def can_access_settings(self):
+        return self.is_platform_admin or self.is_company_admin

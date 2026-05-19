@@ -2,13 +2,12 @@ import styles from "./contacts-screen.module.css";
 
 export function ContactsModal({ mode, form, onChange, onClose, onSubmit, companyOptions, pipelineOptions, statusOptions }) {
   return (
-    <div className={styles.modalOverlay} role="presentation" onClick={onClose}>
+    <div className={styles.modalOverlay} role="presentation">
       <div
         className={styles.modal}
         role="dialog"
         aria-modal="true"
         aria-label={mode === "edit" ? "Edit contact" : "Create contact"}
-        onClick={(event) => event.stopPropagation()}
       >
         <div className={styles.modalHeader}>
           <div>
@@ -99,13 +98,12 @@ export function ContactsModal({ mode, form, onChange, onClose, onSubmit, company
 
 export function CompanyModal({ mode = "create", form, onChange, onPhoneChange, onAddPhone, onRemovePhone, onClose, onSubmit }) {
   return (
-    <div className={styles.modalOverlay} role="presentation" onClick={onClose}>
+    <div className={styles.modalOverlay} role="presentation">
       <div
         className={styles.modal}
         role="dialog"
         aria-modal="true"
         aria-label={mode === "edit" ? "Edit company" : "Create company"}
-        onClick={(event) => event.stopPropagation()}
       >
         <div className={styles.modalHeader}>
           <div>

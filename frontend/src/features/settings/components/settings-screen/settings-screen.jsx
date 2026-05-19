@@ -1,24 +1,32 @@
 "use client";
 
 import Image from "next/image";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { DashboardShell } from "@/components/dashboard/dashboard-shell/dashboard-shell";
 import { Sidebar } from "@/components/dashboard/sidebar/sidebar";
 import { Topbar } from "@/components/dashboard/topbar/topbar";
 import {
   createCompany,
+  createCurrency,
+  createPipelineStatusTemplate,
   createRole,
   createUser,
   deleteCompany,
   deleteRole,
+  deleteCurrency,
+  deletePipelineStatusTemplate,
   deleteUser,
   listCompanies,
+  listCurrencies,
+  listPipelineStatusTemplates,
   listRoles,
   listUsers,
   deleteCompanyLogo,
   uploadCompanyLogo,
   updateCompany,
+  updateCurrency,
+  updatePipelineStatusTemplate,
   updateRole,
   updateUser,
 } from "@/lib/api/admin";
@@ -27,15 +35,10 @@ import { getAccessToken } from "@/lib/session";
 import { SettingsModal } from "./settings-modal";
 import styles from "./settings-screen.module.css";
 
-const tabs = [
-  { id: "company-info", label: "Company Info" },
-  { id: "users", label: "User Management" },
-  { id: "roles", label: "Roles" },
-  { id: "companies", label: "Companies" },
-];
-
 const companyInitialState = { name: "", email: "", phone_number: "", website: "", address: "", is_active: true };
 const roleInitialState = { name: "", description: "" };
+const currencyInitialState = { code: "", name: "", symbol: "", is_default: false, is_active: true };
+const statusTemplateInitialState = { name: "", color: "#7C5F35", position: 0 };
 const userInitialState = {
   email: "",
   full_name: "",
@@ -60,6 +63,21 @@ function formatRoleName(value) {
   return value.replaceAll("_", " ");
 }
 
+function getVisibleTabs(user) {
+  const items = [
+    { id: "company-info", label: "Company Info" },
+    { id: "users", label: "User Management" },
+    { id: "roles", label: "Roles" },
+    { id: "master-data", label: "Master Data" },
+  ];
+
+  if (user?.is_platform_admin) {
+    items.push({ id: "companies", label: "Companies" });
+  }
+
+  return items;
+}
+
 function toCompanyForm(company) {
   return {
     name: company.name || "",
@@ -73,6 +91,24 @@ function toCompanyForm(company) {
 
 function toRoleForm(role) {
   return { name: role.name, description: role.description || "" };
+}
+
+function toCurrencyForm(currency) {
+  return {
+    code: currency.code || "",
+    name: currency.name || "",
+    symbol: currency.symbol || "",
+    is_default: Boolean(currency.is_default),
+    is_active: Boolean(currency.is_active),
+  };
+}
+
+function toStatusTemplateForm(template) {
+  return {
+    name: template.name || "",
+    color: template.color || "#7C5F35",
+    position: Number(template.position || 0),
+  };
 }
 
 function toUserForm(user) {
@@ -182,10 +218,13 @@ export function SettingsScreen({
   roles: initialRoles,
 }) {
   const token = getAccessToken();
+  const tabs = useMemo(() => getVisibleTabs(user), [user]);
   const [activeTab, setActiveTab] = useState("company-info");
   const [companies, setCompanies] = useState(initialCompanies);
   const [users, setUsers] = useState(initialUsers);
   const [roles, setRoles] = useState(initialRoles);
+  const [currencies, setCurrencies] = useState([]);
+  const [statusTemplates, setStatusTemplates] = useState([]);
   const [status, setStatus] = useState({ error: "", success: "" });
   const [modalState, setModalState] = useState({ type: null, mode: "create", itemId: null });
   const [companyForm, setCompanyForm] = useState(companyInitialState);
@@ -197,6 +236,8 @@ export function SettingsScreen({
   });
   const [roleForm, setRoleForm] = useState(roleInitialState);
   const [userForm, setUserForm] = useState(userInitialState);
+  const [currencyForm, setCurrencyForm] = useState(currencyInitialState);
+  const [statusTemplateForm, setStatusTemplateForm] = useState(statusTemplateInitialState);
 
   const selectedCompany = companies.find((company) => String(company.id) === selectedCompanyId) || null;
   const shellUser = useMemo(() => {
@@ -223,9 +264,54 @@ export function SettingsScreen({
     () => roles.map((role) => ({ value: String(role.id), label: role.name, is_system: role.is_system })),
     [roles],
   );
+  const visibleUsers = useMemo(() => {
+    if (user?.is_platform_admin) {
+      return users;
+    }
+    return users.filter((targetUser) => targetUser.companies.some((company) => String(company.id) === selectedCompanyId));
+  }, [selectedCompanyId, user, users]);
+  const visibleRoles = useMemo(() => roles.filter((role) => !role.is_system || user?.is_platform_admin), [roles, user]);
+
+  useEffect(() => {
+    if (!selectedCompanyId) {
+      return;
+    }
+
+    let active = true;
+
+    Promise.all([
+      listCurrencies(token, { company_id: selectedCompanyId }),
+      listPipelineStatusTemplates(token, { company_id: selectedCompanyId }),
+    ])
+      .then(([nextCurrencies, nextTemplates]) => {
+        if (!active) {
+          return;
+        }
+        setCurrencies(nextCurrencies);
+        setStatusTemplates(nextTemplates);
+      })
+      .catch((error) => {
+        if (!active) {
+          return;
+        }
+        setStatus((current) => ({ ...current, error: error.message || "Unable to load master data." }));
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [selectedCompanyId, token]);
 
   function setMessage(error = "", success = "") {
     setStatus({ error, success });
+  }
+
+  function handleSelectedCompanyChange(event) {
+    const nextCompanyId = event.target.value;
+    setSelectedCompanyId(nextCompanyId);
+    const nextCompany = companies.find((company) => String(company.id) === nextCompanyId) || null;
+    setCompanyInfoForm(nextCompany ? toCompanyForm(nextCompany) : companyInitialState);
+    setMessage();
   }
 
   async function refreshAll() {
@@ -251,6 +337,8 @@ export function SettingsScreen({
     setCompanyForm(companyInitialState);
     setRoleForm(roleInitialState);
     setUserForm(userInitialState);
+    setCurrencyForm(currencyInitialState);
+    setStatusTemplateForm(statusTemplateInitialState);
   }
 
   function openCompanyModal(mode, company = null) {
@@ -267,7 +355,27 @@ export function SettingsScreen({
 
   function openUserModal(mode, targetUser = null) {
     setModalState({ type: "user", mode, itemId: targetUser?.id || null });
-    setUserForm(targetUser ? toUserForm(targetUser) : userInitialState);
+    setUserForm(
+      targetUser
+        ? toUserForm(targetUser)
+        : {
+            ...userInitialState,
+            primary_company_id: selectedCompanyId || "",
+            company_ids: selectedCompanyId ? [selectedCompanyId] : [],
+          },
+    );
+    setMessage();
+  }
+
+  function openCurrencyModal(mode, currency = null) {
+    setModalState({ type: "currency", mode, itemId: currency?.id || null });
+    setCurrencyForm(currency ? toCurrencyForm(currency) : currencyInitialState);
+    setMessage();
+  }
+
+  function openStatusTemplateModal(mode, template = null) {
+    setModalState({ type: "status-template", mode, itemId: template?.id || null });
+    setStatusTemplateForm(template ? toStatusTemplateForm(template) : { ...statusTemplateInitialState, position: statusTemplates.length });
     setMessage();
   }
 
@@ -284,6 +392,16 @@ export function SettingsScreen({
   function updateRoleForm(event) {
     const { name, value } = event.target;
     setRoleForm((current) => ({ ...current, [name]: value }));
+  }
+
+  function updateCurrencyForm(event) {
+    const { name, value, type, checked } = event.target;
+    setCurrencyForm((current) => ({ ...current, [name]: type === "checkbox" ? checked : value }));
+  }
+
+  function updateStatusTemplateForm(event) {
+    const { name, value } = event.target;
+    setStatusTemplateForm((current) => ({ ...current, [name]: name === "position" ? Number(value) : value }));
   }
 
   function updateUserForm(event) {
@@ -387,6 +505,20 @@ export function SettingsScreen({
     }
   }
 
+  async function refreshMasterData() {
+    if (!selectedCompanyId) {
+      return;
+    }
+
+    const [nextCurrencies, nextTemplates] = await Promise.all([
+      listCurrencies(token, { company_id: selectedCompanyId }),
+      listPipelineStatusTemplates(token, { company_id: selectedCompanyId }),
+    ]);
+
+    setCurrencies(nextCurrencies);
+    setStatusTemplates(nextTemplates);
+  }
+
   async function handleUserSubmit(event) {
     event.preventDefault();
     setMessage();
@@ -395,9 +527,9 @@ export function SettingsScreen({
       const payload = {
         email: userForm.email.trim(),
         full_name: userForm.full_name.trim(),
-        role: userForm.role,
-        company_id: userForm.primary_company_id || null,
-        company_ids: userForm.company_ids,
+        role: user?.is_platform_admin ? userForm.role : "user",
+        company_id: user?.is_platform_admin ? userForm.primary_company_id || null : selectedCompanyId || null,
+        company_ids: user?.is_platform_admin ? userForm.company_ids : selectedCompanyId ? [selectedCompanyId] : [],
         role_ids: userForm.role_ids,
         is_active: userForm.is_active,
       };
@@ -424,6 +556,60 @@ export function SettingsScreen({
     }
   }
 
+  async function handleCurrencySubmit(event) {
+    event.preventDefault();
+    setMessage();
+
+    try {
+      const payload = {
+        code: currencyForm.code.trim(),
+        name: currencyForm.name.trim(),
+        symbol: currencyForm.symbol.trim(),
+        is_default: currencyForm.is_default,
+        is_active: currencyForm.is_active,
+      };
+
+      if (modalState.mode === "edit" && modalState.itemId) {
+        await updateCurrency(token, modalState.itemId, payload);
+        setMessage("", "Currency updated.");
+      } else {
+        await createCurrency(token, payload, { company_id: selectedCompanyId });
+        setMessage("", "Currency created.");
+      }
+
+      await refreshMasterData();
+      closeModal();
+    } catch (error) {
+      setMessage(error.message || "Unable to save currency.");
+    }
+  }
+
+  async function handleStatusTemplateSubmit(event) {
+    event.preventDefault();
+    setMessage();
+
+    try {
+      const payload = {
+        name: statusTemplateForm.name.trim(),
+        color: statusTemplateForm.color.trim(),
+        position: statusTemplateForm.position,
+      };
+
+      if (modalState.mode === "edit" && modalState.itemId) {
+        await updatePipelineStatusTemplate(token, modalState.itemId, payload);
+        setMessage("", "Default pipeline status updated.");
+      } else {
+        await createPipelineStatusTemplate(token, payload, { company_id: selectedCompanyId });
+        setMessage("", "Default pipeline status created.");
+      }
+
+      await refreshMasterData();
+      closeModal();
+    } catch (error) {
+      setMessage(error.message || "Unable to save default pipeline status.");
+    }
+  }
+
   async function handleDelete(kind, itemId, label) {
     const confirmed = window.confirm(`Delete ${label}?`);
     if (!confirmed) {
@@ -437,11 +623,19 @@ export function SettingsScreen({
         await deleteCompany(token, itemId);
       } else if (kind === "role") {
         await deleteRole(token, itemId);
+      } else if (kind === "currency") {
+        await deleteCurrency(token, itemId);
+      } else if (kind === "status-template") {
+        await deletePipelineStatusTemplate(token, itemId);
       } else {
         await deleteUser(token, itemId);
       }
 
-      await refreshAll();
+      if (kind === "currency" || kind === "status-template") {
+        await refreshMasterData();
+      } else {
+        await refreshAll();
+      }
       setMessage("", `${label} deleted.`);
       if (modalState.itemId === itemId) {
         closeModal();
@@ -507,7 +701,7 @@ export function SettingsScreen({
             <p className={styles.eyebrow}>Administration</p>
             <h1>Settings</h1>
             <p className={styles.copy}>
-              Manage companies, reusable roles, and user access from one warm, structured admin workspace.
+              Manage company settings, user access, roles, and master data from one warm, structured admin workspace.
             </p>
           </div>
         </section>
@@ -538,6 +732,19 @@ export function SettingsScreen({
             </div>
 
             <form className={styles.panelBody} onSubmit={handleCompanyInfoSubmit}>
+              {user?.is_platform_admin && companyOptions.length ? (
+                <label className={styles.field}>
+                  <span>Company context</span>
+                  <select value={selectedCompanyId} onChange={handleSelectedCompanyChange}>
+                    {companyOptions.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              ) : null}
+
               <CompanyFormFields
                 form={companyInfoForm}
                 onChange={updateCompanyInfoForm}
@@ -582,7 +789,7 @@ export function SettingsScreen({
                   </tr>
                 </thead>
                 <tbody>
-                  {users.map((targetUser) => (
+                  {visibleUsers.map((targetUser) => (
                     <tr key={targetUser.id}>
                       <td>{targetUser.full_name}</td>
                       <td className={styles.monoCell}>{targetUser.email}</td>
@@ -626,7 +833,7 @@ export function SettingsScreen({
             </div>
 
             <div className={styles.listGrid}>
-              {roles.map((role) => (
+              {visibleRoles.map((role) => (
                 <article key={role.id} className={styles.listCard}>
                   <div className={styles.listCardHeader}>
                     <div>
@@ -651,6 +858,127 @@ export function SettingsScreen({
                   </div>
                 </article>
               ))}
+            </div>
+          </section>
+        ) : null}
+
+        {activeTab === "master-data" ? (
+          <section className={styles.panel}>
+            <div className={styles.panelHeader}>
+              <div>
+                <p className={styles.panelEyebrow}>Master Data</p>
+                <h2>Currencies and default pipeline statuses</h2>
+              </div>
+              {user?.is_platform_admin && companyOptions.length ? (
+                <label className={styles.field}>
+                  <span>Company context</span>
+                  <select value={selectedCompanyId} onChange={handleSelectedCompanyChange}>
+                    {companyOptions.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              ) : null}
+            </div>
+
+            <div className={styles.panelBody}>
+              <section className={styles.panel}>
+                <div className={styles.panelHeader}>
+                  <div>
+                    <p className={styles.panelEyebrow}>Currencies</p>
+                    <h2>Available currencies</h2>
+                  </div>
+                  <button className={styles.primaryButton} type="button" onClick={() => openCurrencyModal("create")} disabled={!selectedCompanyId}>
+                    Create currency
+                  </button>
+                </div>
+
+                <div className={styles.tableWrap}>
+                  <table className={styles.table}>
+                    <thead>
+                      <tr>
+                        <th>Code</th>
+                        <th>Name</th>
+                        <th>Symbol</th>
+                        <th>Default</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {currencies.map((currency) => (
+                        <tr key={currency.id}>
+                          <td className={styles.monoCell}>{currency.code}</td>
+                          <td>{currency.name}</td>
+                          <td className={styles.monoCell}>{currency.symbol || currency.code}</td>
+                          <td>{currency.is_default ? <StatusBadge>Default</StatusBadge> : "No"}</td>
+                          <td>
+                            <StatusBadge tone={currency.is_active ? "neutral" : "danger"}>
+                              {currency.is_active ? "Active" : "Inactive"}
+                            </StatusBadge>
+                          </td>
+                          <td className={styles.actionsCell}>
+                            <button className={styles.inlineButton} type="button" onClick={() => openCurrencyModal("edit", currency)}>
+                              Edit
+                            </button>
+                            <button className={styles.inlineDanger} type="button" onClick={() => handleDelete("currency", currency.id, currency.name)}>
+                              Delete
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </section>
+
+              <section className={styles.panel}>
+                <div className={styles.panelHeader}>
+                  <div>
+                    <p className={styles.panelEyebrow}>Pipeline Defaults</p>
+                    <h2>Statuses created with every new pipeline</h2>
+                  </div>
+                  <button className={styles.primaryButton} type="button" onClick={() => openStatusTemplateModal("create")} disabled={!selectedCompanyId}>
+                    Add status
+                  </button>
+                </div>
+
+                <div className={styles.tableWrap}>
+                  <table className={styles.table}>
+                    <thead>
+                      <tr>
+                        <th>Position</th>
+                        <th>Name</th>
+                        <th>Color</th>
+                        <th>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {statusTemplates.map((template) => (
+                        <tr key={template.id}>
+                          <td className={styles.monoCell}>{template.position + 1}</td>
+                          <td>{template.name}</td>
+                          <td className={styles.monoCell}>{template.color}</td>
+                          <td className={styles.actionsCell}>
+                            <button className={styles.inlineButton} type="button" onClick={() => openStatusTemplateModal("edit", template)}>
+                              Edit
+                            </button>
+                            <button
+                              className={styles.inlineDanger}
+                              type="button"
+                              onClick={() => handleDelete("status-template", template.id, template.name)}
+                            >
+                              Delete
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </section>
             </div>
           </section>
         ) : null}
@@ -773,29 +1101,38 @@ export function SettingsScreen({
               </label>
               <label className={styles.field}>
                 <span>Fallback role</span>
-                <select name="role" value={userForm.role} onChange={updateUserForm}>
-                  <option value="platform_admin">Platform admin</option>
-                  <option value="company_admin">Company admin</option>
+                <select name="role" value={user?.is_platform_admin ? userForm.role : "user"} onChange={updateUserForm} disabled={!user?.is_platform_admin}>
+                  {user?.is_platform_admin ? <option value="platform_admin">Platform admin</option> : null}
+                  {user?.is_platform_admin ? <option value="company_admin">Company admin</option> : null}
                   <option value="user">User</option>
                 </select>
               </label>
-              <label className={styles.field}>
-                <span>Primary company</span>
-                <select name="primary_company_id" value={userForm.primary_company_id} onChange={updateUserForm}>
-                  <option value="">No primary company</option>
-                  {companyOptions.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
+              {user?.is_platform_admin ? (
+                <label className={styles.field}>
+                  <span>Primary company</span>
+                  <select name="primary_company_id" value={userForm.primary_company_id} onChange={updateUserForm}>
+                    <option value="">No primary company</option>
+                    {companyOptions.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              ) : (
+                <label className={styles.field}>
+                  <span>Primary company</span>
+                  <input value={selectedCompany?.name || "No company selected"} readOnly />
+                </label>
+              )}
             </div>
 
             <div className={styles.assignmentSection}>
               <p className={styles.assignmentTitle}>Assigned roles</p>
               <div className={styles.optionGrid}>
-                {roleOptions.map((option) => (
+                {roleOptions
+                  .filter((option) => !option.is_system)
+                  .map((option) => (
                   <label key={option.value} className={styles.optionCard}>
                     <input
                       type="checkbox"
@@ -808,26 +1145,94 @@ export function SettingsScreen({
               </div>
             </div>
 
-            <div className={styles.assignmentSection}>
-              <p className={styles.assignmentTitle}>Assigned companies</p>
-              <div className={styles.optionGrid}>
-                {companyOptions.map((option) => (
-                  <label key={option.value} className={styles.optionCard}>
-                    <input
-                      type="checkbox"
-                      checked={userForm.company_ids.includes(option.value)}
-                      onChange={() => toggleUserAssignment("company_ids", option.value)}
-                    />
-                    <span>{option.label}</span>
-                  </label>
-                ))}
+            {user?.is_platform_admin ? (
+              <div className={styles.assignmentSection}>
+                <p className={styles.assignmentTitle}>Assigned companies</p>
+                <div className={styles.optionGrid}>
+                  {companyOptions.map((option) => (
+                    <label key={option.value} className={styles.optionCard}>
+                      <input
+                        type="checkbox"
+                        checked={userForm.company_ids.includes(option.value)}
+                        onChange={() => toggleUserAssignment("company_ids", option.value)}
+                      />
+                      <span>{option.label}</span>
+                    </label>
+                  ))}
+                </div>
               </div>
-            </div>
+            ) : null}
 
             <label className={styles.check}>
               <input name="is_active" type="checkbox" checked={userForm.is_active} onChange={updateUserForm} />
               <span>Active user</span>
             </label>
+          </SettingsModal>
+        ) : null}
+
+        {modalState.type === "currency" ? (
+          <SettingsModal
+            title={modalState.mode === "edit" ? "Edit currency" : "Create currency"}
+            description="Currencies are maintained per company and one can be marked as the default."
+            onClose={closeModal}
+            onSubmit={handleCurrencySubmit}
+            submitLabel={modalState.mode === "edit" ? "Save currency" : "Create currency"}
+          >
+            <div className={styles.formGrid}>
+              <label className={styles.field}>
+                <span>Code</span>
+                <input name="code" value={currencyForm.code} onChange={updateCurrencyForm} placeholder="EGP" required />
+              </label>
+              <label className={styles.field}>
+                <span>Name</span>
+                <input name="name" value={currencyForm.name} onChange={updateCurrencyForm} placeholder="Egyptian Pound" required />
+              </label>
+              <label className={styles.field}>
+                <span>Symbol</span>
+                <input name="symbol" value={currencyForm.symbol} onChange={updateCurrencyForm} placeholder="$ or EGP" />
+              </label>
+            </div>
+
+            <label className={styles.check}>
+              <input name="is_default" type="checkbox" checked={currencyForm.is_default} onChange={updateCurrencyForm} />
+              <span>Set as default currency</span>
+            </label>
+
+            <label className={styles.check}>
+              <input name="is_active" type="checkbox" checked={currencyForm.is_active} onChange={updateCurrencyForm} />
+              <span>Active currency</span>
+            </label>
+          </SettingsModal>
+        ) : null}
+
+        {modalState.type === "status-template" ? (
+          <SettingsModal
+            title={modalState.mode === "edit" ? "Edit default pipeline status" : "Create default pipeline status"}
+            description="These statuses are added automatically whenever a new pipeline is created for the selected company."
+            onClose={closeModal}
+            onSubmit={handleStatusTemplateSubmit}
+            submitLabel={modalState.mode === "edit" ? "Save status" : "Create status"}
+          >
+            <div className={styles.formGrid}>
+              <label className={styles.field}>
+                <span>Status name</span>
+                <input name="name" value={statusTemplateForm.name} onChange={updateStatusTemplateForm} placeholder="Qualified" required />
+              </label>
+              <label className={styles.field}>
+                <span>Color</span>
+                <input name="color" value={statusTemplateForm.color} onChange={updateStatusTemplateForm} placeholder="#2C7FB8" required />
+              </label>
+              <label className={styles.field}>
+                <span>Position</span>
+                <input
+                  name="position"
+                  type="number"
+                  min="0"
+                  value={statusTemplateForm.position}
+                  onChange={updateStatusTemplateForm}
+                />
+              </label>
+            </div>
           </SettingsModal>
         ) : null}
       </div>

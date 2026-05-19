@@ -105,6 +105,66 @@ export function listRoles(token) {
   });
 }
 
+export function listCurrencies(token, query = {}) {
+  return apiRequest(buildApiPath("/master-data/currencies/", query), {
+    method: "GET",
+    headers: authHeaders(token),
+  });
+}
+
+export function createCurrency(token, payload, query = {}) {
+  return apiRequest(buildApiPath("/master-data/currencies/", query), {
+    method: "POST",
+    headers: authHeaders(token),
+    body: JSON.stringify(payload),
+  });
+}
+
+export function updateCurrency(token, currencyId, payload) {
+  return apiRequest(`/master-data/currencies/${currencyId}/`, {
+    method: "PATCH",
+    headers: authHeaders(token),
+    body: JSON.stringify(payload),
+  });
+}
+
+export function deleteCurrency(token, currencyId) {
+  return apiRequest(`/master-data/currencies/${currencyId}/`, {
+    method: "DELETE",
+    headers: authHeaders(token),
+  });
+}
+
+export function listPipelineStatusTemplates(token, query = {}) {
+  return apiRequest(buildApiPath("/master-data/pipeline-status-templates/", query), {
+    method: "GET",
+    headers: authHeaders(token),
+  });
+}
+
+export function createPipelineStatusTemplate(token, payload, query = {}) {
+  return apiRequest(buildApiPath("/master-data/pipeline-status-templates/", query), {
+    method: "POST",
+    headers: authHeaders(token),
+    body: JSON.stringify(payload),
+  });
+}
+
+export function updatePipelineStatusTemplate(token, templateId, payload) {
+  return apiRequest(`/master-data/pipeline-status-templates/${templateId}/`, {
+    method: "PATCH",
+    headers: authHeaders(token),
+    body: JSON.stringify(payload),
+  });
+}
+
+export function deletePipelineStatusTemplate(token, templateId) {
+  return apiRequest(`/master-data/pipeline-status-templates/${templateId}/`, {
+    method: "DELETE",
+    headers: authHeaders(token),
+  });
+}
+
 export function createRole(token, payload) {
   return apiRequest("/auth/roles/", {
     method: "POST",

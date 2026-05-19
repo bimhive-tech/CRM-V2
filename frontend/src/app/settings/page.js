@@ -18,7 +18,7 @@ export default function SettingsPage() {
       return;
     }
 
-    if (!authState.user.is_platform_admin) {
+    if (!authState.user.can_access_settings) {
       router.replace("/dashboard");
       return;
     }
@@ -45,7 +45,7 @@ export default function SettingsPage() {
     return null;
   }
 
-  if (!authState.user || !authState.user.is_platform_admin) {
+  if (!authState.user || !authState.user.can_access_settings) {
     return null;
   }
 

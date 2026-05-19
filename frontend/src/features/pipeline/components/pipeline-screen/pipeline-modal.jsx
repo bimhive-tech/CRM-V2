@@ -14,8 +14,8 @@ export function PipelineModal({
   showColorField = false,
 }) {
   return (
-    <div className={styles.modalOverlay} role="presentation" onClick={onClose}>
-      <div className={styles.modal} role="dialog" aria-modal="true" aria-labelledby="pipeline-modal-title" onClick={(event) => event.stopPropagation()}>
+    <div className={styles.modalOverlay} role="presentation">
+      <div className={styles.modal} role="dialog" aria-modal="true" aria-labelledby="pipeline-modal-title">
         <div className={styles.modalHeader}>
           <div>
             <h2 id="pipeline-modal-title">{title}</h2>
@@ -55,13 +55,12 @@ export function PipelineModal({
 
 export function ConfirmDeleteModal({ title, description, value, onChange, onClose, onSubmit, submitLabel }) {
   return (
-    <div className={styles.modalOverlay} role="presentation" onClick={onClose}>
+    <div className={styles.modalOverlay} role="presentation">
       <div
         className={styles.modal}
         role="dialog"
         aria-modal="true"
         aria-labelledby="pipeline-delete-modal-title"
-        onClick={(event) => event.stopPropagation()}
       >
         <div className={styles.modalHeader}>
           <div>

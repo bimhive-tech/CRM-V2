@@ -37,14 +37,14 @@ class CompanySummarySerializer(serializers.ModelSerializer):
 class RoleSerializer(serializers.ModelSerializer):
     class Meta:
         model = Role
-        fields = ["id", "name", "slug", "description", "is_system", "created_at"]
-        read_only_fields = ["id", "slug", "created_at", "is_system"]
+        fields = ["id", "name", "slug", "description", "is_system", "created_at", "company"]
+        read_only_fields = ["id", "slug", "created_at", "is_system", "company"]
 
 
 class RoleSummarySerializer(serializers.ModelSerializer):
     class Meta:
         model = Role
-        fields = ["id", "name", "slug", "is_system"]
+        fields = ["id", "name", "slug", "is_system", "company"]
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -73,6 +73,8 @@ class UserSerializer(serializers.ModelSerializer):
         write_only=True,
     )
     is_platform_admin = serializers.BooleanField(read_only=True)
+    is_company_admin = serializers.BooleanField(read_only=True)
+    can_access_settings = serializers.BooleanField(read_only=True)
 
     class Meta:
         model = User
@@ -88,6 +90,8 @@ class UserSerializer(serializers.ModelSerializer):
             "roles",
             "role_ids",
             "is_platform_admin",
+            "is_company_admin",
+            "can_access_settings",
             "is_active",
             "created_at",
         ]
@@ -133,7 +137,35 @@ class AdminUserCreateSerializer(serializers.ModelSerializer):
     def validate_role(self, value):
         if value not in UserRole.values:
             raise serializers.ValidationError("Invalid role.")
+        request = self.context.get("request")
+        if request and not request.user.is_platform_admin and value != UserRole.USER:
+            raise serializers.ValidationError("Company owners can only create users with the User role.")
         return value
+
+    def validate(self, attrs):
+        request = self.context.get("request")
+        if not request or request.user.is_platform_admin:
+            return attrs
+
+        accessible_company_ids = set(request.user.companies.values_list("id", flat=True))
+        if request.user.company_id:
+            accessible_company_ids.add(request.user.company_id)
+
+        company = attrs.get("company")
+        companies = attrs.get("companies", [])
+        roles = attrs.get("roles", [])
+
+        if company and company.id not in accessible_company_ids:
+            raise serializers.ValidationError({"company_id": "You do not have access to that company."})
+
+        if any(target_company.id not in accessible_company_ids for target_company in companies):
+            raise serializers.ValidationError({"company_ids": "You can only assign users to your own company."})
+
+        disallowed_roles = [role.name for role in roles if role.is_system or role.company_id not in accessible_company_ids]
+        if disallowed_roles:
+            raise serializers.ValidationError({"role_ids": "You can only assign custom roles from your own company."})
+
+        return attrs
 
     def create(self, validated_data):
         password = validated_data.pop("password")
@@ -188,7 +220,35 @@ class AdminUserUpdateSerializer(serializers.ModelSerializer):
     def validate_role(self, value):
         if value not in UserRole.values:
             raise serializers.ValidationError("Invalid role.")
+        request = self.context.get("request")
+        if request and not request.user.is_platform_admin and value != UserRole.USER:
+            raise serializers.ValidationError("Company owners can only assign the User role.")
         return value
+
+    def validate(self, attrs):
+        request = self.context.get("request")
+        if not request or request.user.is_platform_admin:
+            return attrs
+
+        accessible_company_ids = set(request.user.companies.values_list("id", flat=True))
+        if request.user.company_id:
+            accessible_company_ids.add(request.user.company_id)
+
+        company = attrs.get("company", getattr(self.instance, "company", None))
+        companies = attrs.get("companies", getattr(self.instance, "companies", []).all() if self.instance else [])
+        roles = attrs.get("roles", getattr(self.instance, "roles", []).all() if self.instance else [])
+
+        if company and company.id not in accessible_company_ids:
+            raise serializers.ValidationError({"company_id": "You do not have access to that company."})
+
+        if any(target_company.id not in accessible_company_ids for target_company in companies):
+            raise serializers.ValidationError({"company_ids": "You can only assign users to your own company."})
+
+        disallowed_roles = [role.name for role in roles if role.is_system or role.company_id not in accessible_company_ids]
+        if disallowed_roles:
+            raise serializers.ValidationError({"role_ids": "You can only assign custom roles from your own company."})
+
+        return attrs
 
     def update(self, instance, validated_data):
         password = validated_data.pop("password", None)

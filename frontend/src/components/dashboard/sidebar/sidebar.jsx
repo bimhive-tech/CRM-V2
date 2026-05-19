@@ -35,7 +35,7 @@ const navSections = [
     items: [
       { id: "inbox", label: "Inbox", icon: <InboxIcon />, href: "/dashboard" },
       { id: "reports", label: "Reports", icon: <AnalyticsIcon />, href: "/dashboard" },
-      { id: "settings", label: "Settings", icon: <SettingsIcon />, href: "/settings", match: ["/settings"] },
+      { id: "settings", label: "Settings", icon: <SettingsIcon />, href: "/settings", match: ["/settings"], requiresSettingsAccess: true },
     ],
   },
 ];
@@ -131,6 +131,7 @@ export function Sidebar({ user, onNavigate }) {
             <p className={styles.sectionTitle}>{section.title}</p>
             <div className={styles.sectionItems}>
               {section.items.map((item) => (
+                item.requiresSettingsAccess && !user?.can_access_settings ? null : (
                 <button
                   key={item.id}
                   className={`${styles.navItem} ${isItemActive(item) ? styles.navItemActive : ""}`}
@@ -140,6 +141,7 @@ export function Sidebar({ user, onNavigate }) {
                   <span className={styles.navIcon}>{item.icon}</span>
                   <span>{item.label}</span>
                 </button>
+                )
               ))}
             </div>
           </section>

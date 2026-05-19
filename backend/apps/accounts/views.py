@@ -6,7 +6,7 @@ from rest_framework.views import APIView
 from rest_framework_simplejwt.views import TokenObtainPairView
 
 from apps.accounts.models import Role, User
-from apps.accounts.permissions import IsPlatformAdmin
+from apps.accounts.permissions import CanAccessSettings, IsPlatformAdmin
 from apps.accounts.serializers import (
     AdminRoleCreateUpdateSerializer,
     AdminUserCreateSerializer,
@@ -25,6 +25,41 @@ class LoginView(TokenObtainPairView):
     serializer_class = CRMTokenObtainPairSerializer
 
 
+def company_ids_for_user(user):
+    company_ids = list(user.companies.values_list("id", flat=True))
+    if user.company_id and user.company_id not in company_ids:
+        company_ids.append(user.company_id)
+    return company_ids
+
+
+def company_queryset_for_user(user):
+    queryset = Company.objects.all()
+    if user.is_platform_admin:
+        return queryset
+    return queryset.filter(id__in=company_ids_for_user(user))
+
+
+def user_queryset_for_settings(user):
+    queryset = user_queryset()
+    if user.is_platform_admin:
+        return queryset
+    return queryset.filter(companies__id__in=company_ids_for_user(user)).distinct()
+
+
+def role_queryset_for_settings(user):
+    queryset = Role.objects.select_related("company").all()
+    if user.is_platform_admin:
+        return queryset
+    return queryset.filter(company_id__in=company_ids_for_user(user), is_system=False)
+
+
+def resolve_default_company_for_user(user):
+    company = user.company or user.companies.order_by("name", "id").first()
+    if company:
+        return company
+    raise ValidationError({"detail": "This user is not assigned to a company."})
+
+
 class MeView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
@@ -33,23 +68,37 @@ class MeView(APIView):
 
 
 class CompanyListCreateView(generics.ListCreateAPIView):
-    queryset = Company.objects.all()
     serializer_class = CompanySerializer
-    permission_classes = [permissions.IsAuthenticated, IsPlatformAdmin]
+    permission_classes = [permissions.IsAuthenticated, CanAccessSettings]
+
+    def get_queryset(self):
+        return company_queryset_for_user(self.request.user)
+
+    def perform_create(self, serializer):
+        if not self.request.user.is_platform_admin:
+            raise ValidationError({"detail": "Only platform admins can create companies."})
+        serializer.save()
 
 
 class CompanyDetailView(generics.RetrieveUpdateDestroyAPIView):
-    queryset = Company.objects.all()
     serializer_class = CompanySerializer
-    permission_classes = [permissions.IsAuthenticated, IsPlatformAdmin]
+    permission_classes = [permissions.IsAuthenticated, CanAccessSettings]
+
+    def get_queryset(self):
+        return company_queryset_for_user(self.request.user)
+
+    def perform_destroy(self, instance):
+        if not self.request.user.is_platform_admin:
+            raise ValidationError({"detail": "Only platform admins can delete companies."})
+        instance.delete()
 
 
 class CompanyLogoUploadView(APIView):
-    permission_classes = [permissions.IsAuthenticated, IsPlatformAdmin]
+    permission_classes = [permissions.IsAuthenticated, CanAccessSettings]
     parser_classes = [MultiPartParser, FormParser]
 
     def post(self, request, pk):
-        company = generics.get_object_or_404(Company, pk=pk)
+        company = generics.get_object_or_404(company_queryset_for_user(request.user), pk=pk)
         logo_file = request.FILES.get("logo")
 
         if not logo_file:
@@ -65,7 +114,7 @@ class CompanyLogoUploadView(APIView):
         return Response(CompanySerializer(company).data)
 
     def delete(self, request, pk):
-        company = generics.get_object_or_404(Company, pk=pk)
+        company = generics.get_object_or_404(company_queryset_for_user(request.user), pk=pk)
         previous_key = company.logo_key
         company.logo_key = ""
         company.save(update_fields=["logo_key"])
@@ -77,38 +126,63 @@ class CompanyLogoUploadView(APIView):
 
 
 class UserListCreateView(generics.ListCreateAPIView):
-    queryset = user_queryset()
-    permission_classes = [permissions.IsAuthenticated, IsPlatformAdmin]
+    permission_classes = [permissions.IsAuthenticated, CanAccessSettings]
+
+    def get_queryset(self):
+        return user_queryset_for_settings(self.request.user)
 
     def get_serializer_class(self):
         if self.request.method == "POST":
             return AdminUserCreateSerializer
         return UserSerializer
 
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        context["request"] = self.request
+        return context
+
 
 class UserDetailView(generics.RetrieveUpdateDestroyAPIView):
-    queryset = user_queryset()
-    permission_classes = [permissions.IsAuthenticated, IsPlatformAdmin]
+    permission_classes = [permissions.IsAuthenticated, CanAccessSettings]
+
+    def get_queryset(self):
+        return user_queryset_for_settings(self.request.user)
 
     def get_serializer_class(self):
         if self.request.method in {"PUT", "PATCH"}:
             return AdminUserUpdateSerializer
         return UserSerializer
 
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        context["request"] = self.request
+        return context
+
 
 class RoleListCreateView(generics.ListCreateAPIView):
-    queryset = Role.objects.all()
-    permission_classes = [permissions.IsAuthenticated, IsPlatformAdmin]
+    permission_classes = [permissions.IsAuthenticated, CanAccessSettings]
+
+    def get_queryset(self):
+        return role_queryset_for_settings(self.request.user)
 
     def get_serializer_class(self):
         if self.request.method == "POST":
             return AdminRoleCreateUpdateSerializer
         return RoleSerializer
 
+    def perform_create(self, serializer):
+        if self.request.user.is_platform_admin:
+            serializer.save()
+            return
+
+        serializer.save(company=resolve_default_company_for_user(self.request.user))
+
 
 class RoleDetailView(generics.RetrieveUpdateDestroyAPIView):
-    queryset = Role.objects.all()
-    permission_classes = [permissions.IsAuthenticated, IsPlatformAdmin]
+    permission_classes = [permissions.IsAuthenticated, CanAccessSettings]
+
+    def get_queryset(self):
+        return role_queryset_for_settings(self.request.user)
 
     def get_serializer_class(self):
         if self.request.method in {"PUT", "PATCH"}:

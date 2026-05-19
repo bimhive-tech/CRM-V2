@@ -2,13 +2,12 @@ import styles from "./settings-screen.module.css";
 
 export function SettingsModal({ title, description, onClose, onSubmit, submitLabel, children }) {
   return (
-    <div className={styles.modalOverlay} role="presentation" onClick={onClose}>
+    <div className={styles.modalOverlay} role="presentation">
       <div
         className={styles.modal}
         role="dialog"
         aria-modal="true"
         aria-label={title}
-        onClick={(event) => event.stopPropagation()}
       >
         <div className={styles.modalHeader}>
           <div>
