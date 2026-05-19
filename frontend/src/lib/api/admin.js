@@ -274,14 +274,28 @@ export function previewContactImport(token, file) {
 }
 
 export function executeContactImport(token, file, mapping) {
+  return executeContactImportWithPipeline(token, file, mapping, "");
+}
+
+export function executeContactImportWithPipeline(token, file, mapping, pipelineId) {
   const body = new FormData();
   body.append("file", file);
   body.append("mapping", JSON.stringify(mapping || {}));
+  if (pipelineId) {
+    body.append("pipeline_id", String(pipelineId));
+  }
 
   return apiRequest("/contacts/import/execute/", {
     method: "POST",
     headers: authHeaders(token),
     body,
+  });
+}
+
+export function deleteImportedContactData(token) {
+  return apiRequest("/contacts/import/delete-imported/", {
+    method: "POST",
+    headers: authHeaders(token),
   });
 }
 

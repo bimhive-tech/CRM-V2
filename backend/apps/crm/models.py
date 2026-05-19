@@ -19,6 +19,8 @@ class CRMCompany(models.Model):
     latitude = models.FloatField(null=True, blank=True)
     longitude = models.FloatField(null=True, blank=True)
     employee_count = models.PositiveIntegerField(null=True, blank=True)
+    created_by_import = models.BooleanField(default=False)
+    imported_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(default=timezone.now, editable=False)
 
     class Meta:
@@ -62,6 +64,8 @@ class CRMContact(models.Model):
     status = models.CharField(max_length=255, default="Lead")
     notes = models.TextField(blank=True)
     last_touch = models.DateField(default=timezone.localdate)
+    created_by_import = models.BooleanField(default=False)
+    imported_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(default=timezone.now, editable=False)
 
     class Meta:
@@ -88,6 +92,8 @@ class CRMContactCompanyLink(models.Model):
     owner = models.ForeignKey("accounts.User", on_delete=models.SET_NULL, null=True, blank=True, related_name="owned_crm_contact_links")
     title = models.CharField(max_length=255, blank=True)
     status = models.CharField(max_length=255, default="Lead")
+    created_by_import = models.BooleanField(default=False)
+    imported_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(default=timezone.now, editable=False)
 
     class Meta:

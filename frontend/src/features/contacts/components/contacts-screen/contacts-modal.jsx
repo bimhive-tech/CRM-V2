@@ -332,10 +332,15 @@ export function ContactImportModal({
   loading,
   preview,
   mapping,
+  selectedPipelineId,
+  pipelineOptions,
+  showDeleteImported,
   onFileChange,
+  onPipelineChange,
   onMappingChange,
   onAnalyze,
   onImport,
+  onDeleteImported,
   onClose,
 }) {
   return (
@@ -358,10 +363,27 @@ export function ContactImportModal({
             <input type="file" accept=".xlsx,.xlsm" onChange={onFileChange} />
           </label>
 
+          <label className={styles.field}>
+            <span>Pipeline for imported contacts</span>
+            <select value={selectedPipelineId} onChange={(event) => onPipelineChange(event.target.value)}>
+              <option value="">No pipeline</option>
+              {pipelineOptions.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </label>
+
           {fileName ? <p className={styles.helperCopy}>Selected file: {fileName}</p> : null}
 
           {!preview ? (
             <div className={styles.modalActions}>
+              {showDeleteImported ? (
+                <button className={styles.inlineDangerSoft} type="button" onClick={onDeleteImported} disabled={loading}>
+                  Delete imported data
+                </button>
+              ) : null}
               <button className={styles.secondaryButton} type="button" onClick={onClose}>
                 Cancel
               </button>
@@ -439,6 +461,11 @@ export function ContactImportModal({
               </div>
 
               <div className={styles.modalActions}>
+                {showDeleteImported ? (
+                  <button className={styles.inlineDangerSoft} type="button" onClick={onDeleteImported} disabled={loading}>
+                    Delete imported data
+                  </button>
+                ) : null}
                 <button className={styles.secondaryButton} type="button" onClick={onClose}>
                   Cancel
                 </button>

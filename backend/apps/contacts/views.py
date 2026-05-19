@@ -8,9 +8,10 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from django.utils import timezone
 
-from apps.crm.models import CRMContact, CRMContactCompanyLink
+from apps.crm.models import CRMCompany, CRMContact, CRMContactCompanyLink
 from apps.contacts.importer import import_contact_records, parse_workbook
 from apps.contacts.serializers import ContactSerializer
+from apps.pipelines.models import Pipeline
 from config.pagination import StandardResultsSetPagination
 
 
@@ -116,6 +117,7 @@ class ContactImportExecuteView(APIView):
     def post(self, request):
         upload = request.FILES.get("file")
         mapping_payload = request.data.get("mapping", "{}")
+        pipeline_id = (request.data.get("pipeline_id") or "").strip()
         if upload is None:
             raise ValidationError({"detail": "Please choose an Excel file to import."})
         if not upload.name.lower().endswith((".xlsx", ".xlsm")):
@@ -132,10 +134,55 @@ class ContactImportExecuteView(APIView):
             raise ValidationError({"detail": f"Unable to parse this Excel file. {error}"})
 
         tenant_company = resolve_default_tenant_company(request.user)
-        result = import_contact_records(parsed["records"], tenant_company)
+        selected_pipeline = None
+        if pipeline_id:
+            selected_pipeline = generics.get_object_or_404(Pipeline, pk=pipeline_id, company=tenant_company)
+        result = import_contact_records(parsed["records"], tenant_company, pipeline=selected_pipeline)
         return Response(
             {
                 "stats": parsed["stats"],
                 "result": result,
+            }
+        )
+
+
+class ContactImportDeleteImportedView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        if not getattr(request.user, "is_platform_admin", False):
+            raise ValidationError({"detail": "Only platform admins can delete imported data."})
+
+        tenant_company = resolve_default_tenant_company(request.user)
+
+        imported_links = CRMContactCompanyLink.objects.filter(tenant_company=tenant_company, created_by_import=True)
+        deleted_link_count = imported_links.count()
+        imported_contact_ids = list(imported_links.values_list("contact_id", flat=True).distinct())
+        imported_company_ids = list(imported_links.values_list("company_id", flat=True).distinct())
+        imported_links.delete()
+
+        imported_contacts = CRMContact.objects.filter(
+            tenant_company=tenant_company,
+            created_by_import=True,
+            id__in=imported_contact_ids,
+            company_links__isnull=True,
+        ).distinct()
+        deleted_contact_count = imported_contacts.count()
+        imported_contacts.delete()
+
+        imported_companies = CRMCompany.objects.filter(
+            tenant_company=tenant_company,
+            created_by_import=True,
+            id__in=imported_company_ids,
+            contact_links__isnull=True,
+        ).distinct()
+        deleted_company_count = imported_companies.count()
+        imported_companies.delete()
+
+        return Response(
+            {
+                "deleted_links": deleted_link_count,
+                "deleted_contacts": deleted_contact_count,
+                "deleted_companies": deleted_company_count,
             }
         )

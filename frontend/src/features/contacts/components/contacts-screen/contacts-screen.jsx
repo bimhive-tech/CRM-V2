@@ -12,7 +12,9 @@ import {
   createCrmCompany,
   deleteContact,
   deleteCrmCompany,
+  deleteImportedContactData,
   executeContactImport,
+  executeContactImportWithPipeline,
   listContacts,
   listCrmCompanies,
   listPipelines,
@@ -450,6 +452,7 @@ function DirectoryScreen({ user, mode = "contacts" }) {
     file: null,
     preview: null,
     mapping: {},
+    pipelineId: "",
     loading: false,
   });
 
@@ -818,6 +821,7 @@ function DirectoryScreen({ user, mode = "contacts" }) {
       file: null,
       preview: null,
       mapping: {},
+      pipelineId: "",
       loading: false,
     });
     setStatusMessage((current) => ({ ...current, error: "" }));
@@ -829,6 +833,7 @@ function DirectoryScreen({ user, mode = "contacts" }) {
       file: null,
       preview: null,
       mapping: {},
+      pipelineId: "",
       loading: false,
     });
   }
@@ -851,6 +856,10 @@ function DirectoryScreen({ user, mode = "contacts" }) {
         [sourceKey]: value,
       },
     }));
+  }
+
+  function updateImportPipeline(value) {
+    setImportState((current) => ({ ...current, pipelineId: value }));
   }
 
   async function analyzeImportFile() {
@@ -886,7 +895,7 @@ function DirectoryScreen({ user, mode = "contacts" }) {
 
     setImportState((current) => ({ ...current, loading: true }));
     try {
-      const response = await executeContactImport(token, importState.file, importState.mapping);
+      const response = await executeContactImportWithPipeline(token, importState.file, importState.mapping, importState.pipelineId);
       await Promise.all([loadContactsPage(1), loadCompaniesPage(1), loadStaticData()]);
       setContactPage(1);
       setCompanyPage(1);
@@ -898,6 +907,31 @@ function DirectoryScreen({ user, mode = "contacts" }) {
     } catch (error) {
       setImportState((current) => ({ ...current, loading: false }));
       setStatusMessage({ error: error.message || "Unable to import contacts.", success: "" });
+    }
+  }
+
+  async function handleDeleteImportedData() {
+    if (!user?.is_platform_admin) {
+      return;
+    }
+    if (!window.confirm("Delete importer-created data for this tenant company? This is for development cleanup only.")) {
+      return;
+    }
+
+    setImportState((current) => ({ ...current, loading: true }));
+    try {
+      const response = await deleteImportedContactData(token);
+      await Promise.all([loadContactsPage(1), loadCompaniesPage(1), loadStaticData()]);
+      setContactPage(1);
+      setCompanyPage(1);
+      setStatusMessage({
+        error: "",
+        success: `Deleted ${response.deleted_links} imported links, ${response.deleted_contacts} imported contacts, and ${response.deleted_companies} imported companies.`,
+      });
+      setImportState((current) => ({ ...current, loading: false }));
+    } catch (error) {
+      setImportState((current) => ({ ...current, loading: false }));
+      setStatusMessage({ error: error.message || "Unable to delete imported data.", success: "" });
     }
   }
 
@@ -1444,10 +1478,15 @@ function DirectoryScreen({ user, mode = "contacts" }) {
           loading={importState.loading}
           preview={importState.preview}
           mapping={importState.mapping}
+          selectedPipelineId={importState.pipelineId}
+          pipelineOptions={contactPipelineOptions}
+          showDeleteImported={Boolean(user?.is_platform_admin)}
           onFileChange={updateImportFile}
+          onPipelineChange={updateImportPipeline}
           onMappingChange={updateImportMapping}
           onAnalyze={analyzeImportFile}
           onImport={handleExecuteImport}
+          onDeleteImported={handleDeleteImportedData}
           onClose={closeImportModal}
         />
       ) : null}

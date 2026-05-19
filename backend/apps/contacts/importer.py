@@ -2,6 +2,7 @@ import re
 from collections import defaultdict
 
 from django.contrib.auth import get_user_model
+from django.utils import timezone
 from rest_framework.exceptions import ValidationError
 
 from apps.crm.models import CRMCompany, CRMContact, CRMContactCompanyLink
@@ -354,12 +355,14 @@ def resolve_sales_owner(tenant_company, raw_owner_name):
     )
 
 
-def import_contact_records(records, tenant_company):
+def import_contact_records(records, tenant_company, pipeline=None):
     created_contacts = 0
     created_companies = 0
     created_links = 0
     updated_links = 0
     unresolved_sales_people = []
+
+    imported_at = timezone.now()
 
     for record in records:
         company_name = text_value(record.get("company.name"))
@@ -377,6 +380,8 @@ def import_contact_records(records, tenant_company):
                 "email": text_value(record.get("company.email")),
                 "phone_numbers": record.get("company.phone_numbers", []),
                 "phone_number": text_value(record.get("company.phone")),
+                "created_by_import": True,
+                "imported_at": imported_at,
             },
         )
         if company_created:
@@ -405,12 +410,15 @@ def import_contact_records(records, tenant_company):
             contact = CRMContact.objects.create(
                 tenant_company=tenant_company,
                 company=company,
+                pipeline=pipeline,
                 full_name=contact_name,
                 title=text_value(record.get("contact.job_title")),
                 email=contact_email or f"missing-email-{company.id}-{company.contacts.count() + 1}@placeholder.local",
                 phone=text_value(record.get("contact.phone")),
                 phone_numbers=record.get("contact.phone_numbers", []),
                 status=text_value(record.get("status")) or "Lead",
+                created_by_import=True,
+                imported_at=imported_at,
             )
             created_contacts += 1
         else:
@@ -424,6 +432,9 @@ def import_contact_records(records, tenant_company):
             if text_value(record.get("status")) and (not contact.status or contact.status == "Lead"):
                 contact.status = text_value(record.get("status"))
                 dirty = True
+            if pipeline and not contact.pipeline_id:
+                contact.pipeline = pipeline
+                dirty = True
             if dirty:
                 contact.save()
 
@@ -436,9 +447,12 @@ def import_contact_records(records, tenant_company):
             contact=contact,
             company=company,
             defaults={
+                "pipeline": pipeline,
                 "title": text_value(record.get("contact.job_title")),
                 "status": text_value(record.get("status")) or "Lead",
                 "owner": owner,
+                "created_by_import": True,
+                "imported_at": imported_at,
             },
         )
         if link_created:
