@@ -196,6 +196,21 @@ export function createPipeline(token, payload) {
   });
 }
 
+export function updatePipeline(token, pipelineId, payload) {
+  return apiRequest(`/pipelines/${pipelineId}/`, {
+    method: "PATCH",
+    headers: authHeaders(token),
+    body: JSON.stringify(payload),
+  });
+}
+
+export function deletePipeline(token, pipelineId) {
+  return apiRequest(`/pipelines/${pipelineId}/`, {
+    method: "DELETE",
+    headers: authHeaders(token),
+  });
+}
+
 export function createPipelineStatus(token, pipelineId, payload) {
   return apiRequest(`/pipelines/${pipelineId}/statuses/`, {
     method: "POST",

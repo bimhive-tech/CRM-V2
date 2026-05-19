@@ -399,6 +399,7 @@
   border: 1px solid var(--border);
   border-radius: 10px;
   background: var(--surface);
+  cursor: grab;
 }
 
 .contactCardHeader {
@@ -421,7 +422,8 @@
 }
 
 .contactCardMeta span,
-.contactCompany {
+.contactCompany,
+.contactMetaLine {
   margin: 0;
   color: var(--ink-2);
   font-size: 12px;
@@ -451,6 +453,11 @@
   color: var(--ink);
   font-size: 12px;
   outline: none;
+}
+
+.contactDropActive {
+  border-color: var(--accent);
+  background: var(--accent-tint);
 }
 
 .columnEmpty {
@@ -588,5 +595,19 @@
 
   .modalOverlay {
     padding: 12px;
+  }
+
+  .contactCard {
+    cursor: default;
+  }
+
+  .contactStatusSelect {
+    display: block;
+  }
+}
+
+@media (min-width: 721px) {
+  .contactStatusSelect {
+    display: none;
   }
 }

@@ -6,7 +6,7 @@ import { DashboardShell } from "@/components/dashboard/dashboard-shell/dashboard
 import { CheckIcon, ClipboardIcon, PipelineIcon, PlusIcon, TrashIcon } from "@/components/dashboard/dashboard-icons";
 import { Sidebar } from "@/components/dashboard/sidebar/sidebar";
 import { Topbar } from "@/components/dashboard/topbar/topbar";
-import { createPipeline, createPipelineStatus, deletePipelineStatus, listContacts, listPipelines, updateContact, updatePipelineStatus } from "@/lib/api/admin";
+import { createPipeline, createPipelineStatus, deletePipeline, deletePipelineStatus, listContacts, listPipelines, updateContact, updatePipeline, updatePipelineStatus } from "@/lib/api/admin";
 import { getAccessToken } from "@/lib/session";
 
 import { ConfirmDeleteModal, PipelineModal } from "./pipeline-modal";
@@ -59,6 +59,8 @@ export function PipelineScreen({ user }) {
   const [editingName, setEditingName] = useState("");
   const [deleteConfirmValue, setDeleteConfirmValue] = useState("");
   const [dragState, setDragState] = useState({ draggingId: null, previewStatuses: null });
+  const [draggingContactId, setDraggingContactId] = useState(null);
+  const [contactDropStatusId, setContactDropStatusId] = useState(null);
 
   const selectedPipeline = useMemo(
     () => pipelines.find((pipeline) => String(pipeline.id) === selectedPipelineId) || null,
@@ -108,6 +110,8 @@ export function PipelineScreen({ user }) {
         fullName: contact.full_name,
         title: contact.title,
         company: contact.company?.name || "No company",
+        email: contact.email || "",
+        phone: contact.phone || "",
         status: contact.status,
         owner: contact.owner?.full_name || "Unassigned",
       })),
@@ -161,6 +165,8 @@ export function PipelineScreen({ user }) {
             fullName: contact.full_name,
             title: contact.title,
             company: contact.company?.name || "No company",
+            email: contact.email || "",
+            phone: contact.phone || "",
             status: contact.status,
             owner: contact.owner?.full_name || "Unassigned",
           })),
@@ -181,8 +187,13 @@ export function PipelineScreen({ user }) {
   }, [selectedPipelineId, token]);
 
   function openModal(type, statusItem = null) {
-    setNameValue(statusItem?.name || "");
-    setColorValue(statusItem?.color || DEFAULT_STATUS_COLOR);
+    if (type === "pipeline-edit") {
+      setNameValue(selectedPipeline?.name || "");
+      setColorValue(DEFAULT_STATUS_COLOR);
+    } else {
+      setNameValue(statusItem?.name || "");
+      setColorValue(statusItem?.color || DEFAULT_STATUS_COLOR);
+    }
     setDeleteConfirmValue("");
     setModalState({ type, statusId: statusItem?.id || null });
     setStatus((current) => ({ ...current, error: "" }));
@@ -218,6 +229,23 @@ export function PipelineScreen({ user }) {
       closeModal();
     } catch (error) {
       setStatus({ loading: false, error: error.message || "Unable to create pipeline.", success: "" });
+    }
+  }
+
+  async function handleUpdatePipeline(event) {
+    event.preventDefault();
+
+    if (!selectedPipeline) {
+      return;
+    }
+
+    try {
+      await updatePipeline(token, selectedPipeline.id, { name: nameValue.trim() });
+      await loadPipelines();
+      setStatus({ loading: false, error: "", success: "Pipeline updated." });
+      closeModal();
+    } catch (error) {
+      setStatus({ loading: false, error: error.message || "Unable to update pipeline.", success: "" });
     }
   }
 
@@ -270,6 +298,23 @@ export function PipelineScreen({ user }) {
     }
   }
 
+  async function handleDeletePipeline(event) {
+    event.preventDefault();
+
+    if (!selectedPipeline || deleteConfirmValue.trim() !== "Confirm") {
+      return;
+    }
+
+    try {
+      await deletePipeline(token, selectedPipeline.id);
+      await Promise.all([loadPipelines(), loadPipelineContacts("")]);
+      setStatus({ loading: false, error: "", success: "Pipeline removed." });
+      closeModal();
+    } catch (error) {
+      setStatus({ loading: false, error: error.message || "Unable to remove pipeline.", success: "" });
+    }
+  }
+
   async function moveStatusToPosition(statusId, nextPosition) {
     if (!selectedPipeline) {
       return;
@@ -301,6 +346,17 @@ export function PipelineScreen({ user }) {
     } catch (error) {
       setStatus({ loading: false, error: error.message || "Unable to move contact.", success: "" });
     }
+  }
+
+  function renderOwnerInitials(name) {
+    return (
+      name
+        .split(" ")
+        .filter(Boolean)
+        .slice(0, 2)
+        .map((part) => part[0]?.toUpperCase())
+        .join("") || "U"
+    );
   }
 
   return (
@@ -345,6 +401,12 @@ export function PipelineScreen({ user }) {
                 )}
               </select>
             </label>
+            <button className={styles.secondaryButton} type="button" onClick={() => openModal("pipeline-edit")} disabled={!selectedPipeline}>
+              Edit pipeline
+            </button>
+            <button className={styles.secondaryButton} type="button" onClick={() => openModal("pipeline-delete")} disabled={!selectedPipeline}>
+              Delete pipeline
+            </button>
             <button className={styles.primaryButton} type="button" onClick={() => openModal("pipeline")}>
               <PlusIcon />
               <span>New pipeline</span>
@@ -397,6 +459,9 @@ export function PipelineScreen({ user }) {
                       className={`${styles.column} ${dragState.draggingId === statusItem.id ? styles.columnDragging : ""}`}
                       draggable
                       onDragStart={() => {
+                        if (draggingContactId !== null) {
+                          return;
+                        }
                         dragCommittedRef.current = false;
                         setDragState({ draggingId: statusItem.id, previewStatuses: visibleStatuses });
                       }}
@@ -409,6 +474,9 @@ export function PipelineScreen({ user }) {
                       }}
                       onDragOver={(event) => {
                         event.preventDefault();
+                        if (draggingContactId !== null) {
+                          return;
+                        }
                         if (!dragState.draggingId || dragState.draggingId === statusItem.id) {
                           return;
                         }
@@ -419,6 +487,9 @@ export function PipelineScreen({ user }) {
                       }}
                       onDrop={async (event) => {
                         event.preventDefault();
+                        if (draggingContactId !== null) {
+                          return;
+                        }
                         if (dragState.draggingId === null) {
                           return;
                         }
@@ -488,24 +559,57 @@ export function PipelineScreen({ user }) {
                       <div className={styles.columnBody}>
                         <div className={styles.columnContent}>
                           {(contactsByStatus[statusItem.id] || []).length ? (
-                            <div className={styles.contactStack}>
+                            <div
+                              className={`${styles.contactStack} ${contactDropStatusId === statusItem.id ? styles.contactDropActive : ""}`}
+                              onDragOver={(event) => {
+                                if (draggingContactId === null) {
+                                  return;
+                                }
+                                event.preventDefault();
+                                setContactDropStatusId(statusItem.id);
+                              }}
+                              onDragLeave={() => {
+                                if (contactDropStatusId === statusItem.id) {
+                                  setContactDropStatusId(null);
+                                }
+                              }}
+                              onDrop={async (event) => {
+                                if (draggingContactId === null) {
+                                  return;
+                                }
+                                event.preventDefault();
+                                const contactId = draggingContactId;
+                                setDraggingContactId(null);
+                                setContactDropStatusId(null);
+                                await moveContactToStatus(contactId, statusItem.name);
+                              }}
+                            >
                               {(contactsByStatus[statusItem.id] || []).map((contact) => (
-                                <article key={contact.id} className={styles.contactCard}>
+                                <article
+                                  key={contact.id}
+                                  className={styles.contactCard}
+                                  draggable
+                                  onDragStart={(event) => {
+                                    event.stopPropagation();
+                                    setDraggingContactId(contact.id);
+                                  }}
+                                  onDragEnd={() => {
+                                    setDraggingContactId(null);
+                                    setContactDropStatusId(null);
+                                  }}
+                                >
                                   <div className={styles.contactCardHeader}>
                                     <div className={styles.contactCardMeta}>
                                       <strong>{contact.fullName}</strong>
                                       <span>{contact.title}</span>
                                     </div>
                                     <div className={styles.contactOwnerDot} title={contact.owner}>
-                                      {contact.owner
-                                        .split(" ")
-                                        .filter(Boolean)
-                                        .slice(0, 2)
-                                        .map((part) => part[0]?.toUpperCase())
-                                        .join("") || "U"}
+                                      {renderOwnerInitials(contact.owner)}
                                     </div>
                                   </div>
                                   <p className={styles.contactCompany}>{contact.company}</p>
+                                  <p className={styles.contactMetaLine}>{contact.email}</p>
+                                  <p className={styles.contactMetaLine}>{contact.phone}</p>
                                   <label className={styles.contactStatusSelect}>
                                     <span className={styles.visuallyHidden}>Move contact status</span>
                                     <select value={contact.status} onChange={(event) => moveContactToStatus(contact.id, event.target.value)}>
@@ -520,7 +624,31 @@ export function PipelineScreen({ user }) {
                               ))}
                             </div>
                           ) : (
-                            <div className={styles.columnEmpty}>
+                            <div
+                              className={`${styles.columnEmpty} ${contactDropStatusId === statusItem.id ? styles.contactDropActive : ""}`}
+                              onDragOver={(event) => {
+                                if (draggingContactId === null) {
+                                  return;
+                                }
+                                event.preventDefault();
+                                setContactDropStatusId(statusItem.id);
+                              }}
+                              onDragLeave={() => {
+                                if (contactDropStatusId === statusItem.id) {
+                                  setContactDropStatusId(null);
+                                }
+                              }}
+                              onDrop={async (event) => {
+                                if (draggingContactId === null) {
+                                  return;
+                                }
+                                event.preventDefault();
+                                const contactId = draggingContactId;
+                                setDraggingContactId(null);
+                                setContactDropStatusId(null);
+                                await moveContactToStatus(contactId, statusItem.name);
+                              }}
+                            >
                               <span className={styles.columnEmptyIcon}>
                                 <ClipboardIcon />
                               </span>
@@ -567,6 +695,21 @@ export function PipelineScreen({ user }) {
         />
       ) : null}
 
+      {modalState.type === "pipeline-edit" ? (
+        <PipelineModal
+          title="Edit pipeline"
+          description="Rename this pipeline without changing the contacts already assigned to it."
+          value={nameValue}
+          colorValue={colorValue}
+          onChange={setNameValue}
+          onColorChange={setColorValue}
+          onClose={closeModal}
+          onSubmit={handleUpdatePipeline}
+          submitLabel="Save pipeline"
+          placeholder="Commercial sales"
+        />
+      ) : null}
+
       {modalState.type === "status" ? (
         <PipelineModal
           title="Add status"
@@ -580,6 +723,18 @@ export function PipelineScreen({ user }) {
           submitLabel="Add status"
           placeholder="Contract review"
           showColorField
+        />
+      ) : null}
+
+      {modalState.type === "pipeline-delete" ? (
+        <ConfirmDeleteModal
+          title="Delete pipeline"
+          description="Type Confirm to permanently delete this pipeline. This is irreversible. Contacts will remain in the Contacts page, but their pipeline and status will be cleared."
+          value={deleteConfirmValue}
+          onChange={setDeleteConfirmValue}
+          onClose={closeModal}
+          onSubmit={handleDeletePipeline}
+          submitLabel="Delete pipeline"
         />
       ) : null}
 

@@ -1,6 +1,7 @@
 from django.db import transaction
 from rest_framework import generics, permissions, serializers
 from rest_framework.exceptions import ValidationError
+from apps.crm.models import CRMContact
 
 from apps.companies.models import Company
 from apps.pipelines.models import Pipeline, PipelineStatus
@@ -130,6 +131,11 @@ class PipelineDetailView(generics.RetrieveUpdateDestroyAPIView):
             return
 
         serializer.save(company=resolve_requested_company_for_user(self.request.user, requested_company))
+
+    @transaction.atomic
+    def perform_destroy(self, instance):
+        CRMContact.objects.filter(pipeline=instance).update(pipeline=None, status="")
+        instance.delete()
 
 
 class PipelineStatusListCreateView(generics.ListCreateAPIView):

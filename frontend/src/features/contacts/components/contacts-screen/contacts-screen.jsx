@@ -345,7 +345,7 @@ function ContactStatus({ value, color }) {
   return (
     <span className={styles.statusBadge} style={tone}>
       <span className={styles.statusDot} />
-      {value}
+      {value || "No status"}
     </span>
   );
 }
@@ -955,13 +955,16 @@ export function ContactsScreen({ user }) {
                           </td>
                           <td className={styles.lastTouchCell}>{contact.lastTouch}</td>
                           <td>
-                            <div className={styles.ownerCell} title={contact.owner}>
-                              <OwnerAvatar name={contact.owner} />
+                            <div className={styles.ownerTooltipWrap}>
+                              <div className={styles.ownerCell}>
+                                <OwnerAvatar name={contact.owner} />
+                              </div>
+                              <span className={styles.ownerTooltip}>{contact.owner}</span>
                             </div>
                           </td>
                           <td className={styles.rowArrowCell}>
                             <button
-                              className={styles.inlineDangerIcon}
+                              className={styles.deleteIconButton}
                               type="button"
                               aria-label={`Delete ${contact.fullName}`}
                               onClick={(event) => {
@@ -1006,8 +1009,11 @@ export function ContactsScreen({ user }) {
                         </div>
                         <div>
                           <p className={styles.mobileLabel}>Owner</p>
-                          <div className={styles.ownerCell} title={contact.owner}>
-                            <OwnerAvatar name={contact.owner} />
+                          <div className={styles.ownerTooltipWrap}>
+                            <div className={styles.ownerCell}>
+                              <OwnerAvatar name={contact.owner} />
+                            </div>
+                            <span className={styles.ownerTooltip}>{contact.owner}</span>
                           </div>
                         </div>
                         <div>

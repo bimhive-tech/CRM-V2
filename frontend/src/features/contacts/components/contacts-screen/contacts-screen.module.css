@@ -394,6 +394,12 @@
   gap: 10px;
 }
 
+.ownerTooltipWrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
 .companyMark {
   display: inline-flex;
   align-items: center;
@@ -505,6 +511,23 @@
 
 .inlineDangerIcon {
   color: var(--danger);
+}
+
+.deleteIconButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--danger);
+  cursor: pointer;
+  line-height: 0;
+  text-decoration: none;
+  box-shadow: none;
+  outline: none;
 }
 
 .actionsCell {
@@ -652,6 +675,34 @@
 .addressPreview:focus-within .addressTooltip {
   opacity: 1;
   transform: translateY(0);
+}
+
+.ownerTooltip {
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 10px);
+  z-index: 12;
+  padding: 7px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: 0 10px 24px rgba(72, 40, 8, 0.12);
+  opacity: 0;
+  pointer-events: none;
+  transform: translateX(-50%) translateY(4px);
+  transition:
+    opacity 0.12s ease,
+    transform 0.12s ease;
+  white-space: nowrap;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.ownerTooltipWrap:hover .ownerTooltip,
+.ownerTooltipWrap:focus-within .ownerTooltip {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
 }
 
 .mobileNotes {
