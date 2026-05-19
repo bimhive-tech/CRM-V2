@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 
 import { DashboardShell } from "@/components/dashboard/dashboard-shell/dashboard-shell";
-import { DealsIcon, EditIcon, PlusIcon, TrashIcon } from "@/components/dashboard/dashboard-icons";
+import { DealsIcon, EditIcon, PlusIcon, SearchIcon, TrashIcon } from "@/components/dashboard/dashboard-icons";
 import { Sidebar } from "@/components/dashboard/sidebar/sidebar";
 import { Topbar } from "@/components/dashboard/topbar/topbar";
 import { createDeal, deleteDeal, listContacts, listCrmCompanies, listCurrencies, listDeals, listPipelines, updateDeal } from "@/lib/api/admin";
@@ -54,7 +54,7 @@ function formatCurrency(symbol, amount) {
 
 function formatShortDate(value) {
   if (!value) {
-    return "No date";
+    return "-";
   }
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) {
@@ -108,7 +108,7 @@ function DealModal({
           <div>
             <p className={styles.eyebrow}>Deals</p>
             <h2>{mode === "edit" ? "Edit deal" : "Create deal"}</h2>
-            <p className={styles.copy}>Track each opportunity with the right amount, stage, and closing target.</p>
+            <p className={styles.copy}>Use the same modal for creation and editing so opportunity records stay consistent.</p>
           </div>
           <button className={styles.iconButton} type="button" onClick={onClose} aria-label="Close modal">
             x
@@ -208,11 +208,11 @@ export function DealsScreen({ user }) {
   const [selectedPipelineId, setSelectedPipelineId] = useState("");
   const [search, setSearch] = useState("");
   const [companyFilter, setCompanyFilter] = useState("all");
-  const [filterOpen, setFilterOpen] = useState(false);
   const [status, setStatus] = useState({ loading: true, error: "", success: "" });
   const [modalState, setModalState] = useState({ open: false, mode: "create", dealId: null });
   const [dealForm, setDealForm] = useState(emptyDealForm);
   const initialStoredPipelineId = useState(() => readStoredPipelineId(user))[0];
+  const selectedCompanyId = user?.company?.id || user?.companies?.[0]?.id || "";
 
   const selectedPipeline = useMemo(
     () => pipelines.find((pipeline) => String(pipeline.id) === selectedPipelineId) || null,
@@ -221,7 +221,7 @@ export function DealsScreen({ user }) {
   const pipelineOptions = useMemo(() => pipelines.map((pipeline) => ({ value: String(pipeline.id), label: pipeline.name })), [pipelines]);
   const companyOptions = useMemo(() => companies.map((company) => ({ value: String(company.id), label: company.name })), [companies]);
   const visibleContactOptions = useMemo(() => {
-    const source = dealForm.companyId ? contacts.filter((contact) => String(contact.company?.id || contact.company_id || "") === dealForm.companyId) : contacts;
+    const source = dealForm.companyId ? contacts.filter((contact) => String(contact.company?.id || "") === dealForm.companyId) : contacts;
     return source.map((contact) => ({
       value: String(contact.id),
       label: `${contact.full_name} - ${contact.title || "Contact"}`,
@@ -236,9 +236,8 @@ export function DealsScreen({ user }) {
     return deals.filter((deal) => {
       const matchesPipeline = !selectedPipelineId || String(deal.pipeline_id) === selectedPipelineId;
       const matchesCompany = companyFilter === "all" || String(deal.company?.id) === companyFilter;
-      const matchesSearch =
-        !search.trim() ||
-        `${deal.name} ${deal.company?.name || ""} ${deal.contact?.full_name || ""}`.toLowerCase().includes(search.trim().toLowerCase());
+      const haystack = `${deal.name} ${deal.company?.name || ""} ${deal.contact?.full_name || ""}`.toLowerCase();
+      const matchesSearch = !search.trim() || haystack.includes(search.trim().toLowerCase());
       return matchesPipeline && matchesCompany && matchesSearch;
     });
   }, [companyFilter, deals, search, selectedPipelineId]);
@@ -288,7 +287,7 @@ export function DealsScreen({ user }) {
           listPipelines(tokenValue),
           listCrmCompanies(tokenValue, { page: 1, page_size: 200 }),
           listContacts(tokenValue, { page: 1, page_size: 300 }),
-          listCurrencies(tokenValue, { company_id: user?.company?.id || user?.companies?.[0]?.id || "" }),
+          listCurrencies(tokenValue, { company_id: selectedCompanyId }),
         ]);
 
         if (!active) {
@@ -312,7 +311,11 @@ export function DealsScreen({ user }) {
         if (!active) {
           return;
         }
-        setStatus({ loading: false, error: error.message || "Unable to load deals workspace.", success: "" });
+        setStatus({
+          loading: false,
+          error: error.message || "Unable to load deals workspace. If the backend was just updated, make sure migrations were applied.",
+          success: "",
+        });
       }
     }
 
@@ -321,16 +324,20 @@ export function DealsScreen({ user }) {
     return () => {
       active = false;
     };
-  }, [initialStoredPipelineId, user]);
+  }, [initialStoredPipelineId, selectedCompanyId]);
 
   useEffect(() => {
     if (typeof window === "undefined") {
       return;
     }
+
     const storageKey = getDealsStorageKey(user);
     if (selectedPipelineId) {
       window.localStorage.setItem(storageKey, selectedPipelineId);
+      return;
     }
+
+    window.localStorage.removeItem(storageKey);
   }, [selectedPipelineId, user]);
 
   useEffect(() => {
@@ -352,7 +359,10 @@ export function DealsScreen({ user }) {
         if (!active) {
           return;
         }
-        setStatus((current) => ({ ...current, error: error.message || "Unable to load deals." }));
+        setStatus((current) => ({
+          ...current,
+          error: error.message || "Unable to load deals. If the backend was just updated, make sure migrations were applied.",
+        }));
       }
     }
 
@@ -374,8 +384,7 @@ export function DealsScreen({ user }) {
       const nextState = { ...current, [name]: value };
       if (name === "pipelineId") {
         const nextPipeline = pipelines.find((pipeline) => String(pipeline.id) === value);
-        const firstStage = nextPipeline?.statuses?.[0]?.name || "";
-        nextState.stage = firstStage;
+        nextState.stage = nextPipeline?.statuses?.[0]?.name || "";
       }
       if (name === "companyId" && current.contactId) {
         const stillMatches = contacts.some((contact) => String(contact.id) === current.contactId && String(contact.company?.id) === value);
@@ -420,12 +429,13 @@ export function DealsScreen({ user }) {
     setDealForm(emptyDealForm);
   }
 
-  async function refreshDeals() {
-    if (!selectedPipelineId) {
+  async function refreshDeals(nextPipelineId = selectedPipelineId) {
+    if (!nextPipelineId) {
       setDeals([]);
       return;
     }
-    const dealsData = await listDeals(token, { page: 1, page_size: 300, pipeline_id: selectedPipelineId });
+
+    const dealsData = await listDeals(token, { page: 1, page_size: 300, pipeline_id: nextPipelineId });
     setDeals(normalizePaginatedResponse(dealsData).results);
   }
 
@@ -496,12 +506,7 @@ export function DealsScreen({ user }) {
             </p>
           </div>
           <div className={styles.heroActions}>
-            <button className={styles.secondaryButton} type="button" onClick={() => setFilterOpen((current) => !current)}>
-              Filter
-            </button>
-            <label className={styles.groupControl}>
-              <span>Group: Stage</span>
-            </label>
+            <div className={styles.metaBadge}>Grouped by stage</div>
             <button className={styles.primaryButton} type="button" onClick={openCreateModal}>
               <PlusIcon />
               <span>New deal</span>
@@ -512,8 +517,16 @@ export function DealsScreen({ user }) {
         {status.error ? <p className={styles.error}>{status.error}</p> : null}
         {status.success ? <p className={styles.success}>{status.success}</p> : null}
 
-        <section className={styles.controlsBar}>
-          <label className={styles.field}>
+        <section className={styles.filterBar}>
+          <label className={styles.searchField}>
+            <span className={styles.visuallyHidden}>Search deals</span>
+            <span className={styles.searchIcon} aria-hidden="true">
+              <SearchIcon />
+            </span>
+            <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search deals, companies, contacts..." />
+          </label>
+
+          <label className={styles.filterField}>
             <span className={styles.visuallyHidden}>Pipeline</span>
             <select value={selectedPipelineId} onChange={(event) => setSelectedPipelineId(event.target.value)}>
               {pipelineOptions.map((option) => (
@@ -524,30 +537,21 @@ export function DealsScreen({ user }) {
             </select>
           </label>
 
-          <label className={styles.searchField}>
-            <span className={styles.visuallyHidden}>Search deals</span>
-            <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search deals, companies, contacts..." />
+          <label className={styles.filterField}>
+            <span className={styles.visuallyHidden}>Company</span>
+            <select value={companyFilter} onChange={(event) => setCompanyFilter(event.target.value)}>
+              <option value="all">All companies</option>
+              {companyOptions.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
           </label>
         </section>
 
-        {filterOpen ? (
-          <section className={styles.filterPanel}>
-            <label className={styles.field}>
-              <span>Company</span>
-              <select value={companyFilter} onChange={(event) => setCompanyFilter(event.target.value)}>
-                <option value="all">All companies</option>
-                {companyOptions.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-            </label>
-          </section>
-        ) : null}
-
         {selectedPipeline && groupedDeals.length ? (
-          <section className={styles.board}>
+          <section className={styles.panel}>
             {groupedDeals.map((group) => (
               <article key={group.id} className={styles.stageSection}>
                 <div className={styles.stageHeader}>
@@ -596,7 +600,7 @@ export function DealsScreen({ user }) {
             ))}
           </section>
         ) : (
-          <section className={styles.emptyState}>
+          <section className={`${styles.panel} ${styles.emptyState}`}>
             <span className={styles.emptyIcon}>
               <DealsIcon />
             </span>
