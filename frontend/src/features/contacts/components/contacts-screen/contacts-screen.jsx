@@ -396,18 +396,8 @@ function CompanyContactsPreview({ contacts }) {
     return <span className={styles.monoText}>No contacts</span>;
   }
 
-  const visibleContacts = contacts.slice(0, 2);
-  const remainingCount = Math.max(0, contacts.length - visibleContacts.length);
-
   return (
-    <div className={styles.contactListCell}>
-      {visibleContacts.map((contact) => (
-        <span key={contact.id} className={styles.contactPill}>
-          {contact.fullName}
-        </span>
-      ))}
-      {remainingCount ? <span className={styles.contactOverflowPill}>+{remainingCount}</span> : null}
-    </div>
+    <span className={styles.contactOverflowPill}>+{contacts.length}</span>
   );
 }
 
@@ -961,7 +951,8 @@ function DirectoryScreen({ user, mode = "contacts" }) {
                       <tr>
                         <th>Contact</th>
                         <th>Company</th>
-                        <th>Status</th>
+                        <th>Email</th>
+                        <th>Phone</th>
                         <th>Last touch</th>
                         <th>Owner</th>
                         <th aria-label="Open contact" />
@@ -988,7 +979,10 @@ function DirectoryScreen({ user, mode = "contacts" }) {
                             </div>
                           </td>
                           <td>
-                            <ContactStatus value={contact.status} color={statusColorMap.get(`${contact.pipelineId}:${contact.status}`)} />
+                            <span className={styles.monoText}>{contact.email}</span>
+                          </td>
+                          <td>
+                            <span className={styles.monoText}>{contact.phone}</span>
                           </td>
                           <td className={styles.lastTouchCell}>{contact.lastTouch}</td>
                           <td>
