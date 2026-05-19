@@ -343,6 +343,36 @@ export function listPipelines(token) {
   });
 }
 
+export function listDeals(token, query = {}) {
+  return apiRequest(buildApiPath("/deals/", query), {
+    method: "GET",
+    headers: authHeaders(token),
+  });
+}
+
+export function createDeal(token, payload) {
+  return apiRequest("/deals/", {
+    method: "POST",
+    headers: authHeaders(token),
+    body: JSON.stringify(payload),
+  });
+}
+
+export function updateDeal(token, dealId, payload) {
+  return apiRequest(`/deals/${dealId}/`, {
+    method: "PATCH",
+    headers: authHeaders(token),
+    body: JSON.stringify(payload),
+  });
+}
+
+export function deleteDeal(token, dealId) {
+  return apiRequest(`/deals/${dealId}/`, {
+    method: "DELETE",
+    headers: authHeaders(token),
+  });
+}
+
 export function createPipeline(token, payload) {
   return apiRequest("/pipelines/", {
     method: "POST",

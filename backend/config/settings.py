@@ -84,6 +84,7 @@ INSTALLED_APPS = [
     "apps.contacts",
     "apps.pipelines",
     "apps.crm",
+    "apps.deals",
     "apps.masterdata",
 ]
 

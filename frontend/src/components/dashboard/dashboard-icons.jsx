@@ -58,6 +58,21 @@ export function DealsIcon() {
   );
 }
 
+export function OfficeIcon() {
+  return (
+    <DashboardIcon>
+      <path d="M4 21V7l8-4 8 4v14" />
+      <path d="M9 21v-5h6v5" />
+      <path d="M8 10h.01" />
+      <path d="M8 13h.01" />
+      <path d="M12 10h.01" />
+      <path d="M12 13h.01" />
+      <path d="M16 10h.01" />
+      <path d="M16 13h.01" />
+    </DashboardIcon>
+  );
+}
+
 export function PeopleIcon() {
   return (
     <DashboardIcon>

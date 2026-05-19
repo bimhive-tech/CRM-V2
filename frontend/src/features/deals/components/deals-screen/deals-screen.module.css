@@ -1,0 +1,411 @@
+.stack {
+  display: grid;
+  gap: 1.25rem;
+}
+
+.hero {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.hero h1 {
+  margin: 0;
+  font-size: 2rem;
+  line-height: 1.1;
+}
+
+.heroMeta {
+  margin: 0.45rem 0 0;
+  color: #8f7a63;
+  font-size: 0.98rem;
+}
+
+.heroActions,
+.controlsBar,
+.stageHeader,
+.stageLead,
+.dealRow,
+.dealIdentity,
+.progressCell,
+.rowActions,
+.modalHeader,
+.modalActions {
+  display: flex;
+  align-items: center;
+}
+
+.heroActions {
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.groupControl,
+.secondaryButton,
+.primaryButton,
+.searchField,
+.field select,
+.field input,
+.field textarea,
+.modal,
+.stageSection,
+.filterPanel,
+.controlsBar {
+  border: 1px solid rgba(154, 129, 97, 0.18);
+}
+
+.secondaryButton,
+.primaryButton,
+.groupControl {
+  border-radius: 0.9rem;
+  padding: 0.82rem 1rem;
+  font: inherit;
+}
+
+.secondaryButton,
+.groupControl {
+  background: #fffdfa;
+  color: #614b37;
+}
+
+.primaryButton {
+  background: linear-gradient(135deg, #d97c19, #ec9a36);
+  color: #fff;
+  gap: 0.55rem;
+}
+
+.controlsBar {
+  gap: 0.9rem;
+  padding: 1rem;
+  border-radius: 1.2rem;
+  background: linear-gradient(180deg, rgba(255, 252, 247, 0.96), rgba(247, 240, 231, 0.9));
+}
+
+.searchField {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  background: #fff;
+  border-radius: 0.9rem;
+  padding: 0 0.9rem;
+}
+
+.searchField input {
+  width: 100%;
+  border: 0;
+  outline: 0;
+  padding: 0.8rem 0;
+  background: transparent;
+  color: #2f241b;
+}
+
+.filterPanel,
+.stageSection,
+.modal {
+  background: #fffdfa;
+  box-shadow: 0 18px 40px rgba(101, 73, 44, 0.08);
+}
+
+.filterPanel {
+  display: grid;
+  gap: 1rem;
+  padding: 1rem;
+  border-radius: 1.1rem;
+}
+
+.board {
+  display: grid;
+  gap: 1rem;
+}
+
+.stageSection {
+  border-radius: 1.35rem;
+  overflow: hidden;
+}
+
+.stageHeader {
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+  background: linear-gradient(180deg, rgba(244, 237, 227, 0.92), rgba(239, 231, 220, 0.76));
+}
+
+.stageLead {
+  gap: 0.7rem;
+}
+
+.stageDot {
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 999px;
+}
+
+.stageCount {
+  color: #8a7358;
+  font-size: 0.92rem;
+}
+
+.stageTotal {
+  color: #5f4734;
+  font-weight: 700;
+}
+
+.rows {
+  display: grid;
+}
+
+.dealRow {
+  gap: 1rem;
+  grid-template-columns: minmax(0, 2.4fr) minmax(110px, 0.8fr) minmax(170px, 1.1fr) minmax(90px, 0.7fr) minmax(70px, 0.5fr) minmax(56px, 0.4fr) minmax(84px, 0.5fr);
+  display: grid;
+  align-items: center;
+  padding: 1rem 1.25rem;
+  border-top: 1px solid rgba(154, 129, 97, 0.12);
+}
+
+.dealIdentity {
+  gap: 0.85rem;
+  min-width: 0;
+}
+
+.dealIdentity strong,
+.dealIdentity span {
+  display: block;
+}
+
+.dealIdentity strong {
+  color: #1f1710;
+}
+
+.dealIdentity span {
+  margin-top: 0.28rem;
+  color: #8d755b;
+  font-size: 0.93rem;
+}
+
+.dealMark {
+  width: 2rem;
+  height: 2rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.55rem;
+  background: linear-gradient(135deg, #daf0eb, #cde3f7);
+  color: #23536a;
+  font-size: 0.75rem;
+  font-weight: 700;
+  flex: none;
+}
+
+.amountCell {
+  color: #1e160f;
+  font-weight: 700;
+}
+
+.progressCell {
+  gap: 0.8rem;
+  color: #816952;
+  font-size: 0.92rem;
+}
+
+.progressTrack {
+  width: 100%;
+  height: 0.28rem;
+  border-radius: 999px;
+  background: rgba(149, 126, 100, 0.14);
+  overflow: hidden;
+}
+
+.progressFill {
+  height: 100%;
+  display: block;
+}
+
+.dateCell,
+.daysCell {
+  color: #7e6851;
+  font-size: 0.95rem;
+}
+
+.ownerCell {
+  justify-self: end;
+}
+
+.ownerAvatar {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.rowActions {
+  justify-content: flex-end;
+  gap: 0.45rem;
+}
+
+.inlineIconButton,
+.deleteIconButton,
+.iconButton {
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 0.8rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(154, 129, 97, 0.18);
+  background: #fff;
+  color: #624b38;
+}
+
+.deleteIconButton {
+  color: #ae5a44;
+}
+
+.emptyState {
+  display: grid;
+  place-items: center;
+  gap: 0.9rem;
+  padding: 3.4rem 1.5rem;
+  text-align: center;
+  border-radius: 1.35rem;
+  background: linear-gradient(180deg, rgba(255, 252, 247, 0.98), rgba(246, 238, 228, 0.92));
+  border: 1px dashed rgba(154, 129, 97, 0.24);
+}
+
+.emptyIcon {
+  color: #b5782e;
+}
+
+.error,
+.success {
+  margin: 0;
+  padding: 0.9rem 1rem;
+  border-radius: 0.9rem;
+}
+
+.error {
+  background: rgba(189, 79, 63, 0.1);
+  color: #8b3d2d;
+}
+
+.success {
+  background: rgba(83, 151, 113, 0.12);
+  color: #2f6d4c;
+}
+
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  place-items: center;
+  padding: 1.5rem;
+  background: rgba(42, 30, 20, 0.42);
+}
+
+.modal {
+  width: min(760px, 100%);
+  border-radius: 1.4rem;
+  overflow: hidden;
+}
+
+.modalHeader {
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.2rem 1.3rem;
+  border-bottom: 1px solid rgba(154, 129, 97, 0.14);
+}
+
+.eyebrow {
+  margin: 0 0 0.35rem;
+  color: #bc7a26;
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.copy {
+  margin: 0.35rem 0 0;
+  color: #8a735d;
+}
+
+.modalBody {
+  display: grid;
+  gap: 1rem;
+  padding: 1.3rem;
+}
+
+.formGrid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.field {
+  display: grid;
+  gap: 0.45rem;
+  color: #705844;
+  font-size: 0.92rem;
+}
+
+.field input,
+.field select,
+.field textarea {
+  width: 100%;
+  border-radius: 0.9rem;
+  padding: 0.82rem 0.95rem;
+  background: #fff;
+  color: #261b12;
+  font: inherit;
+}
+
+.field textarea {
+  resize: vertical;
+}
+
+.modalActions {
+  justify-content: flex-end;
+  gap: 0.8rem;
+}
+
+.visuallyHidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+@media (max-width: 980px) {
+  .hero,
+  .controlsBar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .dealRow {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+
+  .rowActions,
+  .ownerCell {
+    justify-self: start;
+  }
+}
+
+@media (max-width: 720px) {
+  .formGrid {
+    grid-template-columns: 1fr;
+  }
+}
