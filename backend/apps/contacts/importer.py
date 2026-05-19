@@ -2,7 +2,7 @@ import re
 from collections import defaultdict
 
 from django.contrib.auth import get_user_model
-from openpyxl import load_workbook
+from rest_framework.exceptions import ValidationError
 
 from apps.crm.models import CRMCompany, CRMContact, CRMContactCompanyLink
 
@@ -297,6 +297,13 @@ def parse_sheet(sheet, sheet_index, explicit_mapping=None):
 
 
 def parse_workbook(file_obj, explicit_mapping=None):
+    try:
+        from openpyxl import load_workbook
+    except ModuleNotFoundError as error:
+        raise ValidationError(
+            {"detail": "Excel import is not available because the server is missing the openpyxl package."}
+        ) from error
+
     workbook = load_workbook(file_obj, data_only=True)
     sheets = []
     all_records = []
