@@ -6,7 +6,7 @@ from apps.masterdata.models import Currency, PipelineStatusTemplate
 class CurrencySerializer(serializers.ModelSerializer):
     class Meta:
         model = Currency
-        fields = ["id", "code", "name", "symbol", "is_default", "is_active", "created_at"]
+        fields = ["id", "name", "symbol", "is_default", "is_active", "created_at"]
         read_only_fields = ["id", "created_at"]
 
 

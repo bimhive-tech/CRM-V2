@@ -1,23 +1,16 @@
 from django.db import transaction
 from rest_framework import generics, permissions, serializers
 from rest_framework.exceptions import ValidationError
+from rest_framework.response import Response
 
 from apps.accounts.permissions import CanAccessSettings
+from apps.masterdata.defaults import (
+    create_missing_default_currencies,
+    create_missing_default_pipeline_status_templates,
+    set_default_currency,
+)
 from apps.masterdata.models import Currency, PipelineStatusTemplate
 from apps.masterdata.serializers import CurrencySerializer, PipelineStatusTemplateSerializer
-
-
-DEFAULT_CURRENCIES = [
-    {"code": "EGP", "name": "Egyptian Pound", "symbol": "EGP", "is_default": True},
-]
-
-DEFAULT_PIPELINE_STATUS_TEMPLATES = [
-    {"name": "Lead", "color": "#8C7A61"},
-    {"name": "Qualified", "color": "#2C7FB8"},
-    {"name": "Proposal", "color": "#C66A1E"},
-    {"name": "Negotiation", "color": "#D18918"},
-    {"name": "Customer", "color": "#3E9B64"},
-]
 
 
 def company_ids_for_user(user):
@@ -49,37 +42,6 @@ def resolve_company_for_settings(user, company_id=None):
     return generics.get_object_or_404(Company, pk=target_id)
 
 
-def ensure_default_currencies(company):
-    if company.currencies.exists():
-        if not company.currencies.filter(is_default=True).exists():
-            first_currency = company.currencies.order_by("id").first()
-            if first_currency:
-                first_currency.is_default = True
-                first_currency.save(update_fields=["is_default"])
-        return
-
-    Currency.objects.bulk_create([Currency(company=company, **item) for item in DEFAULT_CURRENCIES])
-
-
-def ensure_default_pipeline_status_templates(company):
-    if company.pipeline_status_templates.exists():
-        return
-
-    PipelineStatusTemplate.objects.bulk_create(
-        [
-            PipelineStatusTemplate(company=company, name=item["name"], color=item["color"], position=index)
-            for index, item in enumerate(DEFAULT_PIPELINE_STATUS_TEMPLATES)
-        ]
-    )
-
-
-def set_default_currency(currency):
-    Currency.objects.filter(company=currency.company, is_default=True).exclude(pk=currency.pk).update(is_default=False)
-    if not currency.is_default:
-        currency.is_default = True
-        currency.save(update_fields=["is_default"])
-
-
 def normalize_template_positions(company):
     for index, template in enumerate(company.pipeline_status_templates.order_by("position", "id")):
         if template.position != index:
@@ -105,7 +67,6 @@ class CurrencyListCreateView(generics.ListCreateAPIView):
 
     def get_queryset(self):
         company = resolve_company_for_settings(self.request.user, self.request.query_params.get("company_id"))
-        ensure_default_currencies(company)
         return Currency.objects.filter(company=company).order_by("name", "id")
 
     def perform_create(self, serializer):
@@ -149,7 +110,6 @@ class PipelineStatusTemplateListCreateView(generics.ListCreateAPIView):
 
     def get_queryset(self):
         company = resolve_company_for_settings(self.request.user, self.request.query_params.get("company_id"))
-        ensure_default_pipeline_status_templates(company)
         return PipelineStatusTemplate.objects.filter(company=company).order_by("position", "id")
 
     @transaction.atomic
@@ -181,3 +141,26 @@ class PipelineStatusTemplateDetailView(generics.RetrieveUpdateDestroyAPIView):
         company = instance.company
         instance.delete()
         normalize_template_positions(company)
+
+
+class CurrencyRestoreDefaultsView(generics.GenericAPIView):
+    permission_classes = [permissions.IsAuthenticated, CanAccessSettings]
+
+    def post(self, request):
+        company = resolve_company_for_settings(request.user, request.query_params.get("company_id"))
+        create_missing_default_currencies(company)
+        return Response(CurrencySerializer(Currency.objects.filter(company=company).order_by("name", "id"), many=True).data)
+
+
+class PipelineStatusTemplateRestoreDefaultsView(generics.GenericAPIView):
+    permission_classes = [permissions.IsAuthenticated, CanAccessSettings]
+
+    def post(self, request):
+        company = resolve_company_for_settings(request.user, request.query_params.get("company_id"))
+        create_missing_default_pipeline_status_templates(company)
+        return Response(
+            PipelineStatusTemplateSerializer(
+                PipelineStatusTemplate.objects.filter(company=company).order_by("position", "id"),
+                many=True,
+            ).data
+        )

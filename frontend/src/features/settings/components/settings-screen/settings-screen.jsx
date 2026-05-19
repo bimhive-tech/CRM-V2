@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
 
+import { EditIcon, TrashIcon } from "@/components/dashboard/dashboard-icons";
 import { DashboardShell } from "@/components/dashboard/dashboard-shell/dashboard-shell";
 import { Sidebar } from "@/components/dashboard/sidebar/sidebar";
 import { Topbar } from "@/components/dashboard/topbar/topbar";
@@ -22,6 +23,8 @@ import {
   listPipelineStatusTemplates,
   listRoles,
   listUsers,
+  restoreDefaultCurrencies,
+  restoreDefaultPipelineStatusTemplates,
   deleteCompanyLogo,
   uploadCompanyLogo,
   updateCompany,
@@ -37,7 +40,7 @@ import styles from "./settings-screen.module.css";
 
 const companyInitialState = { name: "", email: "", phone_number: "", website: "", address: "", is_active: true };
 const roleInitialState = { name: "", description: "" };
-const currencyInitialState = { code: "", name: "", symbol: "", is_default: false, is_active: true };
+const currencyInitialState = { name: "", symbol: "", is_default: false, is_active: true };
 const statusTemplateInitialState = { name: "", color: "#7C5F35", position: 0 };
 const userInitialState = {
   email: "",
@@ -95,7 +98,6 @@ function toRoleForm(role) {
 
 function toCurrencyForm(currency) {
   return {
-    code: currency.code || "",
     name: currency.name || "",
     symbol: currency.symbol || "",
     is_default: Boolean(currency.is_default),
@@ -562,7 +564,6 @@ export function SettingsScreen({
 
     try {
       const payload = {
-        code: currencyForm.code.trim(),
         name: currencyForm.name.trim(),
         symbol: currencyForm.symbol.trim(),
         is_default: currencyForm.is_default,
@@ -607,6 +608,30 @@ export function SettingsScreen({
       closeModal();
     } catch (error) {
       setMessage(error.message || "Unable to save default pipeline status.");
+    }
+  }
+
+  async function handleRestoreCurrencyDefaults() {
+    setMessage();
+
+    try {
+      await restoreDefaultCurrencies(token, { company_id: selectedCompanyId });
+      await refreshMasterData();
+      setMessage("", "Default currencies restored.");
+    } catch (error) {
+      setMessage(error.message || "Unable to restore default currencies.");
+    }
+  }
+
+  async function handleRestoreStatusDefaults() {
+    setMessage();
+
+    try {
+      await restoreDefaultPipelineStatusTemplates(token, { company_id: selectedCompanyId });
+      await refreshMasterData();
+      setMessage("", "Default pipeline statuses restored.");
+    } catch (error) {
+      setMessage(error.message || "Unable to restore default pipeline statuses.");
     }
   }
 
@@ -868,6 +893,7 @@ export function SettingsScreen({
               <div>
                 <p className={styles.panelEyebrow}>Master Data</p>
                 <h2>Currencies and default pipeline statuses</h2>
+                <p className={styles.bodyCopy}>Each company manages its own copy of this data. We seed default values and you can restore them later if they get removed.</p>
               </div>
               {user?.is_platform_admin && companyOptions.length ? (
                 <label className={styles.field}>
@@ -890,16 +916,20 @@ export function SettingsScreen({
                     <p className={styles.panelEyebrow}>Currencies</p>
                     <h2>Available currencies</h2>
                   </div>
-                  <button className={styles.primaryButton} type="button" onClick={() => openCurrencyModal("create")} disabled={!selectedCompanyId}>
-                    Create currency
-                  </button>
+                  <div className={styles.actionsCell}>
+                    <button className={styles.secondaryButton} type="button" onClick={handleRestoreCurrencyDefaults} disabled={!selectedCompanyId}>
+                      Restore defaults
+                    </button>
+                    <button className={styles.primaryButton} type="button" onClick={() => openCurrencyModal("create")} disabled={!selectedCompanyId}>
+                      Create currency
+                    </button>
+                  </div>
                 </div>
 
                 <div className={styles.tableWrap}>
                   <table className={styles.table}>
                     <thead>
                       <tr>
-                        <th>Code</th>
                         <th>Name</th>
                         <th>Symbol</th>
                         <th>Default</th>
@@ -910,9 +940,8 @@ export function SettingsScreen({
                     <tbody>
                       {currencies.map((currency) => (
                         <tr key={currency.id}>
-                          <td className={styles.monoCell}>{currency.code}</td>
                           <td>{currency.name}</td>
-                          <td className={styles.monoCell}>{currency.symbol || currency.code}</td>
+                          <td className={styles.monoCell}>{currency.symbol || "—"}</td>
                           <td>{currency.is_default ? <StatusBadge>Default</StatusBadge> : "No"}</td>
                           <td>
                             <StatusBadge tone={currency.is_active ? "neutral" : "danger"}>
@@ -920,11 +949,11 @@ export function SettingsScreen({
                             </StatusBadge>
                           </td>
                           <td className={styles.actionsCell}>
-                            <button className={styles.inlineButton} type="button" onClick={() => openCurrencyModal("edit", currency)}>
-                              Edit
+                            <button className={styles.inlineIconButton} type="button" onClick={() => openCurrencyModal("edit", currency)} aria-label={`Edit ${currency.name}`}>
+                              <EditIcon />
                             </button>
-                            <button className={styles.inlineDanger} type="button" onClick={() => handleDelete("currency", currency.id, currency.name)}>
-                              Delete
+                            <button className={`${styles.inlineIconButton} ${styles.inlineDangerIcon}`} type="button" onClick={() => handleDelete("currency", currency.id, currency.name)} aria-label={`Delete ${currency.name}`}>
+                              <TrashIcon />
                             </button>
                           </td>
                         </tr>
@@ -940,9 +969,14 @@ export function SettingsScreen({
                     <p className={styles.panelEyebrow}>Pipeline Defaults</p>
                     <h2>Statuses created with every new pipeline</h2>
                   </div>
-                  <button className={styles.primaryButton} type="button" onClick={() => openStatusTemplateModal("create")} disabled={!selectedCompanyId}>
-                    Add status
-                  </button>
+                  <div className={styles.actionsCell}>
+                    <button className={styles.secondaryButton} type="button" onClick={handleRestoreStatusDefaults} disabled={!selectedCompanyId}>
+                      Restore defaults
+                    </button>
+                    <button className={styles.primaryButton} type="button" onClick={() => openStatusTemplateModal("create")} disabled={!selectedCompanyId}>
+                      Add status
+                    </button>
+                  </div>
                 </div>
 
                 <div className={styles.tableWrap}>
@@ -960,17 +994,23 @@ export function SettingsScreen({
                         <tr key={template.id}>
                           <td className={styles.monoCell}>{template.position + 1}</td>
                           <td>{template.name}</td>
-                          <td className={styles.monoCell}>{template.color}</td>
+                          <td>
+                            <div className={styles.colorPreview}>
+                              <span className={styles.colorSwatch} style={{ background: template.color }} />
+                              <span className={styles.monoCell}>{template.color}</span>
+                            </div>
+                          </td>
                           <td className={styles.actionsCell}>
-                            <button className={styles.inlineButton} type="button" onClick={() => openStatusTemplateModal("edit", template)}>
-                              Edit
+                            <button className={styles.inlineIconButton} type="button" onClick={() => openStatusTemplateModal("edit", template)} aria-label={`Edit ${template.name}`}>
+                              <EditIcon />
                             </button>
                             <button
-                              className={styles.inlineDanger}
+                              className={`${styles.inlineIconButton} ${styles.inlineDangerIcon}`}
                               type="button"
                               onClick={() => handleDelete("status-template", template.id, template.name)}
+                              aria-label={`Delete ${template.name}`}
                             >
-                              Delete
+                              <TrashIcon />
                             </button>
                           </td>
                         </tr>
@@ -1180,10 +1220,6 @@ export function SettingsScreen({
           >
             <div className={styles.formGrid}>
               <label className={styles.field}>
-                <span>Code</span>
-                <input name="code" value={currencyForm.code} onChange={updateCurrencyForm} placeholder="EGP" required />
-              </label>
-              <label className={styles.field}>
                 <span>Name</span>
                 <input name="name" value={currencyForm.name} onChange={updateCurrencyForm} placeholder="Egyptian Pound" required />
               </label>
@@ -1220,7 +1256,10 @@ export function SettingsScreen({
               </label>
               <label className={styles.field}>
                 <span>Color</span>
-                <input name="color" value={statusTemplateForm.color} onChange={updateStatusTemplateForm} placeholder="#2C7FB8" required />
+                <div className={styles.colorField}>
+                  <input className={styles.colorInput} name="color" type="color" value={statusTemplateForm.color} onChange={updateStatusTemplateForm} />
+                  <span className={styles.colorValue}>{statusTemplateForm.color}</span>
+                </div>
               </label>
               <label className={styles.field}>
                 <span>Position</span>

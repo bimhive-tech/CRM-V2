@@ -19,6 +19,7 @@ from apps.accounts.services import user_queryset
 from apps.companies.models import Company
 from apps.companies.serializers import CompanySerializer
 from apps.companies.storage import delete_object, upload_company_logo
+from apps.masterdata.defaults import initialize_company_master_data
 
 
 class LoginView(TokenObtainPairView):
@@ -77,7 +78,8 @@ class CompanyListCreateView(generics.ListCreateAPIView):
     def perform_create(self, serializer):
         if not self.request.user.is_platform_admin:
             raise ValidationError({"detail": "Only platform admins can create companies."})
-        serializer.save()
+        company = serializer.save()
+        initialize_company_master_data(company)
 
 
 class CompanyDetailView(generics.RetrieveUpdateDestroyAPIView):

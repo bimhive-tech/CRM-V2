@@ -14,6 +14,19 @@ import styles from "./pipeline-screen.module.css";
 
 const DEFAULT_STATUS_COLOR = "#7C5F35";
 
+function getPipelineStorageKey(user) {
+  const companyId = user?.company?.id || user?.companies?.[0]?.id || "default";
+  return `crm:last-pipeline:${companyId}`;
+}
+
+function readStoredPipelineId(user) {
+  if (typeof window === "undefined") {
+    return "";
+  }
+
+  return window.localStorage.getItem(getPipelineStorageKey(user)) || "";
+}
+
 function normalizePaginatedResponse(data) {
   if (Array.isArray(data)) {
     return {
@@ -48,6 +61,7 @@ function reorderStatuses(statuses, draggingId, targetIndex) {
 export function PipelineScreen({ user }) {
   const token = getAccessToken();
   const dragCommittedRef = useRef(false);
+  const initialStoredPipelineId = useRef(readStoredPipelineId(user));
   const [pipelines, setPipelines] = useState([]);
   const [pipelineContacts, setPipelineContacts] = useState([]);
   const [selectedPipelineId, setSelectedPipelineId] = useState("");
@@ -89,6 +103,9 @@ export function PipelineScreen({ user }) {
         if (current && nextPipelines.some((pipeline) => String(pipeline.id) === current)) {
           return current;
         }
+        if (initialStoredPipelineId.current && nextPipelines.some((pipeline) => String(pipeline.id) === initialStoredPipelineId.current)) {
+          return initialStoredPipelineId.current;
+        }
         return nextPipelines[0] ? String(nextPipelines[0].id) : "";
       });
       setStatus({ loading: false, error: "", success: "" });
@@ -128,7 +145,13 @@ export function PipelineScreen({ user }) {
           return;
         }
         setPipelines(nextPipelines);
-        setSelectedPipelineId(nextPipelines[0] ? String(nextPipelines[0].id) : "");
+        const nextSelectedPipelineId =
+          nextPipelines.find((pipeline) => String(pipeline.id) === initialStoredPipelineId.current)?.id
+            ? initialStoredPipelineId.current
+            : nextPipelines[0]
+              ? String(nextPipelines[0].id)
+              : "";
+        setSelectedPipelineId(nextSelectedPipelineId);
         setStatus({ loading: false, error: "", success: "" });
       } catch (error) {
         if (!active) {
@@ -144,6 +167,20 @@ export function PipelineScreen({ user }) {
       active = false;
     };
   }, [token]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const storageKey = getPipelineStorageKey(user);
+    if (selectedPipelineId) {
+      window.localStorage.setItem(storageKey, selectedPipelineId);
+      return;
+    }
+
+    window.localStorage.removeItem(storageKey);
+  }, [selectedPipelineId, user]);
 
   useEffect(() => {
     let active = true;

@@ -135,6 +135,13 @@ export function deleteCurrency(token, currencyId) {
   });
 }
 
+export function restoreDefaultCurrencies(token, query = {}) {
+  return apiRequest(buildApiPath("/master-data/currencies/restore-defaults/", query), {
+    method: "POST",
+    headers: authHeaders(token),
+  });
+}
+
 export function listPipelineStatusTemplates(token, query = {}) {
   return apiRequest(buildApiPath("/master-data/pipeline-status-templates/", query), {
     method: "GET",
@@ -161,6 +168,13 @@ export function updatePipelineStatusTemplate(token, templateId, payload) {
 export function deletePipelineStatusTemplate(token, templateId) {
   return apiRequest(`/master-data/pipeline-status-templates/${templateId}/`, {
     method: "DELETE",
+    headers: authHeaders(token),
+  });
+}
+
+export function restoreDefaultPipelineStatusTemplates(token, query = {}) {
+  return apiRequest(buildApiPath("/master-data/pipeline-status-templates/restore-defaults/", query), {
+    method: "POST",
     headers: authHeaders(token),
   });
 }

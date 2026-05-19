@@ -1,14 +1,50 @@
+import { useEffect, useMemo, useState } from "react";
+
 import { DataPanel } from "@/components/dashboard/data-panel/data-panel";
 import { DashboardShell } from "@/components/dashboard/dashboard-shell/dashboard-shell";
 import { AnalyticsIcon, OverviewIcon, PeopleIcon, SheetIcon } from "@/components/dashboard/dashboard-icons";
 import { MetricCard } from "@/components/dashboard/metric-card/metric-card";
 import { Sidebar } from "@/components/dashboard/sidebar/sidebar";
 import { Topbar } from "@/components/dashboard/topbar/topbar";
+import { listCurrencies } from "@/lib/api/admin";
+import { getAccessToken } from "@/lib/session";
 
 import styles from "./dashboard-screen.module.css";
 
 export function DashboardScreen({ user }) {
+  const [currencySymbol, setCurrencySymbol] = useState("EGP");
   const todayLabel = new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric" }).format(new Date());
+  const selectedCompanyId = user?.company?.id || user?.companies?.[0]?.id || "";
+
+  useEffect(() => {
+    if (!selectedCompanyId) {
+      return;
+    }
+
+    const token = getAccessToken();
+    let active = true;
+
+    listCurrencies(token, { company_id: selectedCompanyId })
+      .then((currencies) => {
+        if (!active) {
+          return;
+        }
+        const defaultCurrency = currencies.find((currency) => currency.is_default) || currencies[0];
+        setCurrencySymbol(defaultCurrency?.symbol || "EGP");
+      })
+      .catch(() => {
+        if (!active) {
+          return;
+        }
+        setCurrencySymbol("EGP");
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [selectedCompanyId]);
+
+  const zeroValue = useMemo(() => `${currencySymbol}0`, [currencySymbol]);
 
   return (
     <DashboardShell
@@ -33,9 +69,9 @@ export function DashboardScreen({ user }) {
         </section>
 
         <section className={styles.metrics}>
-          <MetricCard label="Open Pipeline" value="$0" helper="waiting for real deals" icon={<OverviewIcon />} />
-          <MetricCard label="Weighted Forecast" value="$0" helper="probability-adjusted" icon={<AnalyticsIcon />} />
-          <MetricCard label="Closed Won (MTD)" value="$0" helper="vs last month" icon={<SheetIcon />} />
+          <MetricCard label="Open Pipeline" value={zeroValue} helper="waiting for real deals" icon={<OverviewIcon />} />
+          <MetricCard label="Weighted Forecast" value={zeroValue} helper="probability-adjusted" icon={<AnalyticsIcon />} />
+          <MetricCard label="Closed Won (MTD)" value={zeroValue} helper="vs last month" icon={<SheetIcon />} />
           <MetricCard label="Avg Cycle" value="0d" helper="will calculate from real deals" icon={<PeopleIcon />} />
         </section>
 

@@ -293,6 +293,24 @@
   color: var(--danger);
 }
 
+.inlineIconButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--accent-deep);
+  cursor: pointer;
+  line-height: 0;
+}
+
+.inlineDangerIcon {
+  color: var(--danger);
+}
+
 .inlineDanger:disabled {
   color: var(--ink-3);
   cursor: not-allowed;
@@ -408,6 +426,36 @@
   color: var(--ink-3);
   font-size: 11px;
   line-height: 1.5;
+}
+
+.colorField,
+.colorPreview {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.colorInput {
+  width: 44px;
+  min-width: 44px;
+  height: 38px;
+  padding: 4px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-input);
+  background: var(--surface);
+}
+
+.colorValue {
+  color: var(--ink-2);
+  font-family: var(--font-mono), monospace;
+  font-size: 12px;
+}
+
+.colorSwatch {
+  width: 14px;
+  height: 14px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
 }
 
 .logoSection {
