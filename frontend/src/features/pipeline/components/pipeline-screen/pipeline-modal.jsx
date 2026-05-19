@@ -1,6 +1,18 @@
 import styles from "./pipeline-screen.module.css";
 
-export function PipelineModal({ title, description, value, onChange, onClose, onSubmit, submitLabel, placeholder }) {
+export function PipelineModal({
+  title,
+  description,
+  value,
+  colorValue,
+  onChange,
+  onColorChange,
+  onClose,
+  onSubmit,
+  submitLabel,
+  placeholder,
+  showColorField = false,
+}) {
   return (
     <div className={styles.modalOverlay} role="presentation" onClick={onClose}>
       <div className={styles.modal} role="dialog" aria-modal="true" aria-labelledby="pipeline-modal-title" onClick={(event) => event.stopPropagation()}>
@@ -18,6 +30,15 @@ export function PipelineModal({ title, description, value, onChange, onClose, on
             <span>Name</span>
             <input value={value} onChange={(event) => onChange(event.target.value)} placeholder={placeholder} required />
           </label>
+          {showColorField ? (
+            <label className={styles.field}>
+              <span>Color</span>
+              <div className={styles.colorField}>
+                <input className={styles.colorInput} type="color" value={colorValue} onChange={(event) => onColorChange(event.target.value)} />
+                <span className={styles.colorValue}>{colorValue}</span>
+              </div>
+            </label>
+          ) : null}
           <div className={styles.modalActions}>
             <button className={styles.secondaryButton} type="button" onClick={onClose}>
               Cancel

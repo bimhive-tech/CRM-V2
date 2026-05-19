@@ -7,7 +7,7 @@ from apps.pipelines.models import Pipeline, PipelineStatus
 class PipelineStatusSerializer(serializers.ModelSerializer):
     class Meta:
         model = PipelineStatus
-        fields = ["id", "name", "position", "created_at"]
+        fields = ["id", "name", "color", "position", "created_at"]
         read_only_fields = ["id", "created_at"]
 
 
@@ -31,7 +31,7 @@ class PipelineSerializer(serializers.ModelSerializer):
 class PipelineStatusCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = PipelineStatus
-        fields = ["id", "name", "position", "created_at"]
+        fields = ["id", "name", "color", "position", "created_at"]
         read_only_fields = ["id", "position", "created_at"]
 
 
@@ -40,5 +40,5 @@ class PipelineStatusUpdateSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = PipelineStatus
-        fields = ["id", "name", "position", "created_at"]
+        fields = ["id", "name", "color", "position", "created_at"]
         read_only_fields = ["id", "created_at"]

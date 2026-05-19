@@ -384,6 +384,75 @@
   flex: 1;
 }
 
+.contactStack {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.contactCard {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+}
+
+.contactCardHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.contactCardMeta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.contactCardMeta strong {
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.contactCardMeta span,
+.contactCompany {
+  margin: 0;
+  color: var(--ink-2);
+  font-size: 12px;
+}
+
+.contactOwnerDot {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  background: var(--accent-tint);
+  color: var(--accent-deep);
+  font-size: 10px;
+  font-weight: 600;
+  flex: 0 0 auto;
+}
+
+.contactStatusSelect select {
+  width: 100%;
+  min-height: 32px;
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 12px;
+  outline: none;
+}
+
 .columnEmpty {
   display: flex;
   flex: 1;
@@ -454,6 +523,28 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
+}
+
+.colorField {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.colorInput {
+  width: 44px;
+  height: 38px;
+  padding: 4px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  cursor: pointer;
+}
+
+.colorValue {
+  color: var(--ink-2);
+  font-family: var(--font-mono), monospace;
+  font-size: 12px;
 }
 
 .visuallyHidden {

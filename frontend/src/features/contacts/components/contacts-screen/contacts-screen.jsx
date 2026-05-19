@@ -30,6 +30,15 @@ const legacyStatusLabelMap = {
   at_risk: "At Risk",
 };
 
+const fallbackStatusColors = {
+  Lead: "#8C7A61",
+  Qualified: "#2C7FB8",
+  Proposal: "#C66A1E",
+  Negotiation: "#D18918",
+  Customer: "#3E9B64",
+  "At Risk": "#C64F3E",
+};
+
 const emptyContactForm = {
   fullName: "",
   title: "",
@@ -108,8 +117,71 @@ function normalizePaginatedResponse(data) {
   };
 }
 
+function formatLastTouch(value) {
+  if (!value) {
+    return "-";
+  }
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const target = new Date(date);
+  target.setHours(0, 0, 0, 0);
+  const diffDays = Math.floor((today.getTime() - target.getTime()) / 86400000);
+
+  if (diffDays <= 0) {
+    return "Today";
+  }
+
+  if (diffDays === 1) {
+    return "1 day ago";
+  }
+
+  if (diffDays <= 6) {
+    return `${diffDays} days ago`;
+  }
+
+  return formatDateForDisplay(value);
+}
+
 function normalizeStatusLabel(value) {
   return legacyStatusLabelMap[value] || value;
+}
+
+function hexToRgb(value) {
+  const normalized = value?.replace("#", "");
+  if (!normalized || normalized.length !== 6) {
+    return null;
+  }
+
+  const channel = Number.parseInt(normalized, 16);
+  if (Number.isNaN(channel)) {
+    return null;
+  }
+
+  return {
+    r: (channel >> 16) & 255,
+    g: (channel >> 8) & 255,
+    b: channel & 255,
+  };
+}
+
+function getStatusTone(color) {
+  const rgb = hexToRgb(color);
+  if (!rgb) {
+    return {
+      background: "oklch(0.95 0.01 80)",
+      color: "oklch(0.45 0.02 80)",
+    };
+  }
+
+  return {
+    background: `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.16)`,
+    color: `rgb(${rgb.r}, ${rgb.g}, ${rgb.b})`,
+  };
 }
 
 function stringToHue(value) {
@@ -132,7 +204,7 @@ function mapContactFromApi(contact) {
     status: normalizeStatusLabel(contact.status),
     ownerId: contact.owner?.id ? String(contact.owner.id) : "",
     owner: contact.owner?.full_name || "Unassigned",
-    lastTouch: formatDateForDisplay(contact.last_touch),
+    lastTouch: formatLastTouch(contact.last_touch),
     lastTouchRaw: formatDateForInput(contact.last_touch),
     notes: contact.notes || "",
   };
@@ -268,22 +340,10 @@ function OwnerAvatar({ name }) {
   );
 }
 
-function ContactStatus({ value }) {
-  const toneClass =
-    value === "Qualified"
-      ? styles.statusQualified
-      : value === "Proposal"
-        ? styles.statusProposal
-        : value === "Negotiation"
-          ? styles.statusNegotiation
-          : value === "Customer"
-            ? styles.statusCustomer
-            : value === "At Risk"
-              ? styles.statusRisk
-              : styles.statusLead;
-
+function ContactStatus({ value, color }) {
+  const tone = getStatusTone(color || fallbackStatusColors[value] || fallbackStatusColors.Lead);
   return (
-    <span className={`${styles.statusBadge} ${toneClass}`}>
+    <span className={styles.statusBadge} style={tone}>
       <span className={styles.statusDot} />
       {value}
     </span>
@@ -360,6 +420,15 @@ export function ContactsScreen({ user }) {
     () => pipelines.map((pipeline) => ({ value: String(pipeline.id), label: pipeline.name })),
     [pipelines],
   );
+  const statusColorMap = useMemo(() => {
+    const nextMap = new Map();
+    pipelines.forEach((pipeline) => {
+      (pipeline.statuses || []).forEach((statusItem) => {
+        nextMap.set(`${pipeline.id}:${normalizeStatusLabel(statusItem.name)}`, statusItem.color || fallbackStatusColors[normalizeStatusLabel(statusItem.name)] || fallbackStatusColors.Lead);
+      });
+    });
+    return nextMap;
+  }, [pipelines]);
 
   const heroMeta = useMemo(() => {
     if (viewMode === "companies") {
@@ -882,11 +951,11 @@ export function ContactsScreen({ user }) {
                             </div>
                           </td>
                           <td>
-                            <ContactStatus value={contact.status} />
+                            <ContactStatus value={contact.status} color={statusColorMap.get(`${contact.pipelineId}:${contact.status}`)} />
                           </td>
                           <td className={styles.lastTouchCell}>{contact.lastTouch}</td>
                           <td>
-                            <div className={styles.ownerCell}>
+                            <div className={styles.ownerCell} title={contact.owner}>
                               <OwnerAvatar name={contact.owner} />
                             </div>
                           </td>
@@ -927,7 +996,7 @@ export function ContactsScreen({ user }) {
                             <span>{contact.title}</span>
                           </div>
                         </div>
-                        <ContactStatus value={contact.status} />
+                        <ContactStatus value={contact.status} color={statusColorMap.get(`${contact.pipelineId}:${contact.status}`)} />
                       </div>
 
                       <div className={styles.mobileCardGrid}>
@@ -937,7 +1006,7 @@ export function ContactsScreen({ user }) {
                         </div>
                         <div>
                           <p className={styles.mobileLabel}>Owner</p>
-                          <div className={styles.ownerCell}>
+                          <div className={styles.ownerCell} title={contact.owner}>
                             <OwnerAvatar name={contact.owner} />
                           </div>
                         </div>

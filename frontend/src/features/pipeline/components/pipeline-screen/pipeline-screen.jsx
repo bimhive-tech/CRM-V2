@@ -6,11 +6,27 @@ import { DashboardShell } from "@/components/dashboard/dashboard-shell/dashboard
 import { CheckIcon, ClipboardIcon, PipelineIcon, PlusIcon, TrashIcon } from "@/components/dashboard/dashboard-icons";
 import { Sidebar } from "@/components/dashboard/sidebar/sidebar";
 import { Topbar } from "@/components/dashboard/topbar/topbar";
-import { createPipeline, createPipelineStatus, deletePipelineStatus, listPipelines, updatePipelineStatus } from "@/lib/api/admin";
+import { createPipeline, createPipelineStatus, deletePipelineStatus, listContacts, listPipelines, updateContact, updatePipelineStatus } from "@/lib/api/admin";
 import { getAccessToken } from "@/lib/session";
 
 import { ConfirmDeleteModal, PipelineModal } from "./pipeline-modal";
 import styles from "./pipeline-screen.module.css";
+
+const DEFAULT_STATUS_COLOR = "#7C5F35";
+
+function normalizePaginatedResponse(data) {
+  if (Array.isArray(data)) {
+    return {
+      count: data.length,
+      results: data,
+    };
+  }
+
+  return {
+    count: data?.count || 0,
+    results: data?.results || [],
+  };
+}
 
 function StageBadge({ count }) {
   return <span className={styles.stageCount}>{count}</span>;
@@ -33,10 +49,12 @@ export function PipelineScreen({ user }) {
   const token = getAccessToken();
   const dragCommittedRef = useRef(false);
   const [pipelines, setPipelines] = useState([]);
+  const [pipelineContacts, setPipelineContacts] = useState([]);
   const [selectedPipelineId, setSelectedPipelineId] = useState("");
   const [status, setStatus] = useState({ loading: true, error: "", success: "" });
   const [modalState, setModalState] = useState({ type: null, statusId: null });
   const [nameValue, setNameValue] = useState("");
+  const [colorValue, setColorValue] = useState(DEFAULT_STATUS_COLOR);
   const [editingStatusId, setEditingStatusId] = useState(null);
   const [editingName, setEditingName] = useState("");
   const [deleteConfirmValue, setDeleteConfirmValue] = useState("");
@@ -46,7 +64,18 @@ export function PipelineScreen({ user }) {
     () => pipelines.find((pipeline) => String(pipeline.id) === selectedPipelineId) || null,
     [pipelines, selectedPipelineId],
   );
-  const visibleStatuses = dragState.previewStatuses || selectedPipeline?.statuses || [];
+  const visibleStatuses = useMemo(
+    () => dragState.previewStatuses || selectedPipeline?.statuses || [],
+    [dragState.previewStatuses, selectedPipeline?.statuses],
+  );
+  const contactsByStatus = useMemo(
+    () =>
+      visibleStatuses.reduce((groups, statusItem) => {
+        groups[statusItem.id] = pipelineContacts.filter((contact) => contact.status === statusItem.name);
+        return groups;
+      }, {}),
+    [pipelineContacts, visibleStatuses],
+  );
 
   async function loadPipelines() {
     setStatus((current) => ({ ...current, loading: true }));
@@ -64,6 +93,25 @@ export function PipelineScreen({ user }) {
     } catch (error) {
       setStatus({ loading: false, error: error.message || "Unable to load pipelines.", success: "" });
     }
+  }
+
+  async function loadPipelineContacts(pipelineId) {
+    if (!pipelineId) {
+      setPipelineContacts([]);
+      return;
+    }
+
+    const response = normalizePaginatedResponse(await listContacts(token, { page: 1, page_size: 200, pipeline_id: pipelineId }));
+    setPipelineContacts(
+      response.results.map((contact) => ({
+        id: contact.id,
+        fullName: contact.full_name,
+        title: contact.title,
+        company: contact.company?.name || "No company",
+        status: contact.status,
+        owner: contact.owner?.full_name || "Unassigned",
+      })),
+    );
   }
 
   useEffect(() => {
@@ -93,8 +141,48 @@ export function PipelineScreen({ user }) {
     };
   }, [token]);
 
+  useEffect(() => {
+    let active = true;
+
+    async function hydrateContacts() {
+      if (!selectedPipelineId) {
+        setPipelineContacts([]);
+        return;
+      }
+
+      try {
+        const response = normalizePaginatedResponse(await listContacts(token, { page: 1, page_size: 200, pipeline_id: selectedPipelineId }));
+        if (!active) {
+          return;
+        }
+        setPipelineContacts(
+          response.results.map((contact) => ({
+            id: contact.id,
+            fullName: contact.full_name,
+            title: contact.title,
+            company: contact.company?.name || "No company",
+            status: contact.status,
+            owner: contact.owner?.full_name || "Unassigned",
+          })),
+        );
+      } catch {
+        if (!active) {
+          return;
+        }
+        setPipelineContacts([]);
+      }
+    }
+
+    hydrateContacts();
+
+    return () => {
+      active = false;
+    };
+  }, [selectedPipelineId, token]);
+
   function openModal(type, statusItem = null) {
     setNameValue(statusItem?.name || "");
+    setColorValue(statusItem?.color || DEFAULT_STATUS_COLOR);
     setDeleteConfirmValue("");
     setModalState({ type, statusId: statusItem?.id || null });
     setStatus((current) => ({ ...current, error: "" }));
@@ -102,6 +190,7 @@ export function PipelineScreen({ user }) {
 
   function closeModal() {
     setNameValue("");
+    setColorValue(DEFAULT_STATUS_COLOR);
     setDeleteConfirmValue("");
     setModalState({ type: null, statusId: null });
   }
@@ -140,8 +229,8 @@ export function PipelineScreen({ user }) {
     }
 
     try {
-      await createPipelineStatus(token, selectedPipeline.id, { name: nameValue.trim() });
-      await loadPipelines();
+      await createPipelineStatus(token, selectedPipeline.id, { name: nameValue.trim(), color: colorValue });
+      await Promise.all([loadPipelines(), loadPipelineContacts(selectedPipeline.id)]);
       setStatus({ loading: false, error: "", success: "Status added." });
       closeModal();
     } catch (error) {
@@ -173,7 +262,7 @@ export function PipelineScreen({ user }) {
 
     try {
       await deletePipelineStatus(token, modalState.statusId);
-      await loadPipelines();
+      await Promise.all([loadPipelines(), loadPipelineContacts(selectedPipeline?.id)]);
       setStatus({ loading: false, error: "", success: "Status removed." });
       closeModal();
     } catch (error) {
@@ -197,6 +286,20 @@ export function PipelineScreen({ user }) {
       setStatus({ loading: false, error: "", success: "Status order updated." });
     } catch (error) {
       setStatus({ loading: false, error: error.message || "Unable to reorder status.", success: "" });
+    }
+  }
+
+  async function moveContactToStatus(contactId, nextStatusName) {
+    if (!selectedPipeline) {
+      return;
+    }
+
+    try {
+      await updateContact(token, contactId, { pipeline_id: selectedPipeline.id, status: nextStatusName });
+      await loadPipelineContacts(selectedPipeline.id);
+      setStatus({ loading: false, error: "", success: "Contact stage updated." });
+    } catch (error) {
+      setStatus({ loading: false, error: error.message || "Unable to move contact.", success: "" });
     }
   }
 
@@ -329,9 +432,9 @@ export function PipelineScreen({ user }) {
                       <div className={styles.columnHeader}>
                         <div className={styles.columnLead}>
                           <span className={styles.stageMarker} aria-hidden="true">
-                            <span />
-                            <span />
-                            <span />
+                            <span style={{ background: statusItem.color || DEFAULT_STATUS_COLOR }} />
+                            <span style={{ background: statusItem.color || DEFAULT_STATUS_COLOR }} />
+                            <span style={{ background: statusItem.color || DEFAULT_STATUS_COLOR }} />
                           </span>
                           <div>
                             {editingStatusId === statusItem.id ? (
@@ -366,7 +469,7 @@ export function PipelineScreen({ user }) {
                                 <span className={styles.columnTitle}>{statusItem.name}</span>
                               </button>
                             )}
-                            <StageBadge count={0} />
+                            <StageBadge count={(contactsByStatus[statusItem.id] || []).length} />
                           </div>
                         </div>
                         <div className={styles.columnActions}>
@@ -384,13 +487,47 @@ export function PipelineScreen({ user }) {
 
                       <div className={styles.columnBody}>
                         <div className={styles.columnContent}>
-                          <div className={styles.columnEmpty}>
-                          <span className={styles.columnEmptyIcon}>
-                            <ClipboardIcon />
-                          </span>
-                          <strong>No deals in this stage</strong>
-                          <p>New opportunities in {statusItem.name.toLowerCase()} will appear here.</p>
-                          </div>
+                          {(contactsByStatus[statusItem.id] || []).length ? (
+                            <div className={styles.contactStack}>
+                              {(contactsByStatus[statusItem.id] || []).map((contact) => (
+                                <article key={contact.id} className={styles.contactCard}>
+                                  <div className={styles.contactCardHeader}>
+                                    <div className={styles.contactCardMeta}>
+                                      <strong>{contact.fullName}</strong>
+                                      <span>{contact.title}</span>
+                                    </div>
+                                    <div className={styles.contactOwnerDot} title={contact.owner}>
+                                      {contact.owner
+                                        .split(" ")
+                                        .filter(Boolean)
+                                        .slice(0, 2)
+                                        .map((part) => part[0]?.toUpperCase())
+                                        .join("") || "U"}
+                                    </div>
+                                  </div>
+                                  <p className={styles.contactCompany}>{contact.company}</p>
+                                  <label className={styles.contactStatusSelect}>
+                                    <span className={styles.visuallyHidden}>Move contact status</span>
+                                    <select value={contact.status} onChange={(event) => moveContactToStatus(contact.id, event.target.value)}>
+                                      {visibleStatuses.map((option) => (
+                                        <option key={option.id} value={option.name}>
+                                          {option.name}
+                                        </option>
+                                      ))}
+                                    </select>
+                                  </label>
+                                </article>
+                              ))}
+                            </div>
+                          ) : (
+                            <div className={styles.columnEmpty}>
+                              <span className={styles.columnEmptyIcon}>
+                                <ClipboardIcon />
+                              </span>
+                              <strong>No contacts in this stage</strong>
+                              <p>Contacts assigned to {statusItem.name.toLowerCase()} will appear here.</p>
+                            </div>
+                          )}
                         </div>
                       </div>
                     </article>
@@ -420,7 +557,9 @@ export function PipelineScreen({ user }) {
           title="Create pipeline"
           description="Set up a new workflow with its own status columns."
           value={nameValue}
+          colorValue={colorValue}
           onChange={setNameValue}
+          onColorChange={setColorValue}
           onClose={closeModal}
           onSubmit={handleCreatePipeline}
           submitLabel="Create pipeline"
@@ -431,13 +570,16 @@ export function PipelineScreen({ user }) {
       {modalState.type === "status" ? (
         <PipelineModal
           title="Add status"
-          description="Add a new status column to the current pipeline."
+          description="Add a new status column to the current pipeline and choose the color used across the workspace."
           value={nameValue}
+          colorValue={colorValue}
           onChange={setNameValue}
+          onColorChange={setColorValue}
           onClose={closeModal}
           onSubmit={handleCreateStatus}
           submitLabel="Add status"
           placeholder="Contract review"
+          showColorField
         />
       ) : null}
 

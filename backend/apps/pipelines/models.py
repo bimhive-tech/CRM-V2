@@ -20,6 +20,7 @@ class Pipeline(models.Model):
 class PipelineStatus(models.Model):
     pipeline = models.ForeignKey(Pipeline, on_delete=models.CASCADE, related_name="statuses")
     name = models.CharField(max_length=255)
+    color = models.CharField(max_length=7, default="#7C5F35")
     position = models.PositiveIntegerField(default=0)
     created_at = models.DateTimeField(default=timezone.now, editable=False)
 

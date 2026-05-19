@@ -20,6 +20,14 @@ DEFAULT_PIPELINE_STATUS_NAMES = [
     "Customer",
 ]
 
+DEFAULT_PIPELINE_STATUS_COLORS = {
+    "Lead": "#8C7A61",
+    "Qualified": "#2C7FB8",
+    "Proposal": "#C66A1E",
+    "Negotiation": "#D18918",
+    "Customer": "#3E9B64",
+}
+
 
 def company_ids_for_user(user):
     ids = list(user.companies.values_list("id", flat=True))
@@ -69,7 +77,12 @@ def resolve_requested_company_for_user(user, requested_company=None):
 def create_default_statuses(pipeline):
     PipelineStatus.objects.bulk_create(
         [
-            PipelineStatus(pipeline=pipeline, name=name, position=index)
+            PipelineStatus(
+                pipeline=pipeline,
+                name=name,
+                color=DEFAULT_PIPELINE_STATUS_COLORS.get(name, "#7C5F35"),
+                position=index,
+            )
             for index, name in enumerate(DEFAULT_PIPELINE_STATUS_NAMES)
         ]
     )

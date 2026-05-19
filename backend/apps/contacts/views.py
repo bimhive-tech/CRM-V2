@@ -1,5 +1,6 @@
 from django.db.models import Q
 from rest_framework import generics, permissions
+from django.utils import timezone
 
 from apps.crm.models import CRMContact
 from apps.contacts.serializers import ContactSerializer
@@ -53,7 +54,7 @@ class ContactListCreateView(generics.ListCreateAPIView):
 
     def perform_create(self, serializer):
         company = serializer.validated_data["company"]
-        serializer.save(tenant_company=company.tenant_company)
+        serializer.save(tenant_company=company.tenant_company, owner=self.request.user, last_touch=timezone.localdate())
 
 
 class ContactDetailView(generics.RetrieveUpdateDestroyAPIView):
@@ -62,3 +63,6 @@ class ContactDetailView(generics.RetrieveUpdateDestroyAPIView):
 
     def get_queryset(self):
         return contacts_queryset_for_user(self.request.user)
+
+    def perform_update(self, serializer):
+        serializer.save(last_touch=timezone.localdate())

@@ -15,7 +15,7 @@ class ContactOwnerSerializer(serializers.ModelSerializer):
 class ContactPipelineSerializer(serializers.ModelSerializer):
     class Meta:
         model = Pipeline
-        fields = ["id", "name"]
+        fields = ["id", "name", "company_id"]
 
 
 class ContactSerializer(serializers.ModelSerializer):
