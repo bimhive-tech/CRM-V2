@@ -153,24 +153,24 @@ function CompanyFormFields({
       <div className={styles.formGrid}>
         <label className={styles.field}>
           <span>Company name</span>
-          <input name="name" value={form.name} onChange={onChange} placeholder="Ember Construction" required />
+          <input name="name" value={form.name} onChange={onChange} placeholder="Cairo Steel Works" required />
         </label>
         <label className={styles.field}>
           <span>Email</span>
-          <input name="email" type="email" value={form.email} onChange={onChange} placeholder="hello@company.com" />
+          <input name="email" type="email" value={form.email} onChange={onChange} placeholder="hello@cairosteel.com.eg" />
         </label>
         <label className={styles.field}>
           <span>Phone number</span>
-          <input name="phone_number" value={form.phone_number} onChange={onChange} placeholder="+1 555 123 4567" />
+          <input name="phone_number" value={form.phone_number} onChange={onChange} placeholder="+20 2 2265 7788" />
         </label>
         <label className={styles.field}>
           <span>Website</span>
-          <input name="website" type="url" value={form.website} onChange={onChange} placeholder="https://company.com" />
+          <input name="website" type="url" value={form.website} onChange={onChange} placeholder="https://cairosteel.com.eg" />
         </label>
       </div>
       <label className={styles.field}>
         <span>Address</span>
-        <textarea name="address" value={form.address} onChange={onChange} placeholder="Street, city, state, postal code" rows={4} />
+        <textarea name="address" value={form.address} onChange={onChange} placeholder="Industrial Zone, 10th of Ramadan City, Sharqia" rows={4} />
       </label>
       <div className={styles.logoSection}>
         {logoUrl ? (
@@ -1097,7 +1097,7 @@ export function SettingsScreen({
           >
             <label className={styles.field}>
               <span>Role name</span>
-              <input name="name" value={roleForm.name} onChange={updateRoleForm} placeholder="Sales Manager" required />
+              <input name="name" value={roleForm.name} onChange={updateRoleForm} placeholder="Site Engineer" required />
             </label>
             <label className={styles.field}>
               <span>Description</span>
@@ -1105,7 +1105,7 @@ export function SettingsScreen({
                 name="description"
                 value={roleForm.description}
                 onChange={updateRoleForm}
-                placeholder="What this role is responsible for."
+                placeholder="Handles site coordination, consultant follow-up, and project reporting."
                 rows={4}
               />
             </label>
@@ -1123,11 +1123,11 @@ export function SettingsScreen({
             <div className={styles.formGrid}>
               <label className={styles.field}>
                 <span>Full name</span>
-                <input name="full_name" value={userForm.full_name} onChange={updateUserForm} placeholder="Maya Patel" required />
+                <input name="full_name" value={userForm.full_name} onChange={updateUserForm} placeholder="Omar Adel" required />
               </label>
               <label className={styles.field}>
                 <span>Email</span>
-                <input name="email" type="email" value={userForm.email} onChange={updateUserForm} placeholder="maya@embercrm.com" required />
+                <input name="email" type="email" value={userForm.email} onChange={updateUserForm} placeholder="omar@bimhive.com.eg" required />
               </label>
               <label className={styles.field}>
                 <span>Password</span>
@@ -1225,7 +1225,7 @@ export function SettingsScreen({
               </label>
               <label className={styles.field}>
                 <span>Symbol</span>
-                <input name="symbol" value={currencyForm.symbol} onChange={updateCurrencyForm} placeholder="$ or EGP" />
+                <input name="symbol" value={currencyForm.symbol} onChange={updateCurrencyForm} placeholder="EGP or $" />
               </label>
             </div>
 
@@ -1252,7 +1252,7 @@ export function SettingsScreen({
             <div className={styles.formGrid}>
               <label className={styles.field}>
                 <span>Status name</span>
-                <input name="name" value={statusTemplateForm.name} onChange={updateStatusTemplateForm} placeholder="Qualified" required />
+                <input name="name" value={statusTemplateForm.name} onChange={updateStatusTemplateForm} placeholder="Technical Review" required />
               </label>
               <label className={styles.field}>
                 <span>Color</span>

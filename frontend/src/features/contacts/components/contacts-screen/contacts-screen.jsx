@@ -367,6 +367,26 @@ function PaginationControls({ page, totalPages, count, onPageChange }) {
   );
 }
 
+function CompanyContactsPreview({ contacts }) {
+  if (!contacts.length) {
+    return <span className={styles.monoText}>No contacts</span>;
+  }
+
+  const visibleContacts = contacts.slice(0, 2);
+  const remainingCount = Math.max(0, contacts.length - visibleContacts.length);
+
+  return (
+    <div className={styles.contactListCell}>
+      {visibleContacts.map((contact) => (
+        <span key={contact.id} className={styles.contactPill}>
+          {contact.fullName}
+        </span>
+      ))}
+      {remainingCount ? <span className={styles.contactOverflowPill}>+{remainingCount}</span> : null}
+    </div>
+  );
+}
+
 function DirectoryScreen({ user, mode = "contacts" }) {
   const token = getAccessToken();
   const router = useRouter();
@@ -1083,19 +1103,7 @@ function DirectoryScreen({ user, mode = "contacts" }) {
                         </td>
                         <td className={styles.monoText}>{company.email}</td>
                         <td className={styles.monoText}>{company.phoneNumbers.join(" · ") || "No number"}</td>
-                        <td>
-                          <div className={styles.contactListCell}>
-                            {company.contacts.length ? (
-                              company.contacts.map((contact) => (
-                                <span key={contact.id} className={styles.contactPill}>
-                                  {contact.fullName}
-                                </span>
-                              ))
-                            ) : (
-                              <span className={styles.monoText}>No contacts</span>
-                            )}
-                          </div>
-                        </td>
+                        <td><CompanyContactsPreview contacts={company.contacts} /></td>
                         <td>{company.website !== "No website" ? company.website : "No website"}</td>
                         <td className={styles.actionsCell}>
                           <button
@@ -1196,17 +1204,7 @@ function DirectoryScreen({ user, mode = "contacts" }) {
                     </div>
 
                     <p className={styles.mobileNotes}>{company.address}</p>
-                    <div className={styles.contactListCell}>
-                      {company.contacts.length ? (
-                        company.contacts.map((contact) => (
-                          <span key={contact.id} className={styles.contactPill}>
-                            {contact.fullName}
-                          </span>
-                        ))
-                      ) : (
-                        <span className={styles.monoText}>No contacts</span>
-                      )}
-                    </div>
+                    <CompanyContactsPreview contacts={company.contacts} />
                   </article>
                 ))}
               </div>

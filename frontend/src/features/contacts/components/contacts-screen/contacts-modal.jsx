@@ -24,19 +24,19 @@ export function ContactsModal({ mode, form, onChange, onClose, onSubmit, company
           <div className={styles.formGrid}>
             <label className={styles.field}>
               <span>Full name</span>
-              <input name="fullName" value={form.fullName} onChange={onChange} placeholder="Eleanor Bishop" required />
+              <input name="fullName" value={form.fullName} onChange={onChange} placeholder="Ahmed Hassan" required />
             </label>
             <label className={styles.field}>
               <span>Job title</span>
-              <input name="title" value={form.title} onChange={onChange} placeholder="Operations Director" required />
+              <input name="title" value={form.title} onChange={onChange} placeholder="Procurement Manager" required />
             </label>
             <label className={styles.field}>
               <span>Email</span>
-              <input name="email" type="email" value={form.email} onChange={onChange} placeholder="eleanor@northstar.com" required />
+              <input name="email" type="email" value={form.email} onChange={onChange} placeholder="ahmed@nilecontracting.com.eg" required />
             </label>
             <label className={styles.field}>
               <span>Phone</span>
-              <input name="phone" value={form.phone} onChange={onChange} placeholder="+1 415 555 0124" required />
+              <input name="phone" value={form.phone} onChange={onChange} placeholder="+20 10 1234 5678" required />
             </label>
             <label className={styles.field}>
               <span>Company</span>
@@ -79,7 +79,7 @@ export function ContactsModal({ mode, form, onChange, onClose, onSubmit, company
 
           <label className={styles.field}>
             <span>Notes</span>
-            <textarea name="notes" value={form.notes} onChange={onChange} rows={4} placeholder="Context, next step, or relationship notes." />
+            <textarea name="notes" value={form.notes} onChange={onChange} rows={4} placeholder="Met at the New Cairo tender meeting. Follow up next week with pricing." />
           </label>
 
           <div className={styles.modalActions}>
@@ -120,23 +120,23 @@ export function CompanyModal({ mode = "create", form, onChange, onPhoneChange, o
           <div className={styles.formGrid}>
             <label className={styles.field}>
               <span>Company name</span>
-              <input name="name" value={form.name} onChange={onChange} placeholder="Northstar Construction" required />
+              <input name="name" value={form.name} onChange={onChange} placeholder="Nile Contracting" required />
             </label>
             <label className={styles.field}>
               <span>Company owner</span>
-              <input name="ownerName" value={form.ownerName} onChange={onChange} placeholder="Eleanor Bishop" />
+              <input name="ownerName" value={form.ownerName} onChange={onChange} placeholder="Mariam Hany" />
             </label>
             <label className={styles.field}>
               <span>Email</span>
-              <input name="email" type="email" value={form.email} onChange={onChange} placeholder="hello@northstar.com" />
+              <input name="email" type="email" value={form.email} onChange={onChange} placeholder="hello@nilecontracting.com.eg" />
             </label>
             <label className={styles.field}>
               <span>Website</span>
-              <input name="website" type="url" value={form.website} onChange={onChange} placeholder="https://northstar.com" />
+              <input name="website" type="url" value={form.website} onChange={onChange} placeholder="https://nilecontracting.com.eg" />
             </label>
             <label className={styles.field}>
               <span>LinkedIn</span>
-              <input name="linkedinUrl" type="url" value={form.linkedinUrl} onChange={onChange} placeholder="https://linkedin.com/company/northstar" />
+              <input name="linkedinUrl" type="url" value={form.linkedinUrl} onChange={onChange} placeholder="https://linkedin.com/company/nile-contracting" />
             </label>
             <label className={styles.field}>
               <span>Company size</span>
@@ -157,7 +157,7 @@ export function CompanyModal({ mode = "create", form, onChange, onPhoneChange, o
                   <input
                     value={phone}
                     onChange={(event) => onPhoneChange(index, event.target.value)}
-                    placeholder={index === 0 ? "+1 415 555 0124" : "Another company number"}
+                    placeholder={index === 0 ? "+20 2 2461 2345" : "Another Egypt office number"}
                   />
                   {form.phoneNumbers.length > 1 ? (
                     <button className={styles.inlineDanger} type="button" onClick={() => onRemovePhone(index)}>
@@ -172,11 +172,11 @@ export function CompanyModal({ mode = "create", form, onChange, onPhoneChange, o
           <div className={styles.formGrid}>
             <label className={styles.field}>
               <span>Country</span>
-              <input name="addressCountry" value={form.addressCountry} onChange={onChange} placeholder="United States" />
+              <input name="addressCountry" value={form.addressCountry} onChange={onChange} placeholder="Egypt" />
             </label>
             <label className={styles.field}>
               <span>State</span>
-              <input name="addressState" value={form.addressState} onChange={onChange} placeholder="California" />
+              <input name="addressState" value={form.addressState} onChange={onChange} placeholder="Cairo" />
             </label>
           </div>
 
@@ -187,7 +187,7 @@ export function CompanyModal({ mode = "create", form, onChange, onPhoneChange, o
               value={form.addressLine}
               onChange={onChange}
               rows={4}
-              placeholder="500 Market Street, Suite 210"
+              placeholder="90 North Teseen St, Fifth Settlement, New Cairo"
             />
           </label>
 

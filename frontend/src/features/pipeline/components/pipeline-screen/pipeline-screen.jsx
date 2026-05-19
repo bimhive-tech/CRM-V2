@@ -728,7 +728,7 @@ export function PipelineScreen({ user }) {
           onClose={closeModal}
           onSubmit={handleCreatePipeline}
           submitLabel="Create pipeline"
-          placeholder="Commercial sales"
+          placeholder="Cairo Projects"
         />
       ) : null}
 
@@ -743,7 +743,7 @@ export function PipelineScreen({ user }) {
           onClose={closeModal}
           onSubmit={handleUpdatePipeline}
           submitLabel="Save pipeline"
-          placeholder="Commercial sales"
+          placeholder="Cairo Projects"
         />
       ) : null}
 
@@ -758,7 +758,7 @@ export function PipelineScreen({ user }) {
           onClose={closeModal}
           onSubmit={handleCreateStatus}
           submitLabel="Add status"
-          placeholder="Contract review"
+          placeholder="Site Visit"
           showColorField
         />
       ) : null}
