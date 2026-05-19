@@ -67,17 +67,12 @@ const emptyCompanyForm = {
 const DIRECTORY_PAGE_SIZE = 10;
 const COMPANY_OPTIONS_PAGE_SIZE = 200;
 
-function getInitialViewMode(searchParams) {
-  const requestedView = searchParams.get("view");
-  return requestedView === "contacts" || requestedView === "companies" ? requestedView : "contacts";
-}
-
-function getInitialFilters(searchParams) {
+function getInitialFilters(searchParams, mode) {
   return {
     search: "",
     status: "All statuses",
     pipelineId: "All pipelines",
-    companyId: searchParams.get("companyId") || "All companies",
+    companyId: mode === "contacts" ? searchParams.get("companyId") || "All companies" : "All companies",
   };
 }
 
@@ -372,19 +367,19 @@ function PaginationControls({ page, totalPages, count, onPageChange }) {
   );
 }
 
-export function ContactsScreen({ user }) {
+function DirectoryScreen({ user, mode = "contacts" }) {
   const token = getAccessToken();
   const router = useRouter();
   const searchParams = useSearchParams();
+  const isContactsView = mode === "contacts";
   const [contacts, setContacts] = useState([]);
   const [companies, setCompanies] = useState([]);
   const [allCompanies, setAllCompanies] = useState([]);
   const [pipelines, setPipelines] = useState([]);
   const [initialLoading, setInitialLoading] = useState(true);
   const [directoryLoading, setDirectoryLoading] = useState(true);
-  const [viewMode, setViewMode] = useState(() => getInitialViewMode(searchParams));
   const [statusMessage, setStatusMessage] = useState({ error: "", success: "" });
-  const [filters, setFilters] = useState(() => getInitialFilters(searchParams));
+  const [filters, setFilters] = useState(() => getInitialFilters(searchParams, mode));
   const deferredSearch = useDeferredValue(filters.search);
   const [contactPage, setContactPage] = useState(1);
   const [companyPage, setCompanyPage] = useState(1);
@@ -412,10 +407,6 @@ export function ContactsScreen({ user }) {
   }, [pipelines, selectedPipeline]);
   const contactStatusOptions = statusOptions.filter((option) => option !== "All statuses");
   const companyOptions = useMemo(() => allCompanies.map((company) => ({ value: String(company.id), label: company.name })), [allCompanies]);
-  const contactCompanyFilterOptions = useMemo(
-    () => [{ value: "All companies", label: "All companies" }, ...allCompanies.map((company) => ({ value: String(company.id), label: company.name }))],
-    [allCompanies],
-  );
   const contactPipelineOptions = useMemo(
     () => pipelines.map((pipeline) => ({ value: String(pipeline.id), label: pipeline.name })),
     [pipelines],
@@ -431,11 +422,11 @@ export function ContactsScreen({ user }) {
   }, [pipelines]);
 
   const heroMeta = useMemo(() => {
-    if (viewMode === "companies") {
+    if (!isContactsView) {
       return `${companiesPagination.count} companies`;
     }
     return `${contactsPagination.count} contacts`;
-  }, [companiesPagination.count, contactsPagination.count, viewMode]);
+  }, [companiesPagination.count, contactsPagination.count, isContactsView]);
   const modalStatusOptions = useMemo(() => {
     const selectedContactPipeline = pipelines.find((pipeline) => String(pipeline.id) === contactForm.pipelineId) || null;
     if (!selectedContactPipeline) {
@@ -516,7 +507,7 @@ export function ContactsScreen({ user }) {
       setPipelines(pipelinesData);
       setStatusMessage({ error: "", success: "" });
     } catch (error) {
-      setStatusMessage({ error: error.message || "Unable to load contacts.", success: "" });
+      setStatusMessage({ error: error.message || `Unable to load ${isContactsView ? "contacts" : "companies"}.`, success: "" });
     }
   }
 
@@ -538,7 +529,7 @@ export function ContactsScreen({ user }) {
         if (!active) {
           return;
         }
-        setStatusMessage({ error: error.message || "Unable to load contacts.", success: "" });
+        setStatusMessage({ error: error.message || `Unable to load ${isContactsView ? "contacts" : "companies"}.`, success: "" });
       } finally {
         if (active) {
           setInitialLoading(false);
@@ -551,7 +542,7 @@ export function ContactsScreen({ user }) {
     return () => {
       active = false;
     };
-  }, [fetchStaticData]);
+  }, [fetchStaticData, isContactsView]);
 
   useEffect(() => {
     let active = true;
@@ -559,7 +550,7 @@ export function ContactsScreen({ user }) {
     async function hydrateDirectory() {
       setDirectoryLoading(true);
       try {
-        if (viewMode === "contacts") {
+        if (isContactsView) {
           await loadContactsPage(contactPage);
         } else {
           await loadCompaniesPage(companyPage);
@@ -572,7 +563,7 @@ export function ContactsScreen({ user }) {
         if (!active) {
           return;
         }
-        setStatusMessage((current) => ({ ...current, error: error.message || "Unable to load contacts." }));
+        setStatusMessage((current) => ({ ...current, error: error.message || `Unable to load ${isContactsView ? "contacts" : "companies"}.` }));
       } finally {
         if (active) {
           setDirectoryLoading(false);
@@ -585,7 +576,7 @@ export function ContactsScreen({ user }) {
     return () => {
       active = false;
     };
-  }, [companyPage, contactPage, loadCompaniesPage, loadContactsPage, viewMode]);
+  }, [companyPage, contactPage, isContactsView, loadCompaniesPage, loadContactsPage]);
 
   useEffect(() => {
     if (filters.status === "All statuses") {
@@ -613,7 +604,7 @@ export function ContactsScreen({ user }) {
       }
       return nextFilters;
     });
-    if (viewMode === "contacts") {
+    if (isContactsView) {
       setContactPage(1);
     } else {
       setCompanyPage(1);
@@ -782,7 +773,11 @@ export function ContactsScreen({ user }) {
   }
 
   function openCompanyDetails(companyId) {
-    router.push(`/contacts/companies/${companyId}`);
+    router.push(`/companies/${companyId}`);
+  }
+
+  function openContactDetails(contactId) {
+    router.push(`/contacts/${contactId}`);
   }
 
   return (
@@ -793,7 +788,7 @@ export function ContactsScreen({ user }) {
           user={user}
           breadcrumbs={[
             { label: "Workspace", href: "/dashboard" },
-            { label: viewMode === "companies" ? "Companies" : "Contacts" },
+            { label: isContactsView ? "Contacts" : "Companies" },
           ]}
         />
       }
@@ -801,12 +796,12 @@ export function ContactsScreen({ user }) {
       <div className={styles.stack}>
         <section className={styles.hero}>
           <div>
-            <h1>{viewMode === "contacts" ? "Contacts" : "Companies"}</h1>
+            <h1>{isContactsView ? "Contacts" : "Companies"}</h1>
             <p className={styles.heroMeta}>{heroMeta}</p>
           </div>
           <div className={styles.heroActions}>
-            {viewMode === "contacts" ? <button className={styles.secondaryButton} type="button">Import</button> : null}
-            {viewMode === "companies" ? (
+            {isContactsView ? <button className={styles.secondaryButton} type="button">Import</button> : null}
+            {!isContactsView ? (
               <button className={styles.primaryButton} type="button" onClick={openCreateCompanyModal}>
                 <PlusIcon />
                 <span>Add company</span>
@@ -824,23 +819,6 @@ export function ContactsScreen({ user }) {
         {statusMessage.success ? <p className={styles.success}>{statusMessage.success}</p> : null}
 
         <section className={styles.filterBar}>
-          <div className={styles.viewToggle} role="tablist" aria-label="Directory views">
-            <button
-              className={`${styles.toggleButton} ${viewMode === "contacts" ? styles.toggleButtonActive : ""}`}
-              type="button"
-              onClick={() => setViewMode("contacts")}
-            >
-              Contacts
-            </button>
-            <button
-              className={`${styles.toggleButton} ${viewMode === "companies" ? styles.toggleButtonActive : ""}`}
-              type="button"
-              onClick={() => setViewMode("companies")}
-            >
-              Companies
-            </button>
-          </div>
-
           <label className={styles.searchField}>
             <span className={styles.visuallyHidden}>Search directory</span>
             <span className={styles.searchIcon} aria-hidden="true">
@@ -850,11 +828,11 @@ export function ContactsScreen({ user }) {
               name="search"
               value={filters.search}
               onChange={updateFilters}
-              placeholder={viewMode === "contacts" ? "Search contacts, companies, emails..." : "Search companies, owners, websites..."}
+              placeholder={isContactsView ? "Search contacts, companies, emails..." : "Search companies, owners, websites..."}
             />
           </label>
 
-          {viewMode === "contacts" ? (
+          {isContactsView ? (
             <>
               <label className={styles.filterField}>
                 <span className={styles.visuallyHidden}>Pipeline</span>
@@ -891,18 +869,7 @@ export function ContactsScreen({ user }) {
                 </div>
               ) : null}
             </>
-          ) : (
-            <label className={styles.filterField}>
-              <span className={styles.visuallyHidden}>Company</span>
-              <select name="companyId" value={filters.companyId} onChange={updateFilters}>
-                {contactCompanyFilterOptions.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-            </label>
-          )}
+          ) : null}
 
         </section>
 
@@ -915,7 +882,7 @@ export function ContactsScreen({ user }) {
               <strong>Loading directory</strong>
               <p>Please wait while we load your workspace records.</p>
             </div>
-          ) : viewMode === "contacts" ? (
+          ) : isContactsView ? (
             contacts.length ? (
               <>
                 <div className={styles.tableWrap}>
@@ -932,7 +899,7 @@ export function ContactsScreen({ user }) {
                     </thead>
                     <tbody>
                       {contacts.map((contact) => (
-                        <tr key={contact.id} className={styles.clickableRow} onClick={() => openEditContactModal(contact)}>
+                        <tr key={contact.id} className={styles.clickableRow} onClick={() => openContactDetails(contact.id)}>
                           <td>
                             <div className={styles.contactCell}>
                               <OwnerAvatar name={contact.fullName} />
@@ -963,17 +930,32 @@ export function ContactsScreen({ user }) {
                             </div>
                           </td>
                           <td className={styles.rowArrowCell}>
-                            <button
-                              className={styles.deleteIconButton}
-                              type="button"
-                              aria-label={`Delete ${contact.fullName}`}
-                              onClick={(event) => {
-                                event.stopPropagation();
-                                handleDelete(contact.id);
-                              }}
-                            >
-                              <TrashIcon />
-                            </button>
+                            <div className={styles.rowActions}>
+                              <button
+                                className={styles.inlineIconButton}
+                                type="button"
+                                aria-label={`Edit ${contact.fullName}`}
+                                title="Edit contact"
+                                onClick={(event) => {
+                                  event.stopPropagation();
+                                  openEditContactModal(contact);
+                                }}
+                              >
+                                <EditIcon />
+                              </button>
+                              <button
+                                className={styles.deleteIconButton}
+                                type="button"
+                                aria-label={`Delete ${contact.fullName}`}
+                                title="Delete contact"
+                                onClick={(event) => {
+                                  event.stopPropagation();
+                                  handleDelete(contact.id);
+                                }}
+                              >
+                                <TrashIcon />
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       ))}
@@ -990,7 +972,7 @@ export function ContactsScreen({ user }) {
 
                 <div className={styles.mobileList}>
                   {contacts.map((contact) => (
-                    <article key={contact.id} className={styles.mobileCard}>
+                    <article key={contact.id} className={`${styles.mobileCard} ${styles.clickableCard}`} onClick={() => openContactDetails(contact.id)}>
                       <div className={styles.mobileCardHeader}>
                         <div className={styles.mobileCardLead}>
                           <OwnerAvatar name={contact.fullName} />
@@ -1029,10 +1011,24 @@ export function ContactsScreen({ user }) {
                       <p className={styles.mobileNotes}>{contact.notes || "No notes yet."}</p>
 
                       <div className={styles.cardActions}>
-                        <button className={styles.inlineButton} type="button" onClick={() => openEditContactModal(contact)}>
+                        <button
+                          className={styles.inlineButton}
+                          type="button"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            openEditContactModal(contact);
+                          }}
+                        >
                           Edit
                         </button>
-                        <button className={styles.inlineDanger} type="button" onClick={() => handleDelete(contact.id)}>
+                        <button
+                          className={styles.inlineDanger}
+                          type="button"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            handleDelete(contact.id);
+                          }}
+                        >
                           Delete
                         </button>
                       </div>
@@ -1254,4 +1250,12 @@ export function ContactsScreen({ user }) {
       ) : null}
     </DashboardShell>
   );
+}
+
+export function ContactsScreen({ user }) {
+  return <DirectoryScreen user={user} mode="contacts" />;
+}
+
+export function CompaniesScreen({ user }) {
+  return <DirectoryScreen user={user} mode="companies" />;
 }

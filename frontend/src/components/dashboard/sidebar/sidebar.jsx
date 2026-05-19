@@ -7,6 +7,7 @@ import { usePathname, useRouter } from "next/navigation";
 import {
   ActivityIcon,
   AnalyticsIcon,
+  DealsIcon,
   InboxIcon,
   OverviewIcon,
   PipelineIcon,
@@ -25,6 +26,7 @@ const navSections = [
       { id: "dashboard", label: "Dashboard", icon: <OverviewIcon />, href: "/dashboard", match: ["/dashboard"] },
       { id: "pipeline", label: "Pipeline", icon: <PipelineIcon />, href: "/pipeline", match: ["/pipeline"] },
       { id: "contacts", label: "Contacts", icon: <PeopleIcon />, href: "/contacts", match: ["/contacts"] },
+      { id: "companies", label: "Companies", icon: <DealsIcon />, href: "/companies", match: ["/companies"] },
       { id: "activity", label: "Activity", icon: <ActivityIcon />, href: "/dashboard" },
     ],
   },
@@ -90,7 +92,7 @@ export function Sidebar({ user, onNavigate }) {
 
   function isItemActive(item) {
     if (item.match?.length) {
-      return item.match.includes(pathname);
+      return item.match.some((value) => pathname === value || pathname.startsWith(`${value}/`));
     }
     return false;
   }

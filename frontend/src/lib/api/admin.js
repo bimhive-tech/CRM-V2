@@ -166,6 +166,13 @@ export function createContact(token, payload) {
   });
 }
 
+export function getContact(token, contactId) {
+  return apiRequest(`/contacts/${contactId}/`, {
+    method: "GET",
+    headers: authHeaders(token),
+  });
+}
+
 export function updateContact(token, contactId, payload) {
   return apiRequest(`/contacts/${contactId}/`, {
     method: "PATCH",

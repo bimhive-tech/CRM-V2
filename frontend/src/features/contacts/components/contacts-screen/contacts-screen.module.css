@@ -535,13 +535,21 @@
   justify-content: center;
 }
 
+.rowActions {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  width: 100%;
+}
+
 .lastTouchCell {
   color: var(--ink-2);
   white-space: nowrap;
 }
 
 .rowArrowCell {
-  width: 44px;
+  width: 72px;
   text-align: right;
 }
 

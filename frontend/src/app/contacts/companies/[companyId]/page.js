@@ -181,6 +181,10 @@ function ExternalActionRow({ label, value, href, icon, external = false }) {
   );
 }
 
+function normalizeContactPath(contactId) {
+  return `/contacts/${contactId}`;
+}
+
 export default function CompanyDetailPage() {
   const params = useParams();
   const router = useRouter();
@@ -297,7 +301,7 @@ export default function CompanyDetailPage() {
           user={authState.user}
           breadcrumbs={[
             { label: "Workspace", href: "/dashboard" },
-            { label: "Companies", href: "/contacts" },
+            { label: "Companies", href: "/companies" },
             { label: company?.name || "Company" },
           ]}
         />
@@ -407,7 +411,19 @@ export default function CompanyDetailPage() {
                 {visibleContacts.length ? (
                   <div className={styles.contactCards}>
                     {visibleContacts.map((contact) => (
-                      <article key={contact.id} className={styles.contactCard}>
+                      <article
+                        key={contact.id}
+                        className={styles.contactCard}
+                        role="button"
+                        tabIndex={0}
+                        onClick={() => router.push(normalizeContactPath(contact.id))}
+                        onKeyDown={(event) => {
+                          if (event.key === "Enter" || event.key === " ") {
+                            event.preventDefault();
+                            router.push(normalizeContactPath(contact.id));
+                          }
+                        }}
+                      >
                         <div className={styles.contactCardHeader}>
                           <div className={styles.ownerCell}>
                             <OwnerAvatar name={contact.full_name} />
@@ -437,7 +453,7 @@ export default function CompanyDetailPage() {
                   <button
                     className={styles.secondaryButton}
                     type="button"
-                    onClick={() => router.push(`/contacts?view=contacts&companyId=${company.id}`)}
+                    onClick={() => router.push(`/contacts?companyId=${company.id}`)}
                   >
                     Show all associated contacts
                   </button>
