@@ -262,6 +262,29 @@ export function deleteContact(token, contactId) {
   });
 }
 
+export function previewContactImport(token, file) {
+  const body = new FormData();
+  body.append("file", file);
+
+  return apiRequest("/contacts/import/preview/", {
+    method: "POST",
+    headers: authHeaders(token),
+    body,
+  });
+}
+
+export function executeContactImport(token, file, mapping) {
+  const body = new FormData();
+  body.append("file", file);
+  body.append("mapping", JSON.stringify(mapping || {}));
+
+  return apiRequest("/contacts/import/execute/", {
+    method: "POST",
+    headers: authHeaders(token),
+    body,
+  });
+}
+
 export function listPipelines(token) {
   return apiRequest("/pipelines/", {
     method: "GET",

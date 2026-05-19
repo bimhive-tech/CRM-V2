@@ -34,7 +34,7 @@ const emptyContactForm = {
   fullName: "",
   title: "",
   email: "",
-  phone: "",
+  phoneNumbers: [""],
   companyId: "",
   pipelineId: "",
   status: "Lead",
@@ -108,7 +108,7 @@ function mapContactToView(contact) {
     fullName: contact.full_name,
     title: contact.title || "",
     email: contact.email || "",
-    phone: contact.phone || "",
+    phoneNumbers: contact.phone_numbers?.length ? contact.phone_numbers : contact.phone ? [contact.phone] : [],
     companyId: contact.company?.id ? String(contact.company.id) : "",
     companyName: contact.company?.name || "No company",
     companyEmail: contact.company?.email || "",
@@ -128,11 +128,14 @@ function mapContactToView(contact) {
 }
 
 function mapContactToPayload(form) {
+  const phoneNumbers = form.phoneNumbers.map((number) => number.trim()).filter(Boolean);
+
   return {
     full_name: form.fullName.trim(),
     title: form.title.trim(),
     email: form.email.trim(),
-    phone: form.phone.trim(),
+    phone: phoneNumbers[0] || "",
+    phone_numbers: phoneNumbers,
     company_id: Number(form.companyId),
     pipeline_id: form.pipelineId ? Number(form.pipelineId) : null,
     status: form.status.trim(),
@@ -146,7 +149,7 @@ function toContactFormState(contact) {
     fullName: contact.fullName,
     title: contact.title,
     email: contact.email,
-    phone: contact.phone,
+    phoneNumbers: contact.phoneNumbers?.length ? contact.phoneNumbers : [""],
     companyId: contact.companyId,
     pipelineId: contact.pipelineId,
     status: contact.status,
@@ -255,6 +258,30 @@ function ExternalActionRow({ label, value, href, icon, external = false }) {
   );
 }
 
+function PhoneNumberBlock({ numbers }) {
+  if (!numbers.length) {
+    return <span className={styles.detailValueMono}>No phone</span>;
+  }
+
+  return (
+    <div className={styles.phoneNumberList}>
+      {numbers.map((number, index) => (
+        <a
+          key={`${number}-${index}`}
+          className={styles.actionLink}
+          href={`tel:${number}`}
+          title={number}
+        >
+          <span className={styles.actionIcon} aria-hidden="true">
+            <PhoneIcon />
+          </span>
+          <span className={styles.detailValueMono}>{number}</span>
+        </a>
+      ))}
+    </div>
+  );
+}
+
 export default function ContactDetailPage() {
   const params = useParams();
   const router = useRouter();
@@ -337,6 +364,24 @@ export default function ContactDetailPage() {
         status: value ? nextStatuses[0] || current.status || "Lead" : "Lead",
       };
     });
+  }
+
+  function updateContactPhone(index, value) {
+    setContactForm((current) => ({
+      ...current,
+      phoneNumbers: current.phoneNumbers.map((phone, phoneIndex) => (phoneIndex === index ? value : phone)),
+    }));
+  }
+
+  function addContactPhone() {
+    setContactForm((current) => ({ ...current, phoneNumbers: [...current.phoneNumbers, ""] }));
+  }
+
+  function removeContactPhone(index) {
+    setContactForm((current) => ({
+      ...current,
+      phoneNumbers: current.phoneNumbers.filter((_, phoneIndex) => phoneIndex !== index),
+    }));
   }
 
   function openEditContactModal() {
@@ -428,12 +473,10 @@ export default function ContactDetailPage() {
                   href={contact.email ? `mailto:${contact.email}` : ""}
                   icon={<MailIcon />}
                 />
-                <ExternalActionRow
-                  label="Phone"
-                  value={contact.phone || "No phone"}
-                  href={contact.phone ? `tel:${contact.phone}` : ""}
-                  icon={<PhoneIcon />}
-                />
+                <div className={styles.detailRow}>
+                  <span className={styles.detailLabel}>Phone numbers</span>
+                  <PhoneNumberBlock numbers={contact.phoneNumbers || []} />
+                </div>
                 <DetailRow label="Last touch" value={contact.lastTouchDisplay} mono />
                 <DetailRow label="Created" value={contact.createdAtDisplay} mono />
               </div>
@@ -561,6 +604,9 @@ export default function ContactDetailPage() {
           mode="edit"
           form={contactForm}
           onChange={updateContactForm}
+          onPhoneChange={updateContactPhone}
+          onAddPhone={addContactPhone}
+          onRemovePhone={removeContactPhone}
           onClose={closeContactModal}
           onSubmit={handleContactSubmit}
           companyOptions={companyOptions}

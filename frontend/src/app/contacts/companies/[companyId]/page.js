@@ -236,6 +236,11 @@ function SocialLinksBlock({ items }) {
   );
 }
 
+function formatPhoneNumbers(contact) {
+  const numbers = contact.phone_numbers?.length ? contact.phone_numbers : contact.phone ? [contact.phone] : [];
+  return numbers.join(" · ") || "No phone";
+}
+
 function normalizeContactPath(contactId) {
   return `/contacts/${contactId}`;
 }
@@ -541,7 +546,7 @@ export default function CompanyDetailPage() {
 
                         <div className={styles.contactDetails}>
                           <DetailRow label="Email" value={contact.email || "No email"} mono />
-                          <DetailRow label="Phone" value={contact.phone || "No phone"} mono />
+                          <DetailRow label="Phone" value={formatPhoneNumbers(contact)} mono />
                         </div>
                       </article>
                     ))}

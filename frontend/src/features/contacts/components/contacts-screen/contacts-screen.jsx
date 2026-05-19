@@ -12,15 +12,17 @@ import {
   createCrmCompany,
   deleteContact,
   deleteCrmCompany,
+  executeContactImport,
   listContacts,
   listCrmCompanies,
   listPipelines,
+  previewContactImport,
   updateContact,
   updateCrmCompany,
 } from "@/lib/api/admin";
 import { getAccessToken } from "@/lib/session";
 
-import { CompanyModal, ContactsModal } from "./contacts-modal";
+import { CompanyModal, ContactImportModal, ContactsModal } from "./contacts-modal";
 import styles from "./contacts-screen.module.css";
 
 const legacyStatusLabelMap = {
@@ -43,7 +45,7 @@ const emptyContactForm = {
   fullName: "",
   title: "",
   email: "",
-  phone: "",
+  phoneNumbers: [""],
   companyId: "",
   pipelineId: "",
   status: "Lead",
@@ -194,7 +196,7 @@ function mapContactFromApi(contact) {
     fullName: contact.full_name,
     title: contact.title,
     email: contact.email,
-    phone: contact.phone,
+    phoneNumbers: contact.phone_numbers?.length ? contact.phone_numbers : contact.phone ? [contact.phone] : [],
     companyId: contact.company?.id ? String(contact.company.id) : "",
     company: contact.company?.name || "No company",
     pipelineId: contact.pipeline?.id ? String(contact.pipeline.id) : "",
@@ -231,17 +233,21 @@ function mapCompanyFromApi(company) {
       title: contact.title,
       email: contact.email,
       phone: contact.phone,
+      phoneNumbers: contact.phone_numbers?.length ? contact.phone_numbers : contact.phone ? [contact.phone] : [],
       status: normalizeStatusLabel(contact.status),
     })),
   };
 }
 
 function mapContactToPayload(form) {
+  const phoneNumbers = form.phoneNumbers.map((number) => number.trim()).filter(Boolean);
+
   return {
     full_name: form.fullName.trim(),
     title: form.title.trim(),
     email: form.email.trim(),
-    phone: form.phone.trim(),
+    phone: phoneNumbers[0] || "",
+    phone_numbers: phoneNumbers,
     company_id: Number(form.companyId),
     pipeline_id: form.pipelineId ? Number(form.pipelineId) : null,
     status: form.status.trim(),
@@ -288,7 +294,7 @@ function toContactFormState(contact) {
     fullName: contact.fullName,
     title: contact.title,
     email: contact.email,
-    phone: contact.phone,
+    phoneNumbers: contact.phoneNumbers?.length ? contact.phoneNumbers : [""],
     companyId: contact.companyId,
     pipelineId: contact.pipelineId,
     status: contact.status,
@@ -401,6 +407,22 @@ function CompanyContactsPreview({ contacts }) {
   );
 }
 
+function PhoneNumberStack({ numbers, emptyLabel = "No phone" }) {
+  if (!numbers.length) {
+    return <span className={styles.monoText}>{emptyLabel}</span>;
+  }
+
+  return (
+    <div className={styles.phoneNumberStack}>
+      {numbers.map((number, index) => (
+        <span key={`${number}-${index}`} className={styles.monoText}>
+          {number}
+        </span>
+      ))}
+    </div>
+  );
+}
+
 function DirectoryScreen({ user, mode = "contacts" }) {
   const token = getAccessToken();
   const router = useRouter();
@@ -423,6 +445,13 @@ function DirectoryScreen({ user, mode = "contacts" }) {
   const [contactForm, setContactForm] = useState(emptyContactForm);
   const [companyModalState, setCompanyModalState] = useState({ open: false, mode: "create", companyId: null });
   const [companyForm, setCompanyForm] = useState(emptyCompanyForm);
+  const [importState, setImportState] = useState({
+    open: false,
+    file: null,
+    preview: null,
+    mapping: {},
+    loading: false,
+  });
 
   const pipelineOptions = useMemo(
     () => [{ value: "All pipelines", label: "All pipelines" }, ...pipelines.map((pipeline) => ({ value: String(pipeline.id), label: pipeline.name }))],
@@ -665,6 +694,24 @@ function DirectoryScreen({ user, mode = "contacts" }) {
     });
   }
 
+  function updateContactPhone(index, value) {
+    setContactForm((current) => ({
+      ...current,
+      phoneNumbers: current.phoneNumbers.map((phone, phoneIndex) => (phoneIndex === index ? value : phone)),
+    }));
+  }
+
+  function addContactPhone() {
+    setContactForm((current) => ({ ...current, phoneNumbers: [...current.phoneNumbers, ""] }));
+  }
+
+  function removeContactPhone(index) {
+    setContactForm((current) => ({
+      ...current,
+      phoneNumbers: current.phoneNumbers.filter((_, phoneIndex) => phoneIndex !== index),
+    }));
+  }
+
   function updateCompanyForm(event) {
     const { name, value } = event.target;
     setCompanyForm((current) => ({ ...current, [name]: value }));
@@ -765,6 +812,95 @@ function DirectoryScreen({ user, mode = "contacts" }) {
     setCompanyForm(emptyCompanyForm);
   }
 
+  function openImportModal() {
+    setImportState({
+      open: true,
+      file: null,
+      preview: null,
+      mapping: {},
+      loading: false,
+    });
+    setStatusMessage((current) => ({ ...current, error: "" }));
+  }
+
+  function closeImportModal() {
+    setImportState({
+      open: false,
+      file: null,
+      preview: null,
+      mapping: {},
+      loading: false,
+    });
+  }
+
+  function updateImportFile(event) {
+    const nextFile = event.target.files?.[0] || null;
+    setImportState((current) => ({
+      ...current,
+      file: nextFile,
+      preview: null,
+      mapping: {},
+    }));
+  }
+
+  function updateImportMapping(sourceKey, value) {
+    setImportState((current) => ({
+      ...current,
+      mapping: {
+        ...current.mapping,
+        [sourceKey]: value,
+      },
+    }));
+  }
+
+  async function analyzeImportFile() {
+    if (!importState.file) {
+      return;
+    }
+
+    setImportState((current) => ({ ...current, loading: true }));
+    try {
+      const preview = await previewContactImport(token, importState.file);
+      const suggestedMapping = {};
+      preview.sheets.forEach((sheet) => {
+        sheet.columns.forEach((column) => {
+          suggestedMapping[column.source_key] = column.suggested_field || "";
+        });
+      });
+      setImportState((current) => ({
+        ...current,
+        preview,
+        mapping: suggestedMapping,
+        loading: false,
+      }));
+    } catch (error) {
+      setImportState((current) => ({ ...current, loading: false }));
+      setStatusMessage({ error: error.message || "Unable to analyze import file.", success: "" });
+    }
+  }
+
+  async function handleExecuteImport() {
+    if (!importState.file) {
+      return;
+    }
+
+    setImportState((current) => ({ ...current, loading: true }));
+    try {
+      const response = await executeContactImport(token, importState.file, importState.mapping);
+      await Promise.all([loadContactsPage(1), loadCompaniesPage(1), loadStaticData()]);
+      setContactPage(1);
+      setCompanyPage(1);
+      closeImportModal();
+      setStatusMessage({
+        error: "",
+        success: `Imported ${response.result.created_links + response.result.updated_links} company-contact links.`,
+      });
+    } catch (error) {
+      setImportState((current) => ({ ...current, loading: false }));
+      setStatusMessage({ error: error.message || "Unable to import contacts.", success: "" });
+    }
+  }
+
   async function handleContactSubmit(event) {
     event.preventDefault();
 
@@ -860,7 +996,7 @@ function DirectoryScreen({ user, mode = "contacts" }) {
             <p className={styles.heroMeta}>{heroMeta}</p>
           </div>
           <div className={styles.heroActions}>
-            {isContactsView ? <button className={styles.secondaryButton} type="button">Import</button> : null}
+            {isContactsView ? <button className={styles.secondaryButton} type="button" onClick={openImportModal}>Import</button> : null}
             {!isContactsView ? (
               <button className={styles.primaryButton} type="button" onClick={openCreateCompanyModal}>
                 <PlusIcon />
@@ -981,9 +1117,9 @@ function DirectoryScreen({ user, mode = "contacts" }) {
                           <td>
                             <span className={styles.monoText}>{contact.email}</span>
                           </td>
-                          <td>
-                            <span className={styles.monoText}>{contact.phone}</span>
-                          </td>
+                            <td>
+                              <PhoneNumberStack numbers={contact.phoneNumbers || []} />
+                            </td>
                           <td className={styles.lastTouchCell}>{contact.lastTouch}</td>
                           <td>
                             <div className={styles.ownerTooltipWrap}>
@@ -1065,6 +1201,10 @@ function DirectoryScreen({ user, mode = "contacts" }) {
                         <div>
                           <p className={styles.mobileLabel}>Email</p>
                           <p className={styles.mobileValueMono}>{contact.email}</p>
+                        </div>
+                        <div>
+                          <p className={styles.mobileLabel}>Phone</p>
+                          <PhoneNumberStack numbers={contact.phoneNumbers || []} />
                         </div>
                         <div>
                           <p className={styles.mobileLabel}>Last touch</p>
@@ -1270,6 +1410,9 @@ function DirectoryScreen({ user, mode = "contacts" }) {
           mode={contactModalState.mode}
           form={contactForm}
           onChange={updateContactForm}
+          onPhoneChange={updateContactPhone}
+          onAddPhone={addContactPhone}
+          onRemovePhone={removeContactPhone}
           onClose={closeContactModal}
           onSubmit={handleContactSubmit}
           companyOptions={companyOptions}
@@ -1292,6 +1435,20 @@ function DirectoryScreen({ user, mode = "contacts" }) {
           onLocationChange={updateCompanyLocation}
           onClose={closeCompanyModal}
           onSubmit={handleCompanySubmit}
+        />
+      ) : null}
+
+      {importState.open ? (
+        <ContactImportModal
+          fileName={importState.file?.name || ""}
+          loading={importState.loading}
+          preview={importState.preview}
+          mapping={importState.mapping}
+          onFileChange={updateImportFile}
+          onMappingChange={updateImportMapping}
+          onAnalyze={analyzeImportFile}
+          onImport={handleExecuteImport}
+          onClose={closeImportModal}
         />
       ) : null}
     </DashboardShell>

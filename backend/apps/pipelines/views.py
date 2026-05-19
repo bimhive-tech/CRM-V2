@@ -1,7 +1,7 @@
 from django.db import transaction
 from rest_framework import generics, permissions, serializers
 from rest_framework.exceptions import ValidationError
-from apps.crm.models import CRMContact
+from apps.crm.models import CRMContact, CRMContactCompanyLink
 
 from apps.companies.models import Company
 from apps.masterdata.models import PipelineStatusTemplate
@@ -152,7 +152,7 @@ class PipelineDetailView(generics.RetrieveUpdateDestroyAPIView):
 
     @transaction.atomic
     def perform_destroy(self, instance):
-        CRMContact.objects.filter(pipeline=instance).update(pipeline=None, status="")
+        CRMContactCompanyLink.objects.filter(pipeline=instance).update(pipeline=None, status="")
         instance.delete()
 
 

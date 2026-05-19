@@ -161,6 +161,12 @@
   color: var(--ink-3);
 }
 
+.phoneNumberList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
 .companyMark {
   display: inline-flex;
   align-items: center;

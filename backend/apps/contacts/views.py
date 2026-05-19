@@ -1,8 +1,15 @@
+import json
+
 from django.db.models import Q
 from rest_framework import generics, permissions
+from rest_framework.exceptions import ValidationError
+from rest_framework.parsers import FormParser, MultiPartParser
+from rest_framework.response import Response
+from rest_framework.views import APIView
 from django.utils import timezone
 
-from apps.crm.models import CRMContact
+from apps.crm.models import CRMContact, CRMContactCompanyLink
+from apps.contacts.importer import import_contact_records, parse_workbook
 from apps.contacts.serializers import ContactSerializer
 from config.pagination import StandardResultsSetPagination
 
@@ -11,7 +18,16 @@ def contacts_queryset_for_user(user):
     company_ids = list(user.companies.values_list("id", flat=True))
     if user.company_id and user.company_id not in company_ids:
         company_ids.append(user.company_id)
-    return CRMContact.objects.select_related("company", "owner", "pipeline").filter(tenant_company_id__in=company_ids)
+    return CRMContactCompanyLink.objects.select_related("contact", "company", "owner", "pipeline").filter(tenant_company_id__in=company_ids)
+
+
+def resolve_default_tenant_company(user):
+    if user.company_id:
+        return user.company
+    first_company = user.companies.order_by("name", "id").first()
+    if first_company:
+        return first_company
+    raise ValidationError({"detail": "This user is not assigned to a company."})
 
 
 class ContactListCreateView(generics.ListCreateAPIView):
@@ -31,9 +47,9 @@ class ContactListCreateView(generics.ListCreateAPIView):
 
         if search:
             queryset = queryset.filter(
-                Q(full_name__icontains=search)
-                | Q(email__icontains=search)
-                | Q(phone__icontains=search)
+                Q(contact__full_name__icontains=search)
+                | Q(contact__email__icontains=search)
+                | Q(contact__phone__icontains=search)
                 | Q(title__icontains=search)
                 | Q(company__name__icontains=search)
             )
@@ -54,7 +70,7 @@ class ContactListCreateView(generics.ListCreateAPIView):
 
     def perform_create(self, serializer):
         company = serializer.validated_data["company"]
-        serializer.save(tenant_company=company.tenant_company, owner=self.request.user, last_touch=timezone.localdate())
+        serializer.save(tenant_company=company.tenant_company, owner=self.request.user, contact={"last_touch": timezone.localdate(), **serializer.validated_data.get("contact", {})})
 
 
 class ContactDetailView(generics.RetrieveUpdateDestroyAPIView):
@@ -65,4 +81,61 @@ class ContactDetailView(generics.RetrieveUpdateDestroyAPIView):
         return contacts_queryset_for_user(self.request.user)
 
     def perform_update(self, serializer):
-        serializer.save(last_touch=timezone.localdate())
+        serializer.save(contact={"last_touch": timezone.localdate(), **serializer.validated_data.get("contact", {})})
+
+    def perform_destroy(self, instance):
+        contact = instance.contact
+        instance.delete()
+        if not contact.company_links.exists():
+            contact.delete()
+
+
+class ContactImportPreviewView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+    parser_classes = [MultiPartParser, FormParser]
+
+    def post(self, request):
+        upload = request.FILES.get("file")
+        if upload is None:
+            raise ValidationError({"detail": "Please choose an Excel file to import."})
+        if not upload.name.lower().endswith((".xlsx", ".xlsm")):
+            raise ValidationError({"detail": "Only .xlsx files are supported right now."})
+
+        try:
+            preview = parse_workbook(upload)
+        except Exception as error:
+            raise ValidationError({"detail": f"Unable to read this Excel file. {error}"})
+
+        return Response(preview)
+
+
+class ContactImportExecuteView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+    parser_classes = [MultiPartParser, FormParser]
+
+    def post(self, request):
+        upload = request.FILES.get("file")
+        mapping_payload = request.data.get("mapping", "{}")
+        if upload is None:
+            raise ValidationError({"detail": "Please choose an Excel file to import."})
+        if not upload.name.lower().endswith((".xlsx", ".xlsm")):
+            raise ValidationError({"detail": "Only .xlsx files are supported right now."})
+
+        try:
+            explicit_mapping = json.loads(mapping_payload) if mapping_payload else {}
+        except json.JSONDecodeError:
+            raise ValidationError({"detail": "The column mapping payload is invalid."})
+
+        try:
+            parsed = parse_workbook(upload, explicit_mapping=explicit_mapping)
+        except Exception as error:
+            raise ValidationError({"detail": f"Unable to parse this Excel file. {error}"})
+
+        tenant_company = resolve_default_tenant_company(request.user)
+        result = import_contact_records(parsed["records"], tenant_company)
+        return Response(
+            {
+                "stats": parsed["stats"],
+                "result": result,
+            }
+        )

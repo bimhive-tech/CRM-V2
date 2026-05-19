@@ -10,7 +10,19 @@ const CompanyLocationMap = dynamic(
   { ssr: false },
 );
 
-export function ContactsModal({ mode, form, onChange, onClose, onSubmit, companyOptions, pipelineOptions, statusOptions }) {
+export function ContactsModal({
+  mode,
+  form,
+  onChange,
+  onPhoneChange,
+  onAddPhone,
+  onRemovePhone,
+  onClose,
+  onSubmit,
+  companyOptions,
+  pipelineOptions,
+  statusOptions,
+}) {
   return (
     <div className={styles.modalOverlay} role="presentation">
       <div
@@ -43,10 +55,6 @@ export function ContactsModal({ mode, form, onChange, onClose, onSubmit, company
             <label className={styles.field}>
               <span>Email</span>
               <input name="email" type="email" value={form.email} onChange={onChange} placeholder="ahmed@nilecontracting.com.eg" required />
-            </label>
-            <label className={styles.field}>
-              <span>Phone</span>
-              <input name="phone" value={form.phone} onChange={onChange} placeholder="+20 10 1234 5678" required />
             </label>
             <label className={styles.field}>
               <span>Company</span>
@@ -85,6 +93,32 @@ export function ContactsModal({ mode, form, onChange, onClose, onSubmit, company
               <span>Last touch</span>
               <input name="lastTouch" type="date" value={form.lastTouch} onChange={onChange} required />
             </label>
+          </div>
+
+          <div className={styles.phoneSection}>
+            <div className={styles.sectionRow}>
+              <span className={styles.sectionLabel}>Phone numbers</span>
+              <button className={styles.inlineButton} type="button" onClick={onAddPhone}>
+                Add number
+              </button>
+            </div>
+            <div className={styles.phoneList}>
+              {form.phoneNumbers.map((phone, index) => (
+                <div key={`contact-phone-${index}`} className={styles.phoneRow}>
+                  <input
+                    value={phone}
+                    onChange={(event) => onPhoneChange(index, event.target.value)}
+                    placeholder={index === 0 ? "+20 10 1234 5678" : "Another Egypt mobile number"}
+                    required={index === 0}
+                  />
+                  {form.phoneNumbers.length > 1 ? (
+                    <button className={styles.inlineDanger} type="button" onClick={() => onRemovePhone(index)}>
+                      Remove
+                    </button>
+                  ) : null}
+                </div>
+              ))}
+            </div>
           </div>
 
           <label className={styles.field}>
@@ -288,6 +322,136 @@ export function CompanyModal({
             </button>
           </div>
         </form>
+      </div>
+    </div>
+  );
+}
+
+export function ContactImportModal({
+  fileName,
+  loading,
+  preview,
+  mapping,
+  onFileChange,
+  onMappingChange,
+  onAnalyze,
+  onImport,
+  onClose,
+}) {
+  return (
+    <div className={styles.modalOverlay} role="presentation">
+      <div className={styles.modal} role="dialog" aria-modal="true" aria-label="Import contacts">
+        <div className={styles.modalHeader}>
+          <div>
+            <p className={styles.eyebrow}>Contacts</p>
+            <h2>Import from Excel</h2>
+            <p className={styles.copy}>Upload a client lead sheet, review the detected mapping, then confirm the import.</p>
+          </div>
+          <button className={styles.iconButton} type="button" onClick={onClose} aria-label="Close modal">
+            x
+          </button>
+        </div>
+
+        <div className={styles.modalBody}>
+          <label className={styles.field}>
+            <span>Excel file</span>
+            <input type="file" accept=".xlsx,.xlsm" onChange={onFileChange} />
+          </label>
+
+          {fileName ? <p className={styles.helperCopy}>Selected file: {fileName}</p> : null}
+
+          {!preview ? (
+            <div className={styles.modalActions}>
+              <button className={styles.secondaryButton} type="button" onClick={onClose}>
+                Cancel
+              </button>
+              <button className={styles.primaryButton} type="button" onClick={onAnalyze} disabled={!fileName || loading}>
+                {loading ? "Analyzing..." : "Analyze file"}
+              </button>
+            </div>
+          ) : (
+            <>
+              <div className={styles.importSummary}>
+                <span>{preview.stats.row_count} parsed rows</span>
+                <span>{preview.stats.sheet_count} sheets</span>
+                <span>{preview.stats.unmatched_column_count} unmatched columns</span>
+              </div>
+
+              {preview.unmatched_columns.length ? (
+                <p className={styles.warningCopy}>
+                  Some columns were not recognized automatically. You can leave them ignored or map them manually below.
+                </p>
+              ) : null}
+
+              <div className={styles.importSheetList}>
+                {preview.sheets.map((sheet) => (
+                  <section key={sheet.sheet_key} className={styles.importSheetCard}>
+                    <div className={styles.sectionRow}>
+                      <span className={styles.sectionLabel}>{sheet.sheet_name}</span>
+                      {sheet.requires_manual_mapping ? <span className={styles.warningBadge}>Manual mapping needed</span> : null}
+                    </div>
+
+                    <div className={styles.importMappingList}>
+                      {sheet.columns.map((column) => (
+                        <div key={column.source_key} className={styles.importMappingRow}>
+                          <div>
+                            <strong>{column.header}</strong>
+                          </div>
+                          <select value={mapping[column.source_key] ?? column.suggested_field ?? ""} onChange={(event) => onMappingChange(column.source_key, event.target.value)}>
+                            {preview.available_fields.map((option) => (
+                              <option key={`${column.source_key}-${option.value || "ignore"}`} value={option.value}>
+                                {option.label}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      ))}
+                    </div>
+
+                    {sheet.preview_rows.length ? (
+                      <div className={styles.importPreviewTableWrap}>
+                        <table className={styles.importPreviewTable}>
+                          <thead>
+                            <tr>
+                              <th>Company</th>
+                              <th>Contact</th>
+                              <th>Email</th>
+                              <th>Phone</th>
+                              <th>Status</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {sheet.preview_rows.map((row, index) => (
+                              <tr key={`${sheet.sheet_key}-row-${index}`}>
+                                <td>{row.company_name || "—"}</td>
+                                <td>{row.contact_name || "—"}</td>
+                                <td>{row.contact_email || "—"}</td>
+                                <td>{row.contact_phone || "—"}</td>
+                                <td>{row.status || "—"}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    ) : null}
+                  </section>
+                ))}
+              </div>
+
+              <div className={styles.modalActions}>
+                <button className={styles.secondaryButton} type="button" onClick={onClose}>
+                  Cancel
+                </button>
+                <button className={styles.secondaryButton} type="button" onClick={onAnalyze} disabled={!fileName || loading}>
+                  {loading ? "Refreshing..." : "Re-analyze"}
+                </button>
+                <button className={styles.primaryButton} type="button" onClick={onImport} disabled={!fileName || loading}>
+                  {loading ? "Importing..." : "Import contacts"}
+                </button>
+              </div>
+            </>
+          )}
+        </div>
       </div>
     </div>
   );

@@ -25,7 +25,7 @@ def resolve_default_tenant_company(user):
 
 
 def crm_companies_queryset_for_user(user):
-    queryset = CRMCompany.objects.prefetch_related("contacts").all()
+    queryset = CRMCompany.objects.prefetch_related("contact_links__contact").all()
     if getattr(user, "is_platform_admin", False):
         return queryset.filter(tenant_company_id__in=tenant_company_ids_for_user(user))
     return queryset.filter(tenant_company_id__in=tenant_company_ids_for_user(user))
@@ -52,9 +52,9 @@ class CRMCompanyListCreateView(generics.ListCreateAPIView):
                 | Q(address_state__icontains=search)
                 | Q(address_line__icontains=search)
                 | Q(phone_number__icontains=search)
-                | Q(contacts__full_name__icontains=search)
-                | Q(contacts__email__icontains=search)
-                | Q(contacts__phone__icontains=search)
+                | Q(contact_links__contact__full_name__icontains=search)
+                | Q(contact_links__contact__email__icontains=search)
+                | Q(contact_links__contact__phone__icontains=search)
             ).distinct()
 
         return queryset

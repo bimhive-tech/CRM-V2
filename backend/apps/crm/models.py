@@ -51,13 +51,14 @@ class CRMCompany(models.Model):
 
 class CRMContact(models.Model):
     tenant_company = models.ForeignKey("companies.Company", on_delete=models.CASCADE, related_name="crm_contacts")
-    company = models.ForeignKey(CRMCompany, on_delete=models.CASCADE, related_name="contacts")
+    company = models.ForeignKey(CRMCompany, on_delete=models.SET_NULL, null=True, blank=True, related_name="contacts")
     pipeline = models.ForeignKey("pipelines.Pipeline", on_delete=models.SET_NULL, null=True, blank=True, related_name="contacts")
     owner = models.ForeignKey("accounts.User", on_delete=models.SET_NULL, null=True, blank=True, related_name="owned_crm_contacts")
     full_name = models.CharField(max_length=255)
     title = models.CharField(max_length=255)
     email = models.EmailField()
     phone = models.CharField(max_length=64)
+    phone_numbers = models.JSONField(default=list, blank=True)
     status = models.CharField(max_length=255, default="Lead")
     notes = models.TextField(blank=True)
     last_touch = models.DateField(default=timezone.localdate)
@@ -71,3 +72,29 @@ class CRMContact(models.Model):
 
     def __str__(self):
         return self.full_name
+
+    def save(self, *args, **kwargs):
+        cleaned_numbers = [str(number).strip() for number in self.phone_numbers if str(number).strip()]
+        self.phone_numbers = cleaned_numbers
+        self.phone = cleaned_numbers[0] if cleaned_numbers else self.phone.strip()
+        super().save(*args, **kwargs)
+
+
+class CRMContactCompanyLink(models.Model):
+    tenant_company = models.ForeignKey("companies.Company", on_delete=models.CASCADE, related_name="crm_contact_links")
+    contact = models.ForeignKey(CRMContact, on_delete=models.CASCADE, related_name="company_links")
+    company = models.ForeignKey(CRMCompany, on_delete=models.CASCADE, related_name="contact_links")
+    pipeline = models.ForeignKey("pipelines.Pipeline", on_delete=models.SET_NULL, null=True, blank=True, related_name="contact_links")
+    owner = models.ForeignKey("accounts.User", on_delete=models.SET_NULL, null=True, blank=True, related_name="owned_crm_contact_links")
+    title = models.CharField(max_length=255, blank=True)
+    status = models.CharField(max_length=255, default="Lead")
+    created_at = models.DateTimeField(default=timezone.now, editable=False)
+
+    class Meta:
+        ordering = ["contact__full_name", "contact__email", "id"]
+        constraints = [
+            models.UniqueConstraint(fields=["contact", "company"], name="unique_crm_contact_company_link"),
+        ]
+
+    def __str__(self):
+        return f"{self.contact.full_name} @ {self.company.name}"
