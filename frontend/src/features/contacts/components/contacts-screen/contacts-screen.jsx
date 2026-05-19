@@ -609,15 +609,14 @@ export function ContactsScreen({ user }) {
   }
 
   function openEditContactModal(contact) {
-    const fallbackPipelineId = contact.pipelineId || contactPipelineOptions[0]?.value || "";
-    const selectedContactPipeline = pipelines.find((pipeline) => String(pipeline.id) === fallbackPipelineId) || null;
+    const selectedContactPipeline = pipelines.find((pipeline) => String(pipeline.id) === contact.pipelineId) || null;
     const availableStatuses = selectedContactPipeline
       ? (selectedContactPipeline.statuses || []).map((status) => normalizeStatusLabel(status.name))
-      : contactStatusOptions;
+      : [];
 
     setContactForm({
       ...toContactFormState(contact),
-      pipelineId: fallbackPipelineId,
+      pipelineId: contact.pipelineId || "",
       status: contact.status || availableStatuses[0] || "Lead",
     });
     setContactModalState({ open: true, mode: "edit", contactId: contact.id });
