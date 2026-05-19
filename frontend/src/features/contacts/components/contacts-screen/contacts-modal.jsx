@@ -60,16 +60,18 @@ export function ContactsModal({ mode, form, onChange, onClose, onSubmit, company
                 ))}
               </select>
             </label>
-            <label className={styles.field}>
-              <span>Status</span>
-              <select name="status" value={form.status} onChange={onChange}>
-                {statusOptions.map((option) => (
-                  <option key={option} value={option}>
-                    {option}
-                  </option>
-                ))}
-              </select>
-            </label>
+            {form.pipelineId ? (
+              <label className={styles.field}>
+                <span>Status</span>
+                <select name="status" value={form.status} onChange={onChange}>
+                  {statusOptions.map((option) => (
+                    <option key={option} value={option}>
+                      {option}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            ) : null}
             <label className={styles.field}>
               <span>Last touch</span>
               <input name="lastTouch" type="date" value={form.lastTouch} onChange={onChange} required />

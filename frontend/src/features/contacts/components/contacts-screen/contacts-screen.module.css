@@ -134,6 +134,7 @@
   flex-wrap: wrap;
   gap: 12px;
   align-items: center;
+  justify-content: flex-start;
 }
 
 .viewToggle {
@@ -186,8 +187,9 @@
 }
 
 .searchField {
-  flex: 1 1 320px;
-  min-width: min(320px, 100%);
+  flex: 0 1 320px;
+  width: min(320px, 100%);
+  min-width: 240px;
   position: relative;
 }
 
@@ -320,7 +322,7 @@
   padding: 12px 16px;
   border-bottom: 1px solid var(--border);
   text-align: left;
-  vertical-align: top;
+  vertical-align: middle;
   font-size: 13px;
 }
 
@@ -497,10 +499,17 @@
   background: transparent;
   color: var(--accent-deep);
   cursor: pointer;
+  line-height: 0;
+  text-decoration: none;
 }
 
 .inlineDangerIcon {
   color: var(--danger);
+}
+
+.actionsCell {
+  align-items: center;
+  justify-content: center;
 }
 
 .lastTouchCell {
@@ -791,6 +800,10 @@
   .filterField,
   .statusTabs {
     width: 100%;
+  }
+
+  .searchField {
+    min-width: 0;
   }
 
   .phoneRow {

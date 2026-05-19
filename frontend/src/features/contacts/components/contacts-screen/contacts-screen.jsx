@@ -595,18 +595,13 @@ export function ContactsScreen({ user }) {
   }
 
   function openCreateContactModal() {
-    const defaultPipelineId =
-      filters.pipelineId !== "All pipelines" ? filters.pipelineId : contactPipelineOptions[0]?.value || "";
-    const defaultPipeline = pipelines.find((pipeline) => String(pipeline.id) === defaultPipelineId) || null;
-    const defaultStatuses = defaultPipeline
-      ? (defaultPipeline.statuses || []).map((status) => normalizeStatusLabel(status.name))
-      : contactStatusOptions;
+    const defaultPipelineId = filters.pipelineId !== "All pipelines" ? filters.pipelineId : "";
 
     setContactForm({
       ...emptyContactForm,
       companyId: companyOptions[0]?.value || "",
       pipelineId: defaultPipelineId,
-      status: defaultStatuses[0] || "Lead",
+      status: "Lead",
       lastTouch: new Date().toISOString().slice(0, 10),
     });
     setContactModalState({ open: true, mode: "create", contactId: null });
@@ -804,27 +799,29 @@ export function ContactsScreen({ user }) {
                 </select>
               </label>
 
-              <div className={styles.statusTabs} role="tablist" aria-label="Status filters">
-                {statusOptions.map((option) => {
-                  const label = option === "All statuses" ? "All" : option;
-                  const active = filters.status === option;
-                  return (
-                    <button
-                      key={option}
-                      className={`${styles.statusTab} ${active ? styles.statusTabActive : ""}`}
-                      type="button"
-                      role="tab"
-                      aria-selected={active}
-                      onClick={() => {
-                        setFilters((current) => ({ ...current, status: option }));
-                        setContactPage(1);
-                      }}
-                    >
-                      {label}
-                    </button>
-                  );
-                })}
-              </div>
+              {filters.pipelineId !== "All pipelines" ? (
+                <div className={styles.statusTabs} role="tablist" aria-label="Status filters">
+                  {statusOptions.map((option) => {
+                    const label = option === "All statuses" ? "All" : option;
+                    const active = filters.status === option;
+                    return (
+                      <button
+                        key={option}
+                        className={`${styles.statusTab} ${active ? styles.statusTabActive : ""}`}
+                        type="button"
+                        role="tab"
+                        aria-selected={active}
+                        onClick={() => {
+                          setFilters((current) => ({ ...current, status: option }));
+                          setContactPage(1);
+                        }}
+                      >
+                        {label}
+                      </button>
+                    );
+                  })}
+                </div>
+              ) : null}
             </>
           ) : (
             <label className={styles.filterField}>
@@ -839,20 +836,6 @@ export function ContactsScreen({ user }) {
             </label>
           )}
 
-          <button
-            className={styles.secondaryButton}
-            type="button"
-            onClick={() => {
-              setFilters({ search: "", status: "All statuses", pipelineId: "All pipelines", companyId: "All companies" });
-              if (viewMode === "contacts") {
-                setContactPage(1);
-              } else {
-                setCompanyPage(1);
-              }
-            }}
-          >
-            Reset
-          </button>
         </section>
 
         <section className={styles.panel}>
