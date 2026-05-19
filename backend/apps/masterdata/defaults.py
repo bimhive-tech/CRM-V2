@@ -1,4 +1,4 @@
-from apps.masterdata.models import Currency, PipelineStatusTemplate
+from apps.masterdata.models import CompanyIndustry, Currency, PipelineStatusTemplate
 
 
 DEFAULT_CURRENCIES = [
@@ -15,6 +15,17 @@ DEFAULT_PIPELINE_STATUS_TEMPLATES = [
     {"name": "Proposal", "color": "#C66A1E"},
     {"name": "Negotiation", "color": "#D18918"},
     {"name": "Customer", "color": "#3E9B64"},
+]
+
+DEFAULT_COMPANY_INDUSTRIES = [
+    {"name": "Construction"},
+    {"name": "Contracting"},
+    {"name": "Real Estate Development"},
+    {"name": "Engineering Consultancy"},
+    {"name": "Architecture & Interior Design"},
+    {"name": "Manufacturing"},
+    {"name": "Technology"},
+    {"name": "Healthcare"},
 ]
 
 
@@ -65,6 +76,28 @@ def create_missing_default_pipeline_status_templates(company):
         PipelineStatusTemplate.objects.bulk_create(to_create)
 
 
+def create_missing_default_company_industries(company):
+    existing_names = set(company.company_industries.values_list("name", flat=True))
+    next_position = company.company_industries.count()
+    to_create = []
+
+    for item in DEFAULT_COMPANY_INDUSTRIES:
+        if item["name"] in existing_names:
+            continue
+        to_create.append(
+            CompanyIndustry(
+                company=company,
+                name=item["name"],
+                position=next_position,
+            )
+        )
+        next_position += 1
+
+    if to_create:
+        CompanyIndustry.objects.bulk_create(to_create)
+
+
 def initialize_company_master_data(company):
     create_missing_default_currencies(company)
     create_missing_default_pipeline_status_templates(company)
+    create_missing_default_company_industries(company)

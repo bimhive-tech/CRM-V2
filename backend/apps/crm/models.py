@@ -4,7 +4,15 @@ from django.utils import timezone
 
 class CRMCompany(models.Model):
     tenant_company = models.ForeignKey("companies.Company", on_delete=models.CASCADE, related_name="crm_companies")
+    imported_by = models.ForeignKey(
+        "accounts.User",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="imported_crm_companies",
+    )
     name = models.CharField(max_length=255)
+    industry = models.CharField(max_length=255, blank=True)
     owner_name = models.CharField(max_length=255, blank=True)
     email = models.EmailField(blank=True)
     website = models.URLField(blank=True)
@@ -53,6 +61,13 @@ class CRMCompany(models.Model):
 
 class CRMContact(models.Model):
     tenant_company = models.ForeignKey("companies.Company", on_delete=models.CASCADE, related_name="crm_contacts")
+    imported_by = models.ForeignKey(
+        "accounts.User",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="imported_crm_contacts",
+    )
     company = models.ForeignKey(CRMCompany, on_delete=models.SET_NULL, null=True, blank=True, related_name="contacts")
     pipeline = models.ForeignKey("pipelines.Pipeline", on_delete=models.SET_NULL, null=True, blank=True, related_name="contacts")
     owner = models.ForeignKey("accounts.User", on_delete=models.SET_NULL, null=True, blank=True, related_name="owned_crm_contacts")
@@ -86,6 +101,13 @@ class CRMContact(models.Model):
 
 class CRMContactCompanyLink(models.Model):
     tenant_company = models.ForeignKey("companies.Company", on_delete=models.CASCADE, related_name="crm_contact_links")
+    imported_by = models.ForeignKey(
+        "accounts.User",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="imported_crm_contact_links",
+    )
     contact = models.ForeignKey(CRMContact, on_delete=models.CASCADE, related_name="company_links")
     company = models.ForeignKey(CRMCompany, on_delete=models.CASCADE, related_name="contact_links")
     pipeline = models.ForeignKey("pipelines.Pipeline", on_delete=models.SET_NULL, null=True, blank=True, related_name="contact_links")

@@ -13,8 +13,8 @@ import {
   deleteContact,
   deleteCrmCompany,
   deleteImportedContactData,
-  executeContactImport,
   executeContactImportWithPipeline,
+  listCompanyIndustries,
   listContacts,
   listCrmCompanies,
   listPipelines,
@@ -57,6 +57,7 @@ const emptyContactForm = {
 
 const emptyCompanyForm = {
   name: "",
+  industry: "",
   ownerName: "",
   email: "",
   website: "",
@@ -216,6 +217,7 @@ function mapCompanyFromApi(company) {
   return {
     id: company.id,
     name: company.name,
+    industry: company.industry || "",
     ownerName: company.owner_name || "No owner listed",
     email: company.email || "No email",
     website: company.website || "No website",
@@ -275,6 +277,7 @@ function mapCompanyToPayload(form) {
 
   return {
     name: form.name.trim(),
+    industry: form.industry.trim(),
     owner_name: form.ownerName.trim(),
     email: form.email.trim(),
     website: website.startsWith("www.") ? `https://${website}` : website,
@@ -308,6 +311,7 @@ function toContactFormState(contact) {
 function toCompanyFormState(company) {
   return {
     name: company.name || "",
+    industry: company.industry || "",
     ownerName: company.ownerName || "",
     email: company.email === "No email" ? "" : company.email,
     website: company.website === "No website" ? "" : company.website,
@@ -434,6 +438,7 @@ function DirectoryScreen({ user, mode = "contacts" }) {
   const [companies, setCompanies] = useState([]);
   const [allCompanies, setAllCompanies] = useState([]);
   const [pipelines, setPipelines] = useState([]);
+  const [industryOptions, setIndustryOptions] = useState([]);
   const [initialLoading, setInitialLoading] = useState(true);
   const [directoryLoading, setDirectoryLoading] = useState(true);
   const [statusMessage, setStatusMessage] = useState({ error: "", success: "" });
@@ -473,6 +478,10 @@ function DirectoryScreen({ user, mode = "contacts" }) {
   }, [pipelines, selectedPipeline]);
   const contactStatusOptions = statusOptions.filter((option) => option !== "All statuses");
   const companyOptions = useMemo(() => allCompanies.map((company) => ({ value: String(company.id), label: company.name })), [allCompanies]);
+  const companyIndustryOptions = useMemo(
+    () => industryOptions.map((industry) => ({ value: industry.name, label: industry.name })),
+    [industryOptions],
+  );
   const contactPipelineOptions = useMemo(
     () => pipelines.map((pipeline) => ({ value: String(pipeline.id), label: pipeline.name })),
     [pipelines],
@@ -505,15 +514,17 @@ function DirectoryScreen({ user, mode = "contacts" }) {
   const loading = initialLoading || directoryLoading;
 
   const fetchStaticData = useCallback(async () => {
-    const [companiesData, pipelinesData] = await Promise.all([
+    const [companiesData, pipelinesData, industriesData] = await Promise.all([
       listCrmCompanies(token, { page: 1, page_size: COMPANY_OPTIONS_PAGE_SIZE }),
       listPipelines(token),
+      listCompanyIndustries(token),
     ]);
 
     const normalizedCompanies = normalizePaginatedResponse(companiesData);
     return {
       allCompaniesData: normalizedCompanies.results.map(mapCompanyFromApi),
       pipelinesData,
+      industriesData,
     };
   }, [token]);
 
@@ -568,9 +579,10 @@ function DirectoryScreen({ user, mode = "contacts" }) {
 
   async function loadStaticData() {
     try {
-      const { allCompaniesData, pipelinesData } = await fetchStaticData();
+      const { allCompaniesData, pipelinesData, industriesData } = await fetchStaticData();
       setAllCompanies(allCompaniesData);
       setPipelines(pipelinesData);
+      setIndustryOptions(industriesData);
       setStatusMessage({ error: "", success: "" });
     } catch (error) {
       setStatusMessage({ error: error.message || `Unable to load ${isContactsView ? "contacts" : "companies"}.`, success: "" });
@@ -582,13 +594,14 @@ function DirectoryScreen({ user, mode = "contacts" }) {
 
     async function hydrateStaticData() {
       try {
-        const { allCompaniesData, pipelinesData } = await fetchStaticData();
+        const { allCompaniesData, pipelinesData, industriesData } = await fetchStaticData();
         if (!active) {
           return;
         }
         startTransition(() => {
           setAllCompanies(allCompaniesData);
           setPipelines(pipelinesData);
+          setIndustryOptions(industriesData);
           setStatusMessage({ error: "", success: "" });
         });
       } catch (error) {
@@ -1459,6 +1472,7 @@ function DirectoryScreen({ user, mode = "contacts" }) {
         <CompanyModal
           mode={companyModalState.mode}
           form={companyForm}
+          industryOptions={companyIndustryOptions}
           onChange={updateCompanyForm}
           onPhoneChange={updateCompanyPhone}
           onAddPhone={addCompanyPhone}

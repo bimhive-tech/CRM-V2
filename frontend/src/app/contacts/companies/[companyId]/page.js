@@ -9,7 +9,7 @@ import { ClipboardIcon, GlobeIcon, LinkedInIcon, MailIcon, PhoneIcon } from "@/c
 import { Sidebar } from "@/components/dashboard/sidebar/sidebar";
 import { Topbar } from "@/components/dashboard/topbar/topbar";
 import { CompanyModal } from "@/features/contacts/components/contacts-screen/contacts-modal";
-import { getCrmCompany, updateCrmCompany } from "@/lib/api/admin";
+import { getCrmCompany, listCompanyIndustries, updateCrmCompany } from "@/lib/api/admin";
 import { DEFAULT_COUNTRY } from "@/lib/countries";
 import { useAuthenticatedUser } from "@/lib/hooks/use-authenticated-user";
 import { getAccessToken } from "@/lib/session";
@@ -32,6 +32,7 @@ const activityTabs = [
 
 const emptyCompanyForm = {
   name: "",
+  industry: "",
   ownerName: "",
   email: "",
   website: "",
@@ -61,6 +62,7 @@ function normalizeWebsiteUrl(value) {
 function toCompanyFormState(company) {
   return {
     name: company.name || "",
+    industry: company.industry || "",
     ownerName: company.owner_name || "",
     email: company.email || "",
     website: company.website || "",
@@ -93,6 +95,7 @@ function mapCompanyToPayload(form) {
 
   return {
     name: form.name.trim(),
+    industry: form.industry.trim(),
     owner_name: form.ownerName.trim(),
     email: form.email.trim(),
     website: website ? normalizeWebsiteUrl(website) : "",
@@ -252,6 +255,7 @@ export default function CompanyDetailPage() {
   const [state, setState] = useState({ loading: true, company: null, error: "" });
   const [activeTab, setActiveTab] = useState("all");
   const [companyForm, setCompanyForm] = useState(emptyCompanyForm);
+  const [industryOptions, setIndustryOptions] = useState([]);
   const [companyModalOpen, setCompanyModalOpen] = useState(false);
   const [saveMessage, setSaveMessage] = useState({ error: "", success: "" });
 
@@ -263,11 +267,12 @@ export default function CompanyDetailPage() {
     const token = getAccessToken();
     let active = true;
 
-    getCrmCompany(token, params.companyId)
-      .then((company) => {
+    Promise.all([getCrmCompany(token, params.companyId), listCompanyIndustries(token)])
+      .then(([company, industries]) => {
         if (!active) {
           return;
         }
+        setIndustryOptions(industries);
         setState({ loading: false, company, error: "" });
       })
       .catch((error) => {
@@ -420,6 +425,7 @@ export default function CompanyDetailPage() {
 
               <div className={styles.panelBody}>
                 <DetailRow label="Owner name" value={company.owner_name || "No owner listed"} />
+                <DetailRow label="Industry" value={company.industry || "No industry"} />
                 <ExternalActionRow
                   label="Email"
                   value={company.email || "No email"}
@@ -574,10 +580,11 @@ export default function CompanyDetailPage() {
       </div>
 
       {companyModalOpen ? (
-        <CompanyModal
-          mode="edit"
-          form={companyForm}
-          onChange={updateCompanyForm}
+          <CompanyModal
+            mode="edit"
+            form={companyForm}
+            industryOptions={industryOptions.map((industry) => ({ value: industry.name, label: industry.name }))}
+            onChange={updateCompanyForm}
           onPhoneChange={updateCompanyPhone}
           onAddPhone={addCompanyPhone}
           onRemovePhone={removeCompanyPhone}

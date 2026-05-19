@@ -44,3 +44,23 @@ class PipelineStatusTemplate(models.Model):
 
     def __str__(self):
         return f"{self.company.name} - {self.name}"
+
+
+class CompanyIndustry(models.Model):
+    company = models.ForeignKey("companies.Company", on_delete=models.CASCADE, related_name="company_industries")
+    name = models.CharField(max_length=255)
+    position = models.PositiveIntegerField(default=0)
+    created_at = models.DateTimeField(default=timezone.now, editable=False)
+
+    class Meta:
+        ordering = ["position", "id"]
+        constraints = [
+            models.UniqueConstraint(fields=["company", "name"], name="unique_company_industry_per_company"),
+        ]
+
+    def save(self, *args, **kwargs):
+        self.name = self.name.strip()
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"{self.company.name} - {self.name}"

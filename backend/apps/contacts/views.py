@@ -137,7 +137,7 @@ class ContactImportExecuteView(APIView):
         selected_pipeline = None
         if pipeline_id:
             selected_pipeline = generics.get_object_or_404(Pipeline, pk=pipeline_id, company=tenant_company)
-        result = import_contact_records(parsed["records"], tenant_company, pipeline=selected_pipeline)
+        result = import_contact_records(parsed["records"], tenant_company, pipeline=selected_pipeline, imported_by=request.user)
         return Response(
             {
                 "stats": parsed["stats"],
@@ -155,7 +155,11 @@ class ContactImportDeleteImportedView(APIView):
 
         tenant_company = resolve_default_tenant_company(request.user)
 
-        imported_links = CRMContactCompanyLink.objects.filter(tenant_company=tenant_company, created_by_import=True)
+        imported_links = CRMContactCompanyLink.objects.filter(
+            tenant_company=tenant_company,
+            created_by_import=True,
+            imported_by=request.user,
+        )
         deleted_link_count = imported_links.count()
         imported_contact_ids = list(imported_links.values_list("contact_id", flat=True).distinct())
         imported_company_ids = list(imported_links.values_list("company_id", flat=True).distinct())
@@ -164,6 +168,7 @@ class ContactImportDeleteImportedView(APIView):
         imported_contacts = CRMContact.objects.filter(
             tenant_company=tenant_company,
             created_by_import=True,
+            imported_by=request.user,
             id__in=imported_contact_ids,
             company_links__isnull=True,
         ).distinct()
@@ -173,6 +178,7 @@ class ContactImportDeleteImportedView(APIView):
         imported_companies = CRMCompany.objects.filter(
             tenant_company=tenant_company,
             created_by_import=True,
+            imported_by=request.user,
             id__in=imported_company_ids,
             contact_links__isnull=True,
         ).distinct()

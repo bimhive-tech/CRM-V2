@@ -112,6 +112,43 @@ export function listCurrencies(token, query = {}) {
   });
 }
 
+export function listCompanyIndustries(token, query = {}) {
+  return apiRequest(buildApiPath("/master-data/company-industries/", query), {
+    method: "GET",
+    headers: authHeaders(token),
+  });
+}
+
+export function createCompanyIndustry(token, payload, query = {}) {
+  return apiRequest(buildApiPath("/master-data/company-industries/", query), {
+    method: "POST",
+    headers: authHeaders(token),
+    body: JSON.stringify(payload),
+  });
+}
+
+export function updateCompanyIndustry(token, industryId, payload) {
+  return apiRequest(`/master-data/company-industries/${industryId}/`, {
+    method: "PATCH",
+    headers: authHeaders(token),
+    body: JSON.stringify(payload),
+  });
+}
+
+export function deleteCompanyIndustry(token, industryId) {
+  return apiRequest(`/master-data/company-industries/${industryId}/`, {
+    method: "DELETE",
+    headers: authHeaders(token),
+  });
+}
+
+export function restoreDefaultCompanyIndustries(token, query = {}) {
+  return apiRequest(buildApiPath("/master-data/company-industries/restore-defaults/", query), {
+    method: "POST",
+    headers: authHeaders(token),
+  });
+}
+
 export function createCurrency(token, payload, query = {}) {
   return apiRequest(buildApiPath("/master-data/currencies/", query), {
     method: "POST",

@@ -8,26 +8,31 @@ import { DashboardShell } from "@/components/dashboard/dashboard-shell/dashboard
 import { Sidebar } from "@/components/dashboard/sidebar/sidebar";
 import { Topbar } from "@/components/dashboard/topbar/topbar";
 import {
+  createCompanyIndustry,
   createCompany,
   createCurrency,
   createPipelineStatusTemplate,
   createRole,
   createUser,
   deleteCompany,
+  deleteCompanyIndustry,
   deleteRole,
   deleteCurrency,
   deletePipelineStatusTemplate,
   deleteUser,
+  listCompanyIndustries,
   listCompanies,
   listCurrencies,
   listPipelineStatusTemplates,
   listRoles,
   listUsers,
+  restoreDefaultCompanyIndustries,
   restoreDefaultCurrencies,
   restoreDefaultPipelineStatusTemplates,
   deleteCompanyLogo,
   uploadCompanyLogo,
   updateCompany,
+  updateCompanyIndustry,
   updateCurrency,
   updatePipelineStatusTemplate,
   updateRole,
@@ -41,6 +46,7 @@ import styles from "./settings-screen.module.css";
 const companyInitialState = { name: "", email: "", phone_number: "", website: "", address: "", is_active: true };
 const roleInitialState = { name: "", description: "" };
 const currencyInitialState = { name: "", symbol: "", is_default: false, is_active: true };
+const industryInitialState = { name: "", position: 0 };
 const statusTemplateInitialState = { name: "", color: "#7C5F35", position: 0 };
 const userInitialState = {
   email: "",
@@ -102,6 +108,13 @@ function toCurrencyForm(currency) {
     symbol: currency.symbol || "",
     is_default: Boolean(currency.is_default),
     is_active: Boolean(currency.is_active),
+  };
+}
+
+function toIndustryForm(industry) {
+  return {
+    name: industry.name || "",
+    position: Number(industry.position || 0),
   };
 }
 
@@ -226,6 +239,7 @@ export function SettingsScreen({
   const [users, setUsers] = useState(initialUsers);
   const [roles, setRoles] = useState(initialRoles);
   const [currencies, setCurrencies] = useState([]);
+  const [industries, setIndustries] = useState([]);
   const [statusTemplates, setStatusTemplates] = useState([]);
   const [status, setStatus] = useState({ error: "", success: "" });
   const [modalState, setModalState] = useState({ type: null, mode: "create", itemId: null });
@@ -239,6 +253,7 @@ export function SettingsScreen({
   const [roleForm, setRoleForm] = useState(roleInitialState);
   const [userForm, setUserForm] = useState(userInitialState);
   const [currencyForm, setCurrencyForm] = useState(currencyInitialState);
+  const [industryForm, setIndustryForm] = useState(industryInitialState);
   const [statusTemplateForm, setStatusTemplateForm] = useState(statusTemplateInitialState);
 
   const selectedCompany = companies.find((company) => String(company.id) === selectedCompanyId) || null;
@@ -282,13 +297,15 @@ export function SettingsScreen({
     let active = true;
 
     Promise.all([
+      listCompanyIndustries(token, { company_id: selectedCompanyId }),
       listCurrencies(token, { company_id: selectedCompanyId }),
       listPipelineStatusTemplates(token, { company_id: selectedCompanyId }),
     ])
-      .then(([nextCurrencies, nextTemplates]) => {
+      .then(([nextIndustries, nextCurrencies, nextTemplates]) => {
         if (!active) {
           return;
         }
+        setIndustries(nextIndustries);
         setCurrencies(nextCurrencies);
         setStatusTemplates(nextTemplates);
       })
@@ -340,6 +357,7 @@ export function SettingsScreen({
     setRoleForm(roleInitialState);
     setUserForm(userInitialState);
     setCurrencyForm(currencyInitialState);
+    setIndustryForm(industryInitialState);
     setStatusTemplateForm(statusTemplateInitialState);
   }
 
@@ -375,6 +393,12 @@ export function SettingsScreen({
     setMessage();
   }
 
+  function openIndustryModal(mode, industry = null) {
+    setModalState({ type: "industry", mode, itemId: industry?.id || null });
+    setIndustryForm(industry ? toIndustryForm(industry) : { ...industryInitialState, position: industries.length });
+    setMessage();
+  }
+
   function openStatusTemplateModal(mode, template = null) {
     setModalState({ type: "status-template", mode, itemId: template?.id || null });
     setStatusTemplateForm(template ? toStatusTemplateForm(template) : { ...statusTemplateInitialState, position: statusTemplates.length });
@@ -399,6 +423,11 @@ export function SettingsScreen({
   function updateCurrencyForm(event) {
     const { name, value, type, checked } = event.target;
     setCurrencyForm((current) => ({ ...current, [name]: type === "checkbox" ? checked : value }));
+  }
+
+  function updateIndustryForm(event) {
+    const { name, value } = event.target;
+    setIndustryForm((current) => ({ ...current, [name]: name === "position" ? Number(value) : value }));
   }
 
   function updateStatusTemplateForm(event) {
@@ -512,13 +541,40 @@ export function SettingsScreen({
       return;
     }
 
-    const [nextCurrencies, nextTemplates] = await Promise.all([
+    const [nextIndustries, nextCurrencies, nextTemplates] = await Promise.all([
+      listCompanyIndustries(token, { company_id: selectedCompanyId }),
       listCurrencies(token, { company_id: selectedCompanyId }),
       listPipelineStatusTemplates(token, { company_id: selectedCompanyId }),
     ]);
 
+    setIndustries(nextIndustries);
     setCurrencies(nextCurrencies);
     setStatusTemplates(nextTemplates);
+  }
+
+  async function handleIndustrySubmit(event) {
+    event.preventDefault();
+    setMessage();
+
+    try {
+      const payload = {
+        name: industryForm.name.trim(),
+        position: industryForm.position,
+      };
+
+      if (modalState.mode === "edit" && modalState.itemId) {
+        await updateCompanyIndustry(token, modalState.itemId, payload);
+        setMessage("", "Industry updated.");
+      } else {
+        await createCompanyIndustry(token, payload, { company_id: selectedCompanyId });
+        setMessage("", "Industry created.");
+      }
+
+      await refreshMasterData();
+      closeModal();
+    } catch (error) {
+      setMessage(error.message || "Unable to save industry.");
+    }
   }
 
   async function handleUserSubmit(event) {
@@ -623,6 +679,18 @@ export function SettingsScreen({
     }
   }
 
+  async function handleRestoreIndustryDefaults() {
+    setMessage();
+
+    try {
+      await restoreDefaultCompanyIndustries(token, { company_id: selectedCompanyId });
+      await refreshMasterData();
+      setMessage("", "Default industries restored.");
+    } catch (error) {
+      setMessage(error.message || "Unable to restore default industries.");
+    }
+  }
+
   async function handleRestoreStatusDefaults() {
     setMessage();
 
@@ -650,13 +718,15 @@ export function SettingsScreen({
         await deleteRole(token, itemId);
       } else if (kind === "currency") {
         await deleteCurrency(token, itemId);
+      } else if (kind === "industry") {
+        await deleteCompanyIndustry(token, itemId);
       } else if (kind === "status-template") {
         await deletePipelineStatusTemplate(token, itemId);
       } else {
         await deleteUser(token, itemId);
       }
 
-      if (kind === "currency" || kind === "status-template") {
+      if (kind === "currency" || kind === "industry" || kind === "status-template") {
         await refreshMasterData();
       } else {
         await refreshAll();
@@ -892,7 +962,7 @@ export function SettingsScreen({
             <div className={styles.panelHeader}>
               <div>
                 <p className={styles.panelEyebrow}>Master Data</p>
-                <h2>Currencies and default pipeline statuses</h2>
+                <h2>Industries, currencies, and default pipeline statuses</h2>
                 <p className={styles.bodyCopy}>Each company manages its own copy of this data. We seed default values and you can restore them later if they get removed.</p>
               </div>
               {user?.is_platform_admin && companyOptions.length ? (
@@ -910,6 +980,51 @@ export function SettingsScreen({
             </div>
 
             <div className={styles.panelBody}>
+              <section className={styles.panel}>
+                <div className={styles.panelHeader}>
+                  <div>
+                    <p className={styles.panelEyebrow}>Industries</p>
+                    <h2>Company industry options</h2>
+                  </div>
+                  <div className={styles.actionsCell}>
+                    <button className={styles.secondaryButton} type="button" onClick={handleRestoreIndustryDefaults} disabled={!selectedCompanyId}>
+                      Restore defaults
+                    </button>
+                    <button className={styles.primaryButton} type="button" onClick={() => openIndustryModal("create")} disabled={!selectedCompanyId}>
+                      Add industry
+                    </button>
+                  </div>
+                </div>
+
+                <div className={styles.tableWrap}>
+                  <table className={styles.table}>
+                    <thead>
+                      <tr>
+                        <th>Position</th>
+                        <th>Name</th>
+                        <th>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {industries.map((industry) => (
+                        <tr key={industry.id}>
+                          <td className={styles.monoCell}>{industry.position + 1}</td>
+                          <td>{industry.name}</td>
+                          <td className={styles.actionsCell}>
+                            <button className={styles.inlineIconButton} type="button" onClick={() => openIndustryModal("edit", industry)} aria-label={`Edit ${industry.name}`}>
+                              <EditIcon />
+                            </button>
+                            <button className={`${styles.inlineIconButton} ${styles.inlineDangerIcon}`} type="button" onClick={() => handleDelete("industry", industry.id, industry.name)} aria-label={`Delete ${industry.name}`}>
+                              <TrashIcon />
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </section>
+
               <section className={styles.panel}>
                 <div className={styles.panelHeader}>
                   <div>
@@ -1238,6 +1353,27 @@ export function SettingsScreen({
               <input name="is_active" type="checkbox" checked={currencyForm.is_active} onChange={updateCurrencyForm} />
               <span>Active currency</span>
             </label>
+          </SettingsModal>
+        ) : null}
+
+        {modalState.type === "industry" ? (
+          <SettingsModal
+            title={modalState.mode === "edit" ? "Edit industry" : "Create industry"}
+            description="These options feed the industry dropdown in the company create and edit flow."
+            onClose={closeModal}
+            onSubmit={handleIndustrySubmit}
+            submitLabel={modalState.mode === "edit" ? "Save industry" : "Create industry"}
+          >
+            <div className={styles.formGrid}>
+              <label className={styles.field}>
+                <span>Industry name</span>
+                <input name="name" value={industryForm.name} onChange={updateIndustryForm} placeholder="Construction" required />
+              </label>
+              <label className={styles.field}>
+                <span>Position</span>
+                <input name="position" type="number" min="0" value={industryForm.position} onChange={updateIndustryForm} />
+              </label>
+            </div>
           </SettingsModal>
         ) : null}
 

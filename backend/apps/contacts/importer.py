@@ -355,7 +355,7 @@ def resolve_sales_owner(tenant_company, raw_owner_name):
     )
 
 
-def import_contact_records(records, tenant_company, pipeline=None):
+def import_contact_records(records, tenant_company, pipeline=None, imported_by=None):
     created_contacts = 0
     created_companies = 0
     created_links = 0
@@ -376,6 +376,8 @@ def import_contact_records(records, tenant_company, pipeline=None):
             tenant_company=tenant_company,
             name=company_name,
             defaults={
+                "imported_by": imported_by,
+                "industry": text_value(record.get("company.industry")),
                 "website": text_value(record.get("company.website")),
                 "email": text_value(record.get("company.email")),
                 "phone_numbers": record.get("company.phone_numbers", []),
@@ -389,6 +391,7 @@ def import_contact_records(records, tenant_company, pipeline=None):
         else:
             dirty = False
             for field, value in {
+                "industry": text_value(record.get("company.industry")),
                 "website": text_value(record.get("company.website")),
                 "email": text_value(record.get("company.email")),
             }.items():
@@ -417,6 +420,7 @@ def import_contact_records(records, tenant_company, pipeline=None):
                 phone=text_value(record.get("contact.phone")),
                 phone_numbers=record.get("contact.phone_numbers", []),
                 status=text_value(record.get("status")) or "Lead",
+                imported_by=imported_by,
                 created_by_import=True,
                 imported_at=imported_at,
             )
@@ -451,6 +455,7 @@ def import_contact_records(records, tenant_company, pipeline=None):
                 "title": text_value(record.get("contact.job_title")),
                 "status": text_value(record.get("status")) or "Lead",
                 "owner": owner,
+                "imported_by": imported_by,
                 "created_by_import": True,
                 "imported_at": imported_at,
             },

@@ -143,6 +143,7 @@ export function ContactsModal({
 export function CompanyModal({
   mode = "create",
   form,
+  industryOptions = [],
   onChange,
   onPhoneChange,
   onAddPhone,
@@ -182,6 +183,17 @@ export function CompanyModal({
             <label className={styles.field}>
               <span>Company owner</span>
               <input name="ownerName" value={form.ownerName} onChange={onChange} placeholder="Mariam Hany" />
+            </label>
+            <label className={styles.field}>
+              <span>Industry</span>
+              <select name="industry" value={form.industry} onChange={onChange}>
+                <option value="">Select industry</option>
+                {industryOptions.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
             </label>
             <label className={styles.field}>
               <span>Email</span>

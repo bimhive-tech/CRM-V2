@@ -5,12 +5,13 @@ from rest_framework.response import Response
 
 from apps.accounts.permissions import CanAccessSettings
 from apps.masterdata.defaults import (
+    create_missing_default_company_industries,
     create_missing_default_currencies,
     create_missing_default_pipeline_status_templates,
     set_default_currency,
 )
-from apps.masterdata.models import Currency, PipelineStatusTemplate
-from apps.masterdata.serializers import CurrencySerializer, PipelineStatusTemplateSerializer
+from apps.masterdata.models import CompanyIndustry, Currency, PipelineStatusTemplate
+from apps.masterdata.serializers import CompanyIndustrySerializer, CurrencySerializer, PipelineStatusTemplateSerializer
 
 
 def company_ids_for_user(user):
@@ -54,6 +55,25 @@ def reorder_pipeline_status_template(template, next_position):
     siblings = [item for item in siblings if item.id != template.id]
     bounded_position = max(0, min(next_position, len(siblings)))
     siblings.insert(bounded_position, template)
+
+    for index, item in enumerate(siblings):
+        if item.position != index:
+            item.position = index
+            item.save(update_fields=["position"])
+
+
+def normalize_company_industry_positions(company):
+    for index, industry in enumerate(company.company_industries.order_by("position", "id")):
+        if industry.position != index:
+            industry.position = index
+            industry.save(update_fields=["position"])
+
+
+def reorder_company_industry(industry, next_position):
+    siblings = list(industry.company.company_industries.order_by("position", "id"))
+    siblings = [item for item in siblings if item.id != industry.id]
+    bounded_position = max(0, min(next_position, len(siblings)))
+    siblings.insert(bounded_position, industry)
 
     for index, item in enumerate(siblings):
         if item.position != index:
@@ -143,6 +163,45 @@ class PipelineStatusTemplateDetailView(generics.RetrieveUpdateDestroyAPIView):
         normalize_template_positions(company)
 
 
+class CompanyIndustryListCreateView(generics.ListCreateAPIView):
+    serializer_class = CompanyIndustrySerializer
+    permission_classes = [permissions.IsAuthenticated, CanAccessSettings]
+
+    def get_queryset(self):
+        company = resolve_company_for_settings(self.request.user, self.request.query_params.get("company_id"))
+        return CompanyIndustry.objects.filter(company=company).order_by("position", "id")
+
+    @transaction.atomic
+    def perform_create(self, serializer):
+        company = resolve_company_for_settings(self.request.user, self.request.query_params.get("company_id"))
+        serializer.save(company=company, position=company.company_industries.count())
+
+
+class CompanyIndustryDetailView(generics.RetrieveUpdateDestroyAPIView):
+    serializer_class = CompanyIndustrySerializer
+    permission_classes = [permissions.IsAuthenticated, CanAccessSettings]
+
+    def get_queryset(self):
+        queryset = CompanyIndustry.objects.select_related("company")
+        if self.request.user.is_platform_admin:
+            return queryset
+        return queryset.filter(company_id__in=company_ids_for_user(self.request.user))
+
+    @transaction.atomic
+    def perform_update(self, serializer):
+        industry = self.get_object()
+        next_position = serializer.validated_data.pop("position", None)
+        serializer.save()
+        if next_position is not None:
+            reorder_company_industry(industry, next_position)
+
+    @transaction.atomic
+    def perform_destroy(self, instance):
+        company = instance.company
+        instance.delete()
+        normalize_company_industry_positions(company)
+
+
 class CurrencyRestoreDefaultsView(generics.GenericAPIView):
     permission_classes = [permissions.IsAuthenticated, CanAccessSettings]
 
@@ -161,6 +220,20 @@ class PipelineStatusTemplateRestoreDefaultsView(generics.GenericAPIView):
         return Response(
             PipelineStatusTemplateSerializer(
                 PipelineStatusTemplate.objects.filter(company=company).order_by("position", "id"),
+                many=True,
+            ).data
+        )
+
+
+class CompanyIndustryRestoreDefaultsView(generics.GenericAPIView):
+    permission_classes = [permissions.IsAuthenticated, CanAccessSettings]
+
+    def post(self, request):
+        company = resolve_company_for_settings(request.user, request.query_params.get("company_id"))
+        create_missing_default_company_industries(company)
+        return Response(
+            CompanyIndustrySerializer(
+                CompanyIndustry.objects.filter(company=company).order_by("position", "id"),
                 many=True,
             ).data
         )

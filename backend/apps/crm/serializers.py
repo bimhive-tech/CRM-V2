@@ -24,6 +24,7 @@ class CRMCompanySummarySerializer(serializers.ModelSerializer):
         fields = [
             "id",
             "name",
+            "industry",
             "owner_name",
             "email",
             "phone_number",
@@ -80,6 +81,7 @@ class CRMCompanySerializer(serializers.ModelSerializer):
         fields = [
             "id",
             "name",
+            "industry",
             "owner_name",
             "email",
             "phone_number",

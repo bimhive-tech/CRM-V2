@@ -43,6 +43,7 @@ class CRMCompanyListCreateView(generics.ListCreateAPIView):
         if search:
             queryset = queryset.filter(
                 Q(name__icontains=search)
+                | Q(industry__icontains=search)
                 | Q(owner_name__icontains=search)
                 | Q(email__icontains=search)
                 | Q(website__icontains=search)
