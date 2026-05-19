@@ -1,5 +1,6 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 
@@ -9,10 +10,16 @@ import { Sidebar } from "@/components/dashboard/sidebar/sidebar";
 import { Topbar } from "@/components/dashboard/topbar/topbar";
 import { CompanyModal } from "@/features/contacts/components/contacts-screen/contacts-modal";
 import { getCrmCompany, updateCrmCompany } from "@/lib/api/admin";
+import { DEFAULT_COUNTRY } from "@/lib/countries";
 import { useAuthenticatedUser } from "@/lib/hooks/use-authenticated-user";
 import { getAccessToken } from "@/lib/session";
 
 import styles from "./page.module.css";
+
+const CompanyLocationMap = dynamic(
+  () => import("@/components/maps/company-location-map").then((module) => module.CompanyLocationMap),
+  { ssr: false },
+);
 
 const activityTabs = [
   { id: "all", label: "All Activities", emptyTitle: "No activity yet", emptyBody: "Calls, emails, notes, meetings, and tasks for this company will appear here." },
@@ -29,11 +36,14 @@ const emptyCompanyForm = {
   email: "",
   website: "",
   linkedinUrl: "",
+  socialLinks: [],
   employeeCount: "",
   phoneNumbers: [""],
-  addressCountry: "",
+  addressCountry: DEFAULT_COUNTRY,
   addressState: "",
   addressLine: "",
+  latitude: "",
+  longitude: "",
 };
 
 function stringToHue(value) {
@@ -45,7 +55,7 @@ function normalizeWebsiteUrl(value) {
     return "";
   }
 
-  return /^https?:\/\//i.test(value) ? value : `https://${value}`;
+  return /^(https?:)?\/\//i.test(value) ? value : `https://${value}`;
 }
 
 function toCompanyFormState(company) {
@@ -55,28 +65,46 @@ function toCompanyFormState(company) {
     email: company.email || "",
     website: company.website || "",
     linkedinUrl: company.linkedin_url || "",
+    socialLinks: company.social_links?.length ? company.social_links : [],
     employeeCount: company.employee_count ? String(company.employee_count) : "",
     phoneNumbers: company.phone_numbers?.length ? company.phone_numbers : [""],
-    addressCountry: company.address_country || "",
+    addressCountry: company.address_country || DEFAULT_COUNTRY,
     addressState: company.address_state || "",
     addressLine: company.address_line || "",
+    latitude: company.latitude !== null && company.latitude !== undefined ? String(company.latitude) : "",
+    longitude: company.longitude !== null && company.longitude !== undefined ? String(company.longitude) : "",
   };
 }
 
 function mapCompanyToPayload(form) {
   const phoneNumbers = form.phoneNumbers.map((number) => number.trim()).filter(Boolean);
+  const website = form.website.trim();
+  const linkedinUrl = form.linkedinUrl.trim();
+  const socialLinks = form.socialLinks
+    .map((item) => ({
+      platform: item.platform.trim(),
+      url: item.url.trim(),
+    }))
+    .filter((item) => item.platform && item.url)
+    .map((item) => ({
+      ...item,
+      url: normalizeWebsiteUrl(item.url),
+    }));
 
   return {
     name: form.name.trim(),
     owner_name: form.ownerName.trim(),
     email: form.email.trim(),
-    website: form.website.trim(),
-    linkedin_url: form.linkedinUrl.trim(),
+    website: website ? normalizeWebsiteUrl(website) : "",
+    linkedin_url: linkedinUrl ? normalizeWebsiteUrl(linkedinUrl) : "",
+    social_links: socialLinks,
     phone_numbers: phoneNumbers,
     phone_number: phoneNumbers[0] || "",
     address_country: form.addressCountry.trim(),
     address_state: form.addressState.trim(),
     address_line: form.addressLine.trim(),
+    latitude: form.latitude ? Number(form.latitude) : null,
+    longitude: form.longitude ? Number(form.longitude) : null,
     employee_count: form.employeeCount ? Number(form.employeeCount) : null,
   };
 }
@@ -181,6 +209,33 @@ function ExternalActionRow({ label, value, href, icon, external = false }) {
   );
 }
 
+function SocialLinksBlock({ items }) {
+  if (!items.length) {
+    return <DetailRow label="Other socials" value="No additional socials" />;
+  }
+
+  return (
+    <div className={styles.detailRow}>
+      <span className={styles.detailLabel}>Other socials</span>
+      <div className={styles.socialList}>
+        {items.map((item, index) => (
+          <a
+            key={`${item.platform}-${item.url}-${index}`}
+            className={styles.socialLink}
+            href={normalizeWebsiteUrl(item.url)}
+            target="_blank"
+            rel="noreferrer"
+            title={item.url}
+          >
+            <span className={styles.socialPlatform}>{item.platform}</span>
+            <span className={styles.detailValueMono}>{item.url}</span>
+          </a>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function normalizeContactPath(contactId) {
   return `/contacts/${contactId}`;
 }
@@ -250,6 +305,35 @@ export default function CompanyDetailPage() {
     }));
   }
 
+  function updateCompanySocial(index, field, value) {
+    setCompanyForm((current) => ({
+      ...current,
+      socialLinks: current.socialLinks.map((item, itemIndex) => (itemIndex === index ? { ...item, [field]: value } : item)),
+    }));
+  }
+
+  function addCompanySocial() {
+    setCompanyForm((current) => ({
+      ...current,
+      socialLinks: [...current.socialLinks, { platform: "LinkedIn", url: "" }],
+    }));
+  }
+
+  function removeCompanySocial(index) {
+    setCompanyForm((current) => ({
+      ...current,
+      socialLinks: current.socialLinks.filter((_, itemIndex) => itemIndex !== index),
+    }));
+  }
+
+  function updateCompanyLocation(latitude, longitude) {
+    setCompanyForm((current) => ({
+      ...current,
+      latitude: String(latitude),
+      longitude: String(longitude),
+    }));
+  }
+
   function openEditCompanyModal() {
     if (!state.company) {
       return;
@@ -292,6 +376,7 @@ export default function CompanyDetailPage() {
 
   const company = state.company;
   const visibleContacts = (company?.contacts || []).slice(0, 4);
+  const hasLocation = Number.isFinite(company?.latitude) && Number.isFinite(company?.longitude);
 
   return (
     <DashboardShell
@@ -350,6 +435,7 @@ export default function CompanyDetailPage() {
                   icon={<LinkedInIcon />}
                   external
                 />
+                <SocialLinksBlock items={company.social_links || []} />
                 <ExternalActionRow
                   label="Phone numbers"
                   value={(company.phone_numbers || []).join(" · ") || "No numbers"}
@@ -364,6 +450,24 @@ export default function CompanyDetailPage() {
                   value={company.employee_count ? `${company.employee_count} people` : "Not set"}
                   mono
                 />
+                <div className={styles.detailRow}>
+                  <span className={styles.detailLabel}>Location</span>
+                  {hasLocation ? (
+                    <div className={styles.mapWrap}>
+                      <CompanyLocationMap
+                        latitude={company.latitude}
+                        longitude={company.longitude}
+                        className={styles.mapCanvas}
+                        height={220}
+                      />
+                      <span className={styles.mapCaption}>
+                        {company.latitude.toFixed(5)}, {company.longitude.toFixed(5)}
+                      </span>
+                    </div>
+                  ) : (
+                    <span className={styles.detailValue}>No map pin selected</span>
+                  )}
+                </div>
               </div>
             </section>
 
@@ -472,6 +576,10 @@ export default function CompanyDetailPage() {
           onPhoneChange={updateCompanyPhone}
           onAddPhone={addCompanyPhone}
           onRemovePhone={removeCompanyPhone}
+          onSocialChange={updateCompanySocial}
+          onAddSocial={addCompanySocial}
+          onRemoveSocial={removeCompanySocial}
+          onLocationChange={updateCompanyLocation}
           onClose={closeCompanyModal}
           onSubmit={handleCompanySubmit}
         />

@@ -57,11 +57,14 @@ const emptyCompanyForm = {
   email: "",
   website: "",
   linkedinUrl: "",
+  socialLinks: [],
   employeeCount: "",
   phoneNumbers: [""],
-  addressCountry: "",
+  addressCountry: "Egypt",
   addressState: "",
   addressLine: "",
+  latitude: "",
+  longitude: "",
 };
 
 const DIRECTORY_PAGE_SIZE = 10;
@@ -213,12 +216,15 @@ function mapCompanyFromApi(company) {
     email: company.email || "No email",
     website: company.website || "No website",
     linkedinUrl: company.linkedin_url || "",
+    socialLinks: company.social_links || [],
     phoneNumbers: company.phone_numbers?.length ? company.phone_numbers : company.phone_number ? [company.phone_number] : [],
     employeeCount: company.employee_count || null,
     address: company.address || "No address",
     addressCountry: company.address_country || "",
     addressState: company.address_state || "",
     addressLine: company.address_line || "",
+    latitude: company.latitude,
+    longitude: company.longitude,
     contacts: (company.contacts || []).map((contact) => ({
       id: contact.id,
       fullName: contact.full_name,
@@ -246,18 +252,33 @@ function mapContactToPayload(form) {
 
 function mapCompanyToPayload(form) {
   const phoneNumbers = form.phoneNumbers.map((number) => number.trim()).filter(Boolean);
+  const socialLinks = form.socialLinks
+    .map((item) => ({
+      platform: item.platform.trim(),
+      url: item.url.trim(),
+    }))
+    .filter((item) => item.platform && item.url)
+    .map((item) => ({
+      ...item,
+      url: item.url.startsWith("www.") ? `https://${item.url}` : item.url,
+    }));
+  const website = form.website.trim();
+  const linkedinUrl = form.linkedinUrl.trim();
 
   return {
     name: form.name.trim(),
     owner_name: form.ownerName.trim(),
     email: form.email.trim(),
-    website: form.website.trim(),
-    linkedin_url: form.linkedinUrl.trim(),
+    website: website.startsWith("www.") ? `https://${website}` : website,
+    linkedin_url: linkedinUrl.startsWith("www.") ? `https://${linkedinUrl}` : linkedinUrl,
+    social_links: socialLinks,
     phone_numbers: phoneNumbers,
     phone_number: phoneNumbers[0] || "",
     address_country: form.addressCountry.trim(),
     address_state: form.addressState.trim(),
     address_line: form.addressLine.trim(),
+    latitude: form.latitude ? Number(form.latitude) : null,
+    longitude: form.longitude ? Number(form.longitude) : null,
     employee_count: form.employeeCount ? Number(form.employeeCount) : null,
   };
 }
@@ -283,11 +304,14 @@ function toCompanyFormState(company) {
     email: company.email === "No email" ? "" : company.email,
     website: company.website === "No website" ? "" : company.website,
     linkedinUrl: company.linkedinUrl || "",
+    socialLinks: company.socialLinks?.length ? company.socialLinks : [],
     employeeCount: company.employeeCount ? String(company.employeeCount) : "",
     phoneNumbers: company.phoneNumbers.length ? company.phoneNumbers : [""],
-    addressCountry: company.addressCountry || "",
+    addressCountry: company.addressCountry || "Egypt",
     addressState: company.addressState || "",
     addressLine: company.addressLine || "",
+    latitude: company.latitude !== null && company.latitude !== undefined ? String(company.latitude) : "",
+    longitude: company.longitude !== null && company.longitude !== undefined ? String(company.longitude) : "",
   };
 }
 
@@ -660,6 +684,32 @@ function DirectoryScreen({ user, mode = "contacts" }) {
     setCompanyForm((current) => ({
       ...current,
       phoneNumbers: current.phoneNumbers.map((phone, phoneIndex) => (phoneIndex === index ? value : phone)),
+    }));
+  }
+
+  function updateCompanySocial(index, field, value) {
+    setCompanyForm((current) => ({
+      ...current,
+      socialLinks: current.socialLinks.map((item, itemIndex) => (itemIndex === index ? { ...item, [field]: value } : item)),
+    }));
+  }
+
+  function addCompanySocial() {
+    setCompanyForm((current) => ({ ...current, socialLinks: [...current.socialLinks, { platform: "", url: "" }] }));
+  }
+
+  function removeCompanySocial(index) {
+    setCompanyForm((current) => ({
+      ...current,
+      socialLinks: current.socialLinks.filter((_, itemIndex) => itemIndex !== index),
+    }));
+  }
+
+  function updateCompanyLocation(latitude, longitude) {
+    setCompanyForm((current) => ({
+      ...current,
+      latitude: String(latitude),
+      longitude: String(longitude),
     }));
   }
 
@@ -1242,6 +1292,10 @@ function DirectoryScreen({ user, mode = "contacts" }) {
           onPhoneChange={updateCompanyPhone}
           onAddPhone={addCompanyPhone}
           onRemovePhone={removeCompanyPhone}
+          onSocialChange={updateCompanySocial}
+          onAddSocial={addCompanySocial}
+          onRemoveSocial={removeCompanySocial}
+          onLocationChange={updateCompanyLocation}
           onClose={closeCompanyModal}
           onSubmit={handleCompanySubmit}
         />

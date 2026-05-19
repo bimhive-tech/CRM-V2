@@ -1,4 +1,14 @@
+import dynamic from "next/dynamic";
+
+import { COUNTRY_OPTIONS } from "@/lib/countries";
+
 import styles from "./contacts-screen.module.css";
+
+const SOCIAL_PLATFORM_OPTIONS = ["LinkedIn", "Facebook", "Instagram", "X", "YouTube", "TikTok", "Behance", "Other"];
+const CompanyLocationMap = dynamic(
+  () => import("@/components/maps/company-location-map").then((module) => module.CompanyLocationMap),
+  { ssr: false },
+);
 
 export function ContactsModal({ mode, form, onChange, onClose, onSubmit, companyOptions, pipelineOptions, statusOptions }) {
   return (
@@ -96,7 +106,20 @@ export function ContactsModal({ mode, form, onChange, onClose, onSubmit, company
   );
 }
 
-export function CompanyModal({ mode = "create", form, onChange, onPhoneChange, onAddPhone, onRemovePhone, onClose, onSubmit }) {
+export function CompanyModal({
+  mode = "create",
+  form,
+  onChange,
+  onPhoneChange,
+  onAddPhone,
+  onRemovePhone,
+  onSocialChange,
+  onAddSocial,
+  onRemoveSocial,
+  onLocationChange,
+  onClose,
+  onSubmit,
+}) {
   return (
     <div className={styles.modalOverlay} role="presentation">
       <div
@@ -169,10 +192,51 @@ export function CompanyModal({ mode = "create", form, onChange, onPhoneChange, o
             </div>
           </div>
 
+          <div className={styles.phoneSection}>
+            <div className={styles.sectionRow}>
+              <span className={styles.sectionLabel}>Other socials</span>
+              <button className={styles.inlineButton} type="button" onClick={onAddSocial}>
+                Add social
+              </button>
+            </div>
+            <div className={styles.phoneList}>
+              {form.socialLinks.length ? (
+                form.socialLinks.map((social, index) => (
+                  <div key={`social-${index}`} className={styles.socialRow}>
+                    <select value={social.platform} onChange={(event) => onSocialChange(index, "platform", event.target.value)}>
+                      <option value="">Select platform</option>
+                      {SOCIAL_PLATFORM_OPTIONS.map((option) => (
+                        <option key={option} value={option}>
+                          {option}
+                        </option>
+                      ))}
+                    </select>
+                    <input
+                      value={social.url}
+                      onChange={(event) => onSocialChange(index, "url", event.target.value)}
+                      placeholder="www.youtube.com/@nilecontracting"
+                    />
+                    <button className={styles.inlineDanger} type="button" onClick={() => onRemoveSocial(index)}>
+                      Remove
+                    </button>
+                  </div>
+                ))
+              ) : (
+                <p className={styles.helperCopy}>Optional links like YouTube, Facebook, Instagram, or any other company social.</p>
+              )}
+            </div>
+          </div>
+
           <div className={styles.formGrid}>
             <label className={styles.field}>
               <span>Country</span>
-              <input name="addressCountry" value={form.addressCountry} onChange={onChange} placeholder="Egypt" />
+              <select name="addressCountry" value={form.addressCountry} onChange={onChange}>
+                {COUNTRY_OPTIONS.map((country) => (
+                  <option key={country.code} value={country.name}>
+                    {country.name}
+                  </option>
+                ))}
+              </select>
             </label>
             <label className={styles.field}>
               <span>State</span>
@@ -190,6 +254,30 @@ export function CompanyModal({ mode = "create", form, onChange, onPhoneChange, o
               placeholder="90 North Teseen St, Fifth Settlement, New Cairo"
             />
           </label>
+
+          <div className={styles.mapSection}>
+            <div className={styles.sectionRow}>
+              <span className={styles.sectionLabel}>Location on map</span>
+              <span className={styles.helperText}>Click the map to pin the company location.</span>
+            </div>
+            <CompanyLocationMap
+              className={styles.mapCanvas}
+              latitude={form.latitude ? Number(form.latitude) : null}
+              longitude={form.longitude ? Number(form.longitude) : null}
+              onSelect={onLocationChange}
+              interactive
+            />
+            <div className={styles.formGrid}>
+              <label className={styles.field}>
+                <span>Latitude</span>
+                <input name="latitude" value={form.latitude} onChange={onChange} placeholder="30.0444" />
+              </label>
+              <label className={styles.field}>
+                <span>Longitude</span>
+                <input name="longitude" value={form.longitude} onChange={onChange} placeholder="31.2357" />
+              </label>
+            </div>
+          </div>
 
           <div className={styles.modalActions}>
             <button className={styles.secondaryButton} type="button" onClick={onClose}>
