@@ -15,7 +15,6 @@ import {
   listContacts,
   listCrmCompanies,
   listPipelines,
-  listUsers,
   updateContact,
   updateCrmCompany,
 } from "@/lib/api/admin";
@@ -37,7 +36,7 @@ const emptyContactForm = {
   email: "",
   phone: "",
   companyId: "",
-  ownerId: "",
+  pipelineId: "",
   status: "Lead",
   lastTouch: "",
   notes: "",
@@ -61,14 +60,14 @@ const COMPANY_OPTIONS_PAGE_SIZE = 200;
 
 function getInitialViewMode(searchParams) {
   const requestedView = searchParams.get("view");
-  return requestedView === "contacts" || requestedView === "companies" ? requestedView : "companies";
+  return requestedView === "contacts" || requestedView === "companies" ? requestedView : "contacts";
 }
 
 function getInitialFilters(searchParams) {
   return {
     search: "",
     status: "All statuses",
-    owner: "All owners",
+    pipelineId: "All pipelines",
     companyId: searchParams.get("companyId") || "All companies",
   };
 }
@@ -128,6 +127,8 @@ function mapContactFromApi(contact) {
     phone: contact.phone,
     companyId: contact.company?.id ? String(contact.company.id) : "",
     company: contact.company?.name || "No company",
+    pipelineId: contact.pipeline?.id ? String(contact.pipeline.id) : "",
+    pipeline: contact.pipeline?.name || "",
     status: normalizeStatusLabel(contact.status),
     ownerId: contact.owner?.id ? String(contact.owner.id) : "",
     owner: contact.owner?.full_name || "Unassigned",
@@ -169,7 +170,7 @@ function mapContactToPayload(form) {
     email: form.email.trim(),
     phone: form.phone.trim(),
     company_id: Number(form.companyId),
-    owner_id: form.ownerId ? Number(form.ownerId) : null,
+    pipeline_id: form.pipelineId ? Number(form.pipelineId) : null,
     status: form.status.trim(),
     last_touch: form.lastTouch,
     notes: form.notes.trim(),
@@ -201,7 +202,7 @@ function toContactFormState(contact) {
     email: contact.email,
     phone: contact.phone,
     companyId: contact.companyId,
-    ownerId: contact.ownerId,
+    pipelineId: contact.pipelineId,
     status: contact.status,
     lastTouch: contact.lastTouchRaw,
     notes: contact.notes,
@@ -318,8 +319,7 @@ export function ContactsScreen({ user }) {
   const [contacts, setContacts] = useState([]);
   const [companies, setCompanies] = useState([]);
   const [allCompanies, setAllCompanies] = useState([]);
-  const [owners, setOwners] = useState([]);
-  const [pipelineStatuses, setPipelineStatuses] = useState([]);
+  const [pipelines, setPipelines] = useState([]);
   const [initialLoading, setInitialLoading] = useState(true);
   const [directoryLoading, setDirectoryLoading] = useState(true);
   const [viewMode, setViewMode] = useState(() => getInitialViewMode(searchParams));
@@ -335,19 +335,30 @@ export function ContactsScreen({ user }) {
   const [companyModalState, setCompanyModalState] = useState({ open: false, mode: "create", companyId: null });
   const [companyForm, setCompanyForm] = useState(emptyCompanyForm);
 
+  const pipelineOptions = useMemo(
+    () => [{ value: "All pipelines", label: "All pipelines" }, ...pipelines.map((pipeline) => ({ value: String(pipeline.id), label: pipeline.name }))],
+    [pipelines],
+  );
+  const selectedPipeline = useMemo(
+    () => pipelines.find((pipeline) => String(pipeline.id) === filters.pipelineId) || null,
+    [filters.pipelineId, pipelines],
+  );
   const statusOptions = useMemo(() => {
-    const uniqueStatuses = [...new Set(pipelineStatuses.filter(Boolean))];
+    const sourceStatuses = selectedPipeline
+      ? (selectedPipeline.statuses || []).map((status) => normalizeStatusLabel(status.name))
+      : pipelines.flatMap((pipeline) => (pipeline.statuses || []).map((status) => normalizeStatusLabel(status.name)));
+    const uniqueStatuses = [...new Set(sourceStatuses.filter(Boolean))];
     return ["All statuses", ...(uniqueStatuses.length ? uniqueStatuses : ["Lead"])];
-  }, [pipelineStatuses]);
+  }, [pipelines, selectedPipeline]);
   const contactStatusOptions = statusOptions.filter((option) => option !== "All statuses");
   const companyOptions = useMemo(() => allCompanies.map((company) => ({ value: String(company.id), label: company.name })), [allCompanies]);
   const contactCompanyFilterOptions = useMemo(
     () => [{ value: "All companies", label: "All companies" }, ...allCompanies.map((company) => ({ value: String(company.id), label: company.name }))],
     [allCompanies],
   );
-  const ownerFilterOptions = useMemo(
-    () => [{ value: "All owners", label: "All owners" }, ...owners.map((owner) => ({ value: String(owner.id), label: owner.full_name }))],
-    [owners],
+  const contactPipelineOptions = useMemo(
+    () => pipelines.map((pipeline) => ({ value: String(pipeline.id), label: pipeline.name })),
+    [pipelines],
   );
 
   const heroMeta = useMemo(() => {
@@ -356,20 +367,27 @@ export function ContactsScreen({ user }) {
     }
     return `${contactsPagination.count} contacts`;
   }, [companiesPagination.count, contactsPagination.count, viewMode]);
+  const modalStatusOptions = useMemo(() => {
+    const selectedContactPipeline = pipelines.find((pipeline) => String(pipeline.id) === contactForm.pipelineId) || null;
+    if (!selectedContactPipeline) {
+      return contactStatusOptions.length ? contactStatusOptions : ["Lead"];
+    }
+
+    const statuses = (selectedContactPipeline.statuses || []).map((status) => normalizeStatusLabel(status.name));
+    return statuses.length ? [...new Set(statuses)] : ["Lead"];
+  }, [contactForm.pipelineId, contactStatusOptions, pipelines]);
   const loading = initialLoading || directoryLoading;
 
   const fetchStaticData = useCallback(async () => {
-    const [companiesData, usersData, pipelinesData] = await Promise.all([
+    const [companiesData, pipelinesData] = await Promise.all([
       listCrmCompanies(token, { page: 1, page_size: COMPANY_OPTIONS_PAGE_SIZE }),
-      listUsers(token),
       listPipelines(token),
     ]);
 
     const normalizedCompanies = normalizePaginatedResponse(companiesData);
     return {
       allCompaniesData: normalizedCompanies.results.map(mapCompanyFromApi),
-      usersData,
-      pipelineStatusesData: [...new Set(pipelinesData.flatMap((pipeline) => (pipeline.statuses || []).map((status) => status.name)))],
+      pipelinesData,
     };
   }, [token]);
 
@@ -381,7 +399,7 @@ export function ContactsScreen({ user }) {
           page_size: DIRECTORY_PAGE_SIZE,
           search: deferredSearch,
           status: filters.status !== "All statuses" ? filters.status : undefined,
-          owner_id: filters.owner !== "All owners" ? filters.owner : undefined,
+          pipeline_id: filters.pipelineId !== "All pipelines" ? filters.pipelineId : undefined,
           company_id: filters.companyId !== "All companies" ? filters.companyId : undefined,
         }),
       );
@@ -396,7 +414,7 @@ export function ContactsScreen({ user }) {
         });
       });
     },
-    [contactPage, deferredSearch, filters.companyId, filters.owner, filters.status, token],
+    [contactPage, deferredSearch, filters.companyId, filters.pipelineId, filters.status, token],
   );
 
   const loadCompaniesPage = useCallback(
@@ -424,10 +442,9 @@ export function ContactsScreen({ user }) {
 
   async function loadStaticData() {
     try {
-      const { allCompaniesData, usersData, pipelineStatusesData } = await fetchStaticData();
+      const { allCompaniesData, pipelinesData } = await fetchStaticData();
       setAllCompanies(allCompaniesData);
-      setOwners(usersData);
-      setPipelineStatuses(pipelineStatusesData);
+      setPipelines(pipelinesData);
       setStatusMessage({ error: "", success: "" });
     } catch (error) {
       setStatusMessage({ error: error.message || "Unable to load contacts.", success: "" });
@@ -439,14 +456,13 @@ export function ContactsScreen({ user }) {
 
     async function hydrateStaticData() {
       try {
-        const { allCompaniesData, usersData, pipelineStatusesData } = await fetchStaticData();
+        const { allCompaniesData, pipelinesData } = await fetchStaticData();
         if (!active) {
           return;
         }
         startTransition(() => {
           setAllCompanies(allCompaniesData);
-          setOwners(usersData);
-          setPipelineStatuses(pipelineStatusesData);
+          setPipelines(pipelinesData);
           setStatusMessage({ error: "", success: "" });
         });
       } catch (error) {
@@ -502,9 +518,32 @@ export function ContactsScreen({ user }) {
     };
   }, [companyPage, contactPage, loadCompaniesPage, loadContactsPage, viewMode]);
 
+  useEffect(() => {
+    if (filters.status === "All statuses") {
+      return;
+    }
+
+    if (!contactStatusOptions.includes(filters.status)) {
+      setFilters((current) => ({ ...current, status: "All statuses" }));
+      setContactPage(1);
+    }
+  }, [contactStatusOptions, filters.status]);
+
   function updateFilters(event) {
     const { name, value } = event.target;
-    setFilters((current) => ({ ...current, [name]: value }));
+    setFilters((current) => {
+      const nextFilters = { ...current, [name]: value };
+      if (name === "pipelineId") {
+        const nextPipeline = pipelines.find((pipeline) => String(pipeline.id) === value) || null;
+        const nextStatuses = nextPipeline
+          ? (nextPipeline.statuses || []).map((status) => normalizeStatusLabel(status.name))
+          : pipelines.flatMap((pipeline) => (pipeline.statuses || []).map((status) => normalizeStatusLabel(status.name)));
+        if (!nextStatuses.includes(current.status)) {
+          nextFilters.status = "All statuses";
+        }
+      }
+      return nextFilters;
+    });
     if (viewMode === "contacts") {
       setContactPage(1);
     } else {
@@ -514,7 +553,22 @@ export function ContactsScreen({ user }) {
 
   function updateContactForm(event) {
     const { name, value } = event.target;
-    setContactForm((current) => ({ ...current, [name]: value }));
+    setContactForm((current) => {
+      if (name !== "pipelineId") {
+        return { ...current, [name]: value };
+      }
+
+      const nextPipeline = pipelines.find((pipeline) => String(pipeline.id) === value) || null;
+      const nextStatuses = nextPipeline
+        ? (nextPipeline.statuses || []).map((status) => normalizeStatusLabel(status.name))
+        : contactStatusOptions;
+
+      return {
+        ...current,
+        pipelineId: value,
+        status: nextStatuses.includes(current.status) ? current.status : nextStatuses[0] || "Lead",
+      };
+    });
   }
 
   function updateCompanyForm(event) {
@@ -541,11 +595,18 @@ export function ContactsScreen({ user }) {
   }
 
   function openCreateContactModal() {
+    const defaultPipelineId =
+      filters.pipelineId !== "All pipelines" ? filters.pipelineId : contactPipelineOptions[0]?.value || "";
+    const defaultPipeline = pipelines.find((pipeline) => String(pipeline.id) === defaultPipelineId) || null;
+    const defaultStatuses = defaultPipeline
+      ? (defaultPipeline.statuses || []).map((status) => normalizeStatusLabel(status.name))
+      : contactStatusOptions;
+
     setContactForm({
       ...emptyContactForm,
       companyId: companyOptions[0]?.value || "",
-      ownerId: "",
-      status: contactStatusOptions[0] || "Lead",
+      pipelineId: defaultPipelineId,
+      status: defaultStatuses[0] || "Lead",
       lastTouch: new Date().toISOString().slice(0, 10),
     });
     setContactModalState({ open: true, mode: "create", contactId: null });
@@ -553,9 +614,16 @@ export function ContactsScreen({ user }) {
   }
 
   function openEditContactModal(contact) {
+    const fallbackPipelineId = contact.pipelineId || contactPipelineOptions[0]?.value || "";
+    const selectedContactPipeline = pipelines.find((pipeline) => String(pipeline.id) === fallbackPipelineId) || null;
+    const availableStatuses = selectedContactPipeline
+      ? (selectedContactPipeline.statuses || []).map((status) => normalizeStatusLabel(status.name))
+      : contactStatusOptions;
+
     setContactForm({
       ...toContactFormState(contact),
-      status: contact.status || contactStatusOptions[0] || "Lead",
+      pipelineId: fallbackPipelineId,
+      status: contact.status || availableStatuses[0] || "Lead",
     });
     setContactModalState({ open: true, mode: "edit", contactId: contact.id });
     setStatusMessage((current) => ({ ...current, error: "" }));
@@ -670,22 +738,22 @@ export function ContactsScreen({ user }) {
       <div className={styles.stack}>
         <section className={styles.hero}>
           <div>
-            <p className={styles.eyebrow}>Contacts</p>
-            <h1>People and companies in one shared directory</h1>
+            <h1>{viewMode === "contacts" ? "Contacts" : "Companies"}</h1>
             <p className={styles.heroMeta}>{heroMeta}</p>
           </div>
           <div className={styles.heroActions}>
-            <button className={styles.secondaryButton} type="button">
-              Import CSV
-            </button>
-            <button className={styles.secondaryButton} type="button" onClick={openCreateCompanyModal}>
-              <PlusIcon />
-              <span>New company</span>
-            </button>
-            <button className={styles.primaryButton} type="button" onClick={openCreateContactModal} disabled={!companyOptions.length}>
-              <PlusIcon />
-              <span>New contact</span>
-            </button>
+            {viewMode === "contacts" ? <button className={styles.secondaryButton} type="button">Import</button> : null}
+            {viewMode === "companies" ? (
+              <button className={styles.primaryButton} type="button" onClick={openCreateCompanyModal}>
+                <PlusIcon />
+                <span>Add company</span>
+              </button>
+            ) : (
+              <button className={styles.primaryButton} type="button" onClick={openCreateContactModal} disabled={!companyOptions.length}>
+                <PlusIcon />
+                <span>Add contact</span>
+              </button>
+            )}
           </div>
         </section>
 
@@ -719,27 +787,16 @@ export function ContactsScreen({ user }) {
               name="search"
               value={filters.search}
               onChange={updateFilters}
-              placeholder={viewMode === "contacts" ? "Search by name, email, company, or title" : "Search by company, owner, contact, or website"}
+              placeholder={viewMode === "contacts" ? "Search contacts, companies, emails..." : "Search companies, owners, websites..."}
             />
           </label>
 
           {viewMode === "contacts" ? (
             <>
               <label className={styles.filterField}>
-                <span>Status</span>
-                <select name="status" value={filters.status} onChange={updateFilters}>
-                  {statusOptions.map((option) => (
-                    <option key={option} value={option}>
-                      {option}
-                    </option>
-                  ))}
-                </select>
-              </label>
-
-              <label className={styles.filterField}>
-                <span>Owner</span>
-                <select name="owner" value={filters.owner} onChange={updateFilters}>
-                  {ownerFilterOptions.map((option) => (
+                <span className={styles.visuallyHidden}>Pipeline</span>
+                <select name="pipelineId" value={filters.pipelineId} onChange={updateFilters}>
+                  {pipelineOptions.map((option) => (
                     <option key={option.value} value={option.value}>
                       {option.label}
                     </option>
@@ -747,24 +804,46 @@ export function ContactsScreen({ user }) {
                 </select>
               </label>
 
-              <label className={styles.filterField}>
-                <span>Company</span>
-                <select name="companyId" value={filters.companyId} onChange={updateFilters}>
-                  {contactCompanyFilterOptions.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
+              <div className={styles.statusTabs} role="tablist" aria-label="Status filters">
+                {statusOptions.map((option) => {
+                  const label = option === "All statuses" ? "All" : option;
+                  const active = filters.status === option;
+                  return (
+                    <button
+                      key={option}
+                      className={`${styles.statusTab} ${active ? styles.statusTabActive : ""}`}
+                      type="button"
+                      role="tab"
+                      aria-selected={active}
+                      onClick={() => {
+                        setFilters((current) => ({ ...current, status: option }));
+                        setContactPage(1);
+                      }}
+                    >
+                      {label}
+                    </button>
+                  );
+                })}
+              </div>
             </>
-          ) : null}
+          ) : (
+            <label className={styles.filterField}>
+              <span className={styles.visuallyHidden}>Company</span>
+              <select name="companyId" value={filters.companyId} onChange={updateFilters}>
+                {contactCompanyFilterOptions.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
 
           <button
             className={styles.secondaryButton}
             type="button"
             onClick={() => {
-              setFilters({ search: "", status: "All statuses", owner: "All owners", companyId: "All companies" });
+              setFilters({ search: "", status: "All statuses", pipelineId: "All pipelines", companyId: "All companies" });
               if (viewMode === "contacts") {
                 setContactPage(1);
               } else {
@@ -795,46 +874,51 @@ export function ContactsScreen({ user }) {
                         <th>Contact</th>
                         <th>Company</th>
                         <th>Status</th>
-                        <th>Owner</th>
                         <th>Last touch</th>
-                        <th>Actions</th>
+                        <th>Owner</th>
+                        <th aria-label="Open contact" />
                       </tr>
                     </thead>
                     <tbody>
                       {contacts.map((contact) => (
-                        <tr key={contact.id}>
+                        <tr key={contact.id} className={styles.clickableRow} onClick={() => openEditContactModal(contact)}>
                           <td>
-                            <div className={styles.contactMeta}>
-                              <strong>{contact.fullName}</strong>
-                              <span>{contact.title}</span>
-                              <span className={styles.monoText}>{contact.email}</span>
+                            <div className={styles.contactCell}>
+                              <OwnerAvatar name={contact.fullName} />
+                              <div className={styles.contactMeta}>
+                                <strong>{contact.fullName}</strong>
+                                <span>{contact.title}</span>
+                              </div>
                             </div>
                           </td>
                           <td>
                             <div className={styles.companyCell}>
                               <CompanyMark company={contact.company} />
                               <div className={styles.companyMeta}>
-                                <strong>{contact.company}</strong>
-                                <span className={styles.monoText}>{contact.phone}</span>
+                                <span>{contact.company}</span>
                               </div>
                             </div>
                           </td>
                           <td>
                             <ContactStatus value={contact.status} />
                           </td>
+                          <td className={styles.lastTouchCell}>{contact.lastTouch}</td>
                           <td>
                             <div className={styles.ownerCell}>
                               <OwnerAvatar name={contact.owner} />
-                              <span>{contact.owner}</span>
                             </div>
                           </td>
-                          <td className={styles.monoText}>{contact.lastTouch}</td>
-                          <td className={styles.actionsCell}>
-                            <button className={styles.inlineButton} type="button" onClick={() => openEditContactModal(contact)}>
-                              Edit
-                            </button>
-                            <button className={styles.inlineDanger} type="button" onClick={() => handleDelete(contact.id)}>
-                              Delete
+                          <td className={styles.rowArrowCell}>
+                            <button
+                              className={styles.inlineDangerIcon}
+                              type="button"
+                              aria-label={`Delete ${contact.fullName}`}
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                handleDelete(contact.id);
+                              }}
+                            >
+                              <TrashIcon />
                             </button>
                           </td>
                         </tr>
@@ -855,7 +939,7 @@ export function ContactsScreen({ user }) {
                     <article key={contact.id} className={styles.mobileCard}>
                       <div className={styles.mobileCardHeader}>
                         <div className={styles.mobileCardLead}>
-                          <CompanyMark company={contact.company} />
+                          <OwnerAvatar name={contact.fullName} />
                           <div className={styles.contactMeta}>
                             <strong>{contact.fullName}</strong>
                             <span>{contact.title}</span>
@@ -873,7 +957,6 @@ export function ContactsScreen({ user }) {
                           <p className={styles.mobileLabel}>Owner</p>
                           <div className={styles.ownerCell}>
                             <OwnerAvatar name={contact.owner} />
-                            <span>{contact.owner}</span>
                           </div>
                         </div>
                         <div>
@@ -1095,7 +1178,8 @@ export function ContactsScreen({ user }) {
           onClose={closeContactModal}
           onSubmit={handleContactSubmit}
           companyOptions={companyOptions}
-          statusOptions={contactStatusOptions}
+          pipelineOptions={contactPipelineOptions}
+          statusOptions={modalStatusOptions}
         />
       ) : null}
 

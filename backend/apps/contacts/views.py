@@ -10,7 +10,7 @@ def contacts_queryset_for_user(user):
     company_ids = list(user.companies.values_list("id", flat=True))
     if user.company_id and user.company_id not in company_ids:
         company_ids.append(user.company_id)
-    return CRMContact.objects.select_related("company", "owner").filter(tenant_company_id__in=company_ids)
+    return CRMContact.objects.select_related("company", "owner", "pipeline").filter(tenant_company_id__in=company_ids)
 
 
 class ContactListCreateView(generics.ListCreateAPIView):
@@ -26,6 +26,7 @@ class ContactListCreateView(generics.ListCreateAPIView):
         status = query_params.get("status", "").strip()
         owner_id = query_params.get("owner_id", "").strip()
         company_id = query_params.get("company_id", "").strip()
+        pipeline_id = query_params.get("pipeline_id", "").strip()
 
         if search:
             queryset = queryset.filter(
@@ -44,6 +45,9 @@ class ContactListCreateView(generics.ListCreateAPIView):
 
         if company_id:
             queryset = queryset.filter(company_id=company_id)
+
+        if pipeline_id:
+            queryset = queryset.filter(pipeline_id=pipeline_id)
 
         return queryset
 

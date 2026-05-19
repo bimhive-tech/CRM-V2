@@ -41,6 +41,7 @@ class CRMCompany(models.Model):
 class CRMContact(models.Model):
     tenant_company = models.ForeignKey("companies.Company", on_delete=models.CASCADE, related_name="crm_contacts")
     company = models.ForeignKey(CRMCompany, on_delete=models.CASCADE, related_name="contacts")
+    pipeline = models.ForeignKey("pipelines.Pipeline", on_delete=models.SET_NULL, null=True, blank=True, related_name="contacts")
     owner = models.ForeignKey("accounts.User", on_delete=models.SET_NULL, null=True, blank=True, related_name="owned_crm_contacts")
     full_name = models.CharField(max_length=255)
     title = models.CharField(max_length=255)
