@@ -7,37 +7,24 @@ import { CheckIcon, ClipboardIcon, DealsIcon, PeopleIcon, PipelineIcon, PlusIcon
 import { Sidebar } from "@/components/dashboard/sidebar/sidebar";
 import { Topbar } from "@/components/dashboard/topbar/topbar";
 import {
-  assignPipelineMemberships,
   createPipeline,
   createPipelineStatus,
   deletePipeline,
-  deletePipelineMembership,
   deletePipelineStatus,
   listContacts,
   listDeals,
-  listPipelineInviteOptions,
-  listPipelineMemberships,
   listPipelines,
   updateContact,
   updateDeal,
-  updatePipelineMembership,
   updatePipeline,
   updatePipelineStatus,
 } from "@/lib/api/admin";
 import { getAccessToken } from "@/lib/session";
 
-import { ConfirmDeleteModal, NoticeModal, PipelineInviteModal, PipelineModal } from "./pipeline-modal";
+import { ConfirmDeleteModal, PipelineModal } from "./pipeline-modal";
 import styles from "./pipeline-screen.module.css";
 
 const DEFAULT_STATUS_COLOR = "#7C5F35";
-const inviteInitialState = {
-  userId: "",
-  pipelineIds: [],
-  can_invite_members: false,
-  can_edit_pipeline: false,
-  can_delete_pipeline: false,
-  can_manage_statuses: false,
-};
 const PIPELINE_TABS = [
   { id: "contacts", label: "Contacts", icon: PeopleIcon },
   { id: "deals", label: "Deals", icon: DealsIcon },
@@ -79,18 +66,6 @@ function formatAmount(value) {
 
 function StageBadge({ count }) {
   return <span className={styles.stageCount}>{count}</span>;
-}
-
-function hasPermission(user, permissionCode) {
-  if (!user) {
-    return false;
-  }
-
-  if (user.is_platform_admin) {
-    return true;
-  }
-
-  return Array.isArray(user.permissions) && user.permissions.includes(permissionCode);
 }
 
 function reorderStatuses(statuses, draggingId, targetIndex) {
@@ -160,23 +135,8 @@ export function PipelineScreen({ user }) {
   const [dragState, setDragState] = useState({ draggingId: null, previewStatuses: null });
   const [draggingCardId, setDraggingCardId] = useState(null);
   const [dropStatusId, setDropStatusId] = useState(null);
-  const [inviteState, setInviteState] = useState({
-    open: false,
-    loading: false,
-    users: [],
-    pipelines: [],
-    accessiblePipelineCount: 0,
-    managePipelineId: "",
-    memberships: [],
-    membershipsLoading: false,
-    membershipSavingId: null,
-    membershipRemovingId: null,
-    form: inviteInitialState,
-  });
-  const [noticeState, setNoticeState] = useState({ open: false, title: "", description: "" });
 
   const copy = getTabCopy(activeTab);
-  const canManagePipelineMembers = hasPermission(user, "pipelines.manage_members");
   const selectedPipeline = useMemo(
     () => pipelines.find((pipeline) => String(pipeline.id) === selectedPipelineId) || null,
     [pipelines, selectedPipelineId],
@@ -404,219 +364,6 @@ export function PipelineScreen({ user }) {
     setModalState({ type: null, statusId: null });
   }
 
-  async function openInviteModal() {
-    setStatus((current) => ({ ...current, error: "" }));
-    setInviteState((current) => ({ ...current, open: true, loading: true }));
-    try {
-      const options = await listPipelineInviteOptions(token);
-      if (!(options.pipelines || []).length) {
-        closeInviteModal();
-        if ((options.accessible_pipeline_count || 0) === 0) {
-          setNoticeState({
-            open: true,
-            title: "Create a pipeline first",
-            description: "Create at least one pipeline before inviting teammates or managing pipeline members.",
-          });
-          return;
-        }
-
-        setNoticeState({
-          open: true,
-          title: "No manageable pipelines yet",
-          description: "You do not currently have permission to invite or manage members on any pipeline you can access.",
-        });
-        return;
-      }
-
-      const defaultManagePipelineId =
-        selectedPipeline && options.pipelines.some((pipeline) => pipeline.id === selectedPipeline.id)
-          ? String(selectedPipeline.id)
-          : String(options.pipelines[0].id);
-      const defaultPipelineIds =
-        selectedPipeline && options.pipelines.some((pipeline) => pipeline.id === selectedPipeline.id)
-          ? [String(selectedPipeline.id)]
-          : [];
-      const memberships = await listPipelineMemberships(token, { pipeline_id: defaultManagePipelineId });
-      setInviteState({
-        open: true,
-        loading: false,
-        users: options.users || [],
-        pipelines: options.pipelines || [],
-        accessiblePipelineCount: options.accessible_pipeline_count || 0,
-        managePipelineId: defaultManagePipelineId,
-        memberships: memberships || [],
-        membershipsLoading: false,
-        membershipSavingId: null,
-        membershipRemovingId: null,
-        form: { ...inviteInitialState, pipelineIds: defaultPipelineIds },
-      });
-    } catch (error) {
-      setInviteState((current) => ({ ...current, open: false, loading: false }));
-      setStatus({ loading: false, error: error.message || "Unable to load pipeline invite options.", success: "" });
-    }
-  }
-
-  function closeInviteModal() {
-    setInviteState({
-      open: false,
-      loading: false,
-      users: [],
-      pipelines: [],
-      accessiblePipelineCount: 0,
-      managePipelineId: "",
-      memberships: [],
-      membershipsLoading: false,
-      membershipSavingId: null,
-      membershipRemovingId: null,
-      form: inviteInitialState,
-    });
-  }
-
-  async function loadManageMemberships(pipelineId) {
-    if (!pipelineId) {
-      setInviteState((current) => ({ ...current, memberships: [], membershipsLoading: false }));
-      return;
-    }
-
-    setInviteState((current) => ({
-      ...current,
-      managePipelineId: pipelineId,
-      membershipsLoading: true,
-      memberships: current.managePipelineId === pipelineId ? current.memberships : [],
-    }));
-
-    try {
-      const memberships = await listPipelineMemberships(token, { pipeline_id: pipelineId });
-      setInviteState((current) => ({
-        ...current,
-        managePipelineId: pipelineId,
-        memberships: memberships || [],
-        membershipsLoading: false,
-      }));
-    } catch (error) {
-      setInviteState((current) => ({ ...current, membershipsLoading: false }));
-      setStatus({ loading: false, error: error.message || "Unable to load pipeline members.", success: "" });
-    }
-  }
-
-  function updateInviteUser(userId) {
-    setInviteState((current) => ({
-      ...current,
-      form: { ...current.form, userId },
-    }));
-  }
-
-  function toggleInvitePipeline(pipelineId) {
-    setInviteState((current) => {
-      const nextPipelineIds = current.form.pipelineIds.includes(pipelineId)
-        ? current.form.pipelineIds.filter((value) => value !== pipelineId)
-        : [...current.form.pipelineIds, pipelineId];
-      return {
-        ...current,
-        form: { ...current.form, pipelineIds: nextPipelineIds },
-      };
-    });
-  }
-
-  function updateInvitePermission(field, checked) {
-    setInviteState((current) => ({
-      ...current,
-      form: { ...current.form, [field]: checked },
-    }));
-  }
-
-  async function handleInviteSubmit(event) {
-    event.preventDefault();
-    setInviteState((current) => ({ ...current, loading: true }));
-    setStatus((current) => ({ ...current, error: "", success: "" }));
-
-    try {
-      await assignPipelineMemberships(token, {
-        user_id: Number(inviteState.form.userId),
-        pipeline_ids: inviteState.form.pipelineIds.map((id) => Number(id)),
-        can_invite_members: inviteState.form.can_invite_members,
-        can_edit_pipeline: inviteState.form.can_edit_pipeline,
-        can_delete_pipeline: inviteState.form.can_delete_pipeline,
-        can_manage_statuses: inviteState.form.can_manage_statuses,
-      });
-      let nextMemberships = inviteState.memberships;
-      if (inviteState.managePipelineId && inviteState.form.pipelineIds.includes(inviteState.managePipelineId)) {
-        nextMemberships = await listPipelineMemberships(token, { pipeline_id: inviteState.managePipelineId });
-      }
-      setInviteState((current) => ({
-        ...current,
-        loading: false,
-        memberships: nextMemberships || [],
-        form: {
-          ...inviteInitialState,
-          pipelineIds:
-            selectedPipeline && current.pipelines.some((pipeline) => pipeline.id === selectedPipeline.id)
-              ? [String(selectedPipeline.id)]
-              : [],
-        },
-      }));
-      await loadPipelines(activeTab, selectedPipelineId);
-      setStatus({ loading: false, error: "", success: "Pipeline access updated." });
-    } catch (error) {
-      setInviteState((current) => ({ ...current, loading: false }));
-      setStatus({ loading: false, error: error.message || "Unable to invite user to pipelines.", success: "" });
-    }
-  }
-
-  async function handleManagePipelineChange(pipelineId) {
-    await loadManageMemberships(pipelineId);
-  }
-
-  async function handleMembershipPermissionChange(membershipId, field, checked) {
-    const membership = inviteState.memberships.find((item) => item.id === membershipId);
-    if (!membership) {
-      return;
-    }
-
-    setInviteState((current) => ({ ...current, membershipSavingId: membershipId }));
-    setStatus((current) => ({ ...current, error: "", success: "" }));
-
-    try {
-      const updated = await updatePipelineMembership(token, membershipId, {
-        can_invite_members: field === "can_invite_members" ? checked : membership.can_invite_members,
-        can_edit_pipeline: field === "can_edit_pipeline" ? checked : membership.can_edit_pipeline,
-        can_delete_pipeline: field === "can_delete_pipeline" ? checked : membership.can_delete_pipeline,
-        can_manage_statuses: field === "can_manage_statuses" ? checked : membership.can_manage_statuses,
-      });
-      setInviteState((current) => ({
-        ...current,
-        membershipSavingId: null,
-        memberships: current.memberships.map((item) => (item.id === membershipId ? { ...item, ...updated } : item)),
-      }));
-      setStatus({ loading: false, error: "", success: "Pipeline member updated." });
-    } catch (error) {
-      setInviteState((current) => ({ ...current, membershipSavingId: null }));
-      setStatus({ loading: false, error: error.message || "Unable to update pipeline member.", success: "" });
-    }
-  }
-
-  async function handleMembershipRemove(membershipId) {
-    setInviteState((current) => ({ ...current, membershipRemovingId: membershipId }));
-    setStatus((current) => ({ ...current, error: "", success: "" }));
-
-    try {
-      await deletePipelineMembership(token, membershipId);
-      setInviteState((current) => ({
-        ...current,
-        membershipRemovingId: null,
-        memberships: current.memberships.filter((item) => item.id !== membershipId),
-      }));
-      setStatus({ loading: false, error: "", success: "Pipeline member removed." });
-    } catch (error) {
-      setInviteState((current) => ({ ...current, membershipRemovingId: null }));
-      setStatus({ loading: false, error: error.message || "Unable to remove pipeline member.", success: "" });
-    }
-  }
-
-  function closeNoticeModal() {
-    setNoticeState({ open: false, title: "", description: "" });
-  }
-
   function startStatusEditing(statusItem) {
     setEditingStatusId(statusItem.id);
     setEditingName(statusItem.name);
@@ -795,8 +542,6 @@ export function PipelineScreen({ user }) {
       topbar={
         <Topbar
           user={user}
-          onInvite={openInviteModal}
-          inviteDisabled={!canManagePipelineMembers}
           breadcrumbs={[
             { label: "Workspace", href: "/dashboard" },
             { label: "Pipeline", href: "/pipeline" },
@@ -1231,44 +976,6 @@ export function PipelineScreen({ user }) {
         />
       ) : null}
 
-      {inviteState.open ? (
-        <PipelineInviteModal
-          users={inviteState.users}
-          pipelines={inviteState.pipelines}
-          memberships={inviteState.memberships}
-          value={inviteState.form}
-          managePipelineId={inviteState.managePipelineId}
-          loading={inviteState.loading}
-          membershipsLoading={inviteState.membershipsLoading}
-          membershipSavingId={inviteState.membershipSavingId}
-          membershipRemovingId={inviteState.membershipRemovingId}
-          onUserChange={updateInviteUser}
-          onTogglePipeline={toggleInvitePipeline}
-          onPermissionChange={updateInvitePermission}
-          onManagePipelineChange={handleManagePipelineChange}
-          onMembershipPermissionChange={handleMembershipPermissionChange}
-          onMembershipRemove={handleMembershipRemove}
-          onClose={closeInviteModal}
-          onSubmit={handleInviteSubmit}
-        />
-      ) : null}
-
-      {noticeState.open ? (
-        <NoticeModal
-          title={noticeState.title}
-          description={noticeState.description}
-          actionLabel={noticeState.title === "Create a pipeline first" ? "Create pipeline" : ""}
-          onAction={
-            noticeState.title === "Create a pipeline first"
-              ? () => {
-                  closeNoticeModal();
-                  openModal("pipeline");
-                }
-              : null
-          }
-          onClose={closeNoticeModal}
-        />
-      ) : null}
     </DashboardShell>
   );
 }

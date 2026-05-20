@@ -735,3 +735,10 @@ Watching for file changes with StatReloader
 [20/May/2026 17:15:17] "GET /api/pipelines/invite-options/ HTTP/1.1" 200 4091
 [20/May/2026 17:15:17] "OPTIONS /api/pipelines/memberships/?pipeline_id=3 HTTP/1.1" 200 0
 [20/May/2026 17:15:17] "GET /api/pipelines/memberships/?pipeline_id=3 HTTP/1.1" 200 2
+[20/May/2026 17:50:31] "OPTIONS /api/auth/me/ HTTP/1.1" 200 0
+Unauthorized: /api/auth/me/
+[20/May/2026 17:50:31] "GET /api/auth/me/ HTTP/1.1" 401 172
+[20/May/2026 17:50:31] "OPTIONS /api/auth/refresh/ HTTP/1.1" 200 0
+[20/May/2026 17:50:33,206] - Broken pipe from ('127.0.0.1', 57930)
+[20/May/2026 17:51:58] "POST /api/auth/login/ HTTP/1.1" 200 4096
+[20/May/2026 17:52:16] "POST /api/auth/login/ HTTP/1.1" 200 4096

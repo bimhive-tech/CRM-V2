@@ -75,3 +75,20 @@
  GET / 200 in 176ms (next.js: 122ms, application-code: 53ms)
  GET /dashboard 200 in 172ms (next.js: 130ms, application-code: 41ms)
  GET /pipeline 200 in 212ms (next.js: 39ms, application-code: 173ms)
+✓ Compiled in 618ms
+ GET /pipeline 200 in 362ms (next.js: 120ms, application-code: 242ms)
+ GET /pipeline 200 in 224ms (next.js: 5ms, application-code: 219ms)
+ GET /pipeline 200 in 169ms (next.js: 44ms, application-code: 125ms)
+ GET /pipeline 200 in 172ms (next.js: 8ms, application-code: 164ms)
+ GET /pipeline 200 in 171ms (next.js: 78ms, application-code: 93ms)
+ GET /pipeline 200 in 196ms (next.js: 105ms, application-code: 92ms)
+ GET /pipeline 200 in 120ms (next.js: 4ms, application-code: 116ms)
+ GET /pipeline 200 in 89ms (next.js: 8ms, application-code: 81ms)
+ GET /pipeline 200 in 58ms (next.js: 4ms, application-code: 54ms)
+ GET /pipeline 200 in 60ms (next.js: 27ms, application-code: 32ms)
+✓ Compiled in 37ms
+ GET /pipeline 200 in 183ms (next.js: 135ms, application-code: 48ms)
+✓ Compiled in 38ms
+ GET /pipeline 200 in 370ms (next.js: 154ms, application-code: 216ms)
+ GET / 200 in 49ms (next.js: 18ms, application-code: 31ms)
+ GET / 200 in 65ms (next.js: 4ms, application-code: 62ms)
