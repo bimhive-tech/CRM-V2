@@ -14,8 +14,8 @@ class UserRole(models.TextChoices):
 
 
 class Role(models.Model):
-    name = models.CharField(max_length=255, unique=True)
-    slug = models.SlugField(max_length=255, unique=True)
+    name = models.CharField(max_length=255)
+    slug = models.SlugField(max_length=255, db_index=True)
     company = models.ForeignKey("companies.Company", on_delete=models.CASCADE, null=True, blank=True, related_name="roles")
     description = models.TextField(blank=True)
     is_system = models.BooleanField(default=False)
@@ -29,7 +29,8 @@ class Role(models.Model):
         return self.name
 
     def save(self, *args, **kwargs):
-        self.slug = slugify(self.name)
+        if not self.slug:
+            self.slug = slugify(self.name).replace("-", "_")
         self.permissions = sorted({code for code in self.permissions if code in ALL_PERMISSION_CODES})
         super().save(*args, **kwargs)
 

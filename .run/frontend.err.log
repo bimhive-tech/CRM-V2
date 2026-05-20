@@ -1,0 +1,235 @@
+[browser] Image with src "https://633c2464b38a51b3a7f9141ddbc37c41.r2.cloudflarestorage.com/bh-crm/company-logos/1/d70063bb08b6418787d7150b58729ec1.png?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=19dbda97d4b758141c83036d45d7ba3d%2F20260520%2Fauto%2Fs3%2Faws4_request&X-Amz-Date=20260520T113350Z&X-Amz-Expires=3600&X-Amz-SignedHeaders=host&X-Amz-Signature=e0f9c1f286ca6258bf67f7ac397fa63507c4cc2f844d77200c7526434df3328e" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio. (file://D:/Youssef/Work/BIM Hive/CRM V2/frontend/.next/dev/static/chunks/node_modules_next_dist_115brz8._.js:2477:13)
+[browser] Image with src "https://633c2464b38a51b3a7f9141ddbc37c41.r2.cloudflarestorage.com/bh-crm/company-logos/1/d70063bb08b6418787d7150b58729ec1.png?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=19dbda97d4b758141c83036d45d7ba3d%2F20260520%2Fauto%2Fs3%2Faws4_request&X-Amz-Date=20260520T113358Z&X-Amz-Expires=3600&X-Amz-SignedHeaders=host&X-Amz-Signature=6a1c6d5e1d9c7910e8296b1770b2f8d4b3a40ddb3212926bb2f8082235af56b4" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio. (file://D:/Youssef/Work/BIM Hive/CRM V2/frontend/.next/dev/static/chunks/node_modules_next_dist_115brz8._.js:2477:13)
+[browser] Image with src "https://633c2464b38a51b3a7f9141ddbc37c41.r2.cloudflarestorage.com/bh-crm/company-logos/1/d70063bb08b6418787d7150b58729ec1.png?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=19dbda97d4b758141c83036d45d7ba3d%2F20260520%2Fauto%2Fs3%2Faws4_request&X-Amz-Date=20260520T115405Z&X-Amz-Expires=3600&X-Amz-SignedHeaders=host&X-Amz-Signature=a6e2f1dbd3b787829c252c4ffa7d2539755d113fd223e6abf697ded97b06497d" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio. (file://D:/Youssef/Work/BIM Hive/CRM V2/frontend/.next/dev/static/chunks/node_modules_next_dist_115brz8._.js:2477:13)
+[browser] Image with src "https://633c2464b38a51b3a7f9141ddbc37c41.r2.cloudflarestorage.com/bh-crm/company-logos/1/d70063bb08b6418787d7150b58729ec1.png?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=19dbda97d4b758141c83036d45d7ba3d%2F20260520%2Fauto%2Fs3%2Faws4_request&X-Amz-Date=20260520T115405Z&X-Amz-Expires=3600&X-Amz-SignedHeaders=host&X-Amz-Signature=a6e2f1dbd3b787829c252c4ffa7d2539755d113fd223e6abf697ded97b06497d" was detected as the Largest Contentful Paint (LCP). Please add the `loading="eager"` property if this image is above the fold.
+Read more: https://nextjs.org/docs/app/api-reference/components/image#loading (file://D:/Youssef/Work/BIM Hive/CRM V2/frontend/.next/dev/static/chunks/node_modules_next_dist_115brz8._.js:2477:13)
+⨯ ./src/features/settings/components/settings-screen/settings-screen.jsx:1423:16
+Expected '</', got '}'
+  [90m1421 |[0m                   </select>
+  [90m1422 |[0m                 </label>
+[31m[1m>[0m [90m1423 |[0m               )}
+  [90m     |[0m                [31m[1m^[0m
+  [90m1424 |[0m             </div>
+  [90m1425 |[0m
+  [90m1426 |[0m             <div className={styles.assignmentSection}>
+
+Parsing ecmascript source code failed
+
+Import traces:
+  Client Component Browser:
+    ./src/features/settings/components/settings-screen/settings-screen.jsx [Client Component Browser]
+    ./src/app/settings/page.js [Client Component Browser]
+    ./src/app/settings/page.js [Server Component]
+
+  Client Component SSR:
+    ./src/features/settings/components/settings-screen/settings-screen.jsx [Client Component SSR]
+    ./src/app/settings/page.js [Client Component SSR]
+    ./src/app/settings/page.js [Server Component]
+
+
+⨯ ./src/features/settings/components/settings-screen/settings-screen.jsx:1423:16
+Expected '</', got '}'
+  [90m1421 |[0m                   </select>
+  [90m1422 |[0m                 </label>
+[31m[1m>[0m [90m1423 |[0m               )}
+  [90m     |[0m                [31m[1m^[0m
+  [90m1424 |[0m             </div>
+  [90m1425 |[0m
+  [90m1426 |[0m             <div className={styles.assignmentSection}>
+
+Parsing ecmascript source code failed
+
+Import traces:
+  Client Component Browser:
+    ./src/features/settings/components/settings-screen/settings-screen.jsx [Client Component Browser]
+    ./src/app/settings/page.js [Client Component Browser]
+    ./src/app/settings/page.js [Server Component]
+
+  Client Component SSR:
+    ./src/features/settings/components/settings-screen/settings-screen.jsx [Client Component SSR]
+    ./src/app/settings/page.js [Client Component SSR]
+    ./src/app/settings/page.js [Server Component]
+
+
+[browser] Uncaught Error: ./src/features/settings/components/settings-screen/settings-screen.jsx:1423:16
+Expected '</', got '}'
+  1421 |                   </select>
+  1422 |                 </label>
+> 1423 |               )}
+       |                ^
+  1424 |             </div>
+  1425 |
+  1426 |             <div className={styles.assignmentSection}>
+
+Parsing ecmascript source code failed
+
+Import traces:
+  Client Component Browser:
+    ./src/features/settings/components/settings-screen/settings-screen.jsx [Client Component Browser]
+    ./src/app/settings/page.js [Client Component Browser]
+    ./src/app/settings/page.js [Server Component]
+
+  Client Component SSR:
+    ./src/features/settings/components/settings-screen/settings-screen.jsx [Client Component SSR]
+    ./src/app/settings/page.js [Client Component SSR]
+    ./src/app/settings/page.js [Server Component]
+
+
+    at <unknown> (Error: ./src/features/settings/components/settings-screen/settings-screen.jsx:1423:16)
+    at <unknown> (Error: (./src/features/settings/components/settings-screen/settings-screen.jsx:1423:16)
+[browser] ./src/features/settings/components/settings-screen/settings-screen.jsx:1423:16
+Expected '</', got '}'
+  1421 |                   </select>
+  1422 |                 </label>
+> 1423 |               )}
+       |                ^
+  1424 |             </div>
+  1425 |
+  1426 |             <div className={styles.assignmentSection}>
+
+Parsing ecmascript source code failed
+
+Import traces:
+  Client Component Browser:
+    ./src/features/settings/components/settings-screen/settings-screen.jsx [Client Component Browser]
+    ./src/app/settings/page.js [Client Component Browser]
+    ./src/app/settings/page.js [Server Component]
+
+  Client Component SSR:
+    ./src/features/settings/components/settings-screen/settings-screen.jsx [Client Component SSR]
+    ./src/app/settings/page.js [Client Component SSR]
+    ./src/app/settings/page.js [Server Component] 
+    at handleErrors (file://D:/Youssef/Work/BIM Hive/CRM V2/frontend/.next/dev/static/chunks/node_modules_next_dist_client_0pe1dg-._.js:2774:21)
+    at processMessage (file://D:/Youssef/Work/BIM Hive/CRM V2/frontend/.next/dev/static/chunks/node_modules_next_dist_client_0pe1dg-._.js:2835:28)
+    at <unknown> (file://D:/Youssef/Work/BIM Hive/CRM V2/frontend/.next/dev/static/chunks/node_modules_next_dist_client_0pe1dg-._.js:2680:13)
+    at WebSocket.handleMessage (file://D:/Youssef/Work/BIM Hive/CRM V2/frontend/.next/dev/static/chunks/node_modules_next_dist_client_0pe1dg-._.js:2325:17) (file://D:/Youssef/Work/BIM Hive/CRM V2/frontend/.next/dev/static/chunks/node_modules_next_dist_client_0pe1dg-._.js:2774:21)
+[browser] ./src/features/settings/components/settings-screen/settings-screen.jsx:1423:16
+Expected '</', got '}'
+  1421 |                   </select>
+  1422 |                 </label>
+> 1423 |               )}
+       |                ^
+  1424 |             </div>
+  1425 |
+  1426 |             <div className={styles.assignmentSection}>
+
+Parsing ecmascript source code failed
+
+Import traces:
+  Client Component Browser:
+    ./src/features/settings/components/settings-screen/settings-screen.jsx [Client Component Browser]
+    ./src/app/settings/page.js [Client Component Browser]
+    ./src/app/settings/page.js [Server Component]
+
+  Client Component SSR:
+    ./src/features/settings/components/settings-screen/settings-screen.jsx [Client Component SSR]
+    ./src/app/settings/page.js [Client Component SSR]
+    ./src/app/settings/page.js [Server Component] 
+    at handleErrors (file://D:/Youssef/Work/BIM Hive/CRM V2/frontend/.next/dev/static/chunks/node_modules_next_dist_client_0pe1dg-._.js:2774:21)
+    at processMessage (file://D:/Youssef/Work/BIM Hive/CRM V2/frontend/.next/dev/static/chunks/node_modules_next_dist_client_0pe1dg-._.js:2835:28)
+    at <unknown> (file://D:/Youssef/Work/BIM Hive/CRM V2/frontend/.next/dev/static/chunks/node_modules_next_dist_client_0pe1dg-._.js:2680:13)
+    at WebSocket.handleMessage (file://D:/Youssef/Work/BIM Hive/CRM V2/frontend/.next/dev/static/chunks/node_modules_next_dist_client_0pe1dg-._.js:2325:17) (file://D:/Youssef/Work/BIM Hive/CRM V2/frontend/.next/dev/static/chunks/node_modules_next_dist_client_0pe1dg-._.js:2774:21)
+[browser] Uncaught Error: ./src/features/settings/components/settings-screen/settings-screen.jsx:1423:16
+Expected '</', got '}'
+  1421 |                   </select>
+  1422 |                 </label>
+> 1423 |               )}
+       |                ^
+  1424 |             </div>
+  1425 |
+  1426 |             <div className={styles.assignmentSection}>
+
+Parsing ecmascript source code failed
+
+Import traces:
+  Client Component Browser:
+    ./src/features/settings/components/settings-screen/settings-screen.jsx [Client Component Browser]
+    ./src/app/settings/page.js [Client Component Browser]
+    ./src/app/settings/page.js [Server Component]
+
+  Client Component SSR:
+    ./src/features/settings/components/settings-screen/settings-screen.jsx [Client Component SSR]
+    ./src/app/settings/page.js [Client Component SSR]
+    ./src/app/settings/page.js [Server Component]
+
+
+    at <unknown> (Error: ./src/features/settings/components/settings-screen/settings-screen.jsx:1423:16)
+    at <unknown> (Error: (./src/features/settings/components/settings-screen/settings-screen.jsx:1423:16)
+[browser] ./src/features/settings/components/settings-screen/settings-screen.jsx:1423:16
+Expected '</', got '}'
+  1421 |                   </select>
+  1422 |                 </label>
+> 1423 |               )}
+       |                ^
+  1424 |             </div>
+  1425 |
+  1426 |             <div className={styles.assignmentSection}>
+
+Parsing ecmascript source code failed
+
+Import traces:
+  Client Component Browser:
+    ./src/features/settings/components/settings-screen/settings-screen.jsx [Client Component Browser]
+    ./src/app/settings/page.js [Client Component Browser]
+    ./src/app/settings/page.js [Server Component]
+
+  Client Component SSR:
+    ./src/features/settings/components/settings-screen/settings-screen.jsx [Client Component SSR]
+    ./src/app/settings/page.js [Client Component SSR]
+    ./src/app/settings/page.js [Server Component] 
+    at handleErrors (file://D:/Youssef/Work/BIM Hive/CRM V2/frontend/.next/dev/static/chunks/node_modules_next_dist_client_0pe1dg-._.js:2774:21)
+    at processMessage (file://D:/Youssef/Work/BIM Hive/CRM V2/frontend/.next/dev/static/chunks/node_modules_next_dist_client_0pe1dg-._.js:2835:28)
+    at <unknown> (file://D:/Youssef/Work/BIM Hive/CRM V2/frontend/.next/dev/static/chunks/node_modules_next_dist_client_0pe1dg-._.js:2680:13)
+    at WebSocket.handleMessage (file://D:/Youssef/Work/BIM Hive/CRM V2/frontend/.next/dev/static/chunks/node_modules_next_dist_client_0pe1dg-._.js:2325:17) (file://D:/Youssef/Work/BIM Hive/CRM V2/frontend/.next/dev/static/chunks/node_modules_next_dist_client_0pe1dg-._.js:2774:21)
+[browser] ./src/features/settings/components/settings-screen/settings-screen.jsx:1423:16
+Expected '</', got '}'
+  1421 |                   </select>
+  1422 |                 </label>
+> 1423 |               )}
+       |                ^
+  1424 |             </div>
+  1425 |
+  1426 |             <div className={styles.assignmentSection}>
+
+Parsing ecmascript source code failed
+
+Import traces:
+  Client Component Browser:
+    ./src/features/settings/components/settings-screen/settings-screen.jsx [Client Component Browser]
+    ./src/app/settings/page.js [Client Component Browser]
+    ./src/app/settings/page.js [Server Component]
+
+  Client Component SSR:
+    ./src/features/settings/components/settings-screen/settings-screen.jsx [Client Component SSR]
+    ./src/app/settings/page.js [Client Component SSR]
+    ./src/app/settings/page.js [Server Component] 
+    at handleErrors (file://D:/Youssef/Work/BIM Hive/CRM V2/frontend/.next/dev/static/chunks/node_modules_next_dist_client_0pe1dg-._.js:2774:21)
+    at processMessage (file://D:/Youssef/Work/BIM Hive/CRM V2/frontend/.next/dev/static/chunks/node_modules_next_dist_client_0pe1dg-._.js:2835:28)
+    at <unknown> (file://D:/Youssef/Work/BIM Hive/CRM V2/frontend/.next/dev/static/chunks/node_modules_next_dist_client_0pe1dg-._.js:2680:13)
+    at WebSocket.handleMessage (file://D:/Youssef/Work/BIM Hive/CRM V2/frontend/.next/dev/static/chunks/node_modules_next_dist_client_0pe1dg-._.js:2325:17) (file://D:/Youssef/Work/BIM Hive/CRM V2/frontend/.next/dev/static/chunks/node_modules_next_dist_client_0pe1dg-._.js:2774:21)
+[browser] ./src/features/settings/components/settings-screen/settings-screen.jsx:1423:16
+Expected '</', got '}'
+  1421 |                   </select>
+  1422 |                 </label>
+> 1423 |               )}
+       |                ^
+  1424 |             </div>
+  1425 |
+  1426 |             <div className={styles.assignmentSection}>
+
+Parsing ecmascript source code failed
+
+Import traces:
+  Client Component Browser:
+    ./src/features/settings/components/settings-screen/settings-screen.jsx [Client Component Browser]
+    ./src/app/settings/page.js [Client Component Browser]
+    ./src/app/settings/page.js [Server Component]
+
+  Client Component SSR:
+    ./src/features/settings/components/settings-screen/settings-screen.jsx [Client Component SSR]
+    ./src/app/settings/page.js [Client Component SSR]
+    ./src/app/settings/page.js [Server Component] 
+    at handleErrors (file://D:/Youssef/Work/BIM Hive/CRM V2/frontend/.next/dev/static/chunks/node_modules_next_dist_client_0pe1dg-._.js:2774:21)
+    at processMessage (file://D:/Youssef/Work/BIM Hive/CRM V2/frontend/.next/dev/static/chunks/node_modules_next_dist_client_0pe1dg-._.js:2835:28)
+    at <unknown> (file://D:/Youssef/Work/BIM Hive/CRM V2/frontend/.next/dev/static/chunks/node_modules_next_dist_client_0pe1dg-._.js:2680:13)
+    at WebSocket.handleMessage (file://D:/Youssef/Work/BIM Hive/CRM V2/frontend/.next/dev/static/chunks/node_modules_next_dist_client_0pe1dg-._.js:2325:17) (file://D:/Youssef/Work/BIM Hive/CRM V2/frontend/.next/dev/static/chunks/node_modules_next_dist_client_0pe1dg-._.js:2774:21)

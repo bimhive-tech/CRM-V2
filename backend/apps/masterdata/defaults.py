@@ -1,3 +1,4 @@
+from apps.accounts.defaults import ensure_default_company_roles
 from apps.masterdata.models import CompanyIndustry, Currency, PipelineStatusTemplate
 
 
@@ -98,6 +99,7 @@ def create_missing_default_company_industries(company):
 
 
 def initialize_company_master_data(company):
+    ensure_default_company_roles(company)
     create_missing_default_currencies(company)
     create_missing_default_pipeline_status_templates(company)
     create_missing_default_company_industries(company)

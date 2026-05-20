@@ -151,6 +151,9 @@ class AdminUserCreateSerializer(serializers.ModelSerializer):
         if not request or request.user.is_platform_admin:
             return attrs
 
+        if "company_ids" in self.initial_data:
+            raise serializers.ValidationError({"company_ids": "Only platform admins can assign companies."})
+
         accessible_company_ids = set(request.user.companies.values_list("id", flat=True))
         if request.user.company_id:
             accessible_company_ids.add(request.user.company_id)
@@ -164,8 +167,6 @@ class AdminUserCreateSerializer(serializers.ModelSerializer):
 
         if any(target_company.id not in accessible_company_ids for target_company in companies):
             raise serializers.ValidationError({"company_ids": "You can only assign users to your own company."})
-        if companies and not request.user.has_app_permission("users.assign_companies"):
-            raise serializers.ValidationError({"company_ids": "You do not have permission to assign companies."})
 
         disallowed_roles = [role.name for role in roles if role.is_system or role.company_id not in accessible_company_ids]
         if disallowed_roles:
@@ -238,6 +239,9 @@ class AdminUserUpdateSerializer(serializers.ModelSerializer):
         if not request or request.user.is_platform_admin:
             return attrs
 
+        if "company_ids" in self.initial_data:
+            raise serializers.ValidationError({"company_ids": "Only platform admins can assign companies."})
+
         accessible_company_ids = set(request.user.companies.values_list("id", flat=True))
         if request.user.company_id:
             accessible_company_ids.add(request.user.company_id)
@@ -253,8 +257,6 @@ class AdminUserUpdateSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError({"company_ids": "You can only assign users to your own company."})
         if roles and not request.user.has_app_permission("users.assign_roles"):
             raise serializers.ValidationError({"role_ids": "You do not have permission to assign roles."})
-        if companies and not request.user.has_app_permission("users.assign_companies"):
-            raise serializers.ValidationError({"company_ids": "You do not have permission to assign companies."})
 
         disallowed_roles = [role.name for role in roles if role.is_system or role.company_id not in accessible_company_ids]
         if disallowed_roles:

@@ -53,7 +53,6 @@ const userInitialState = {
   email: "",
   full_name: "",
   password: "",
-  role: "user",
   primary_company_id: "",
   company_ids: [],
   role_ids: [],
@@ -146,7 +145,6 @@ function toUserForm(user) {
     email: user.email,
     full_name: user.full_name,
     password: "",
-    role: user.role || "user",
     primary_company_id: user.company?.id ? String(user.company.id) : "",
     company_ids: user.companies.map((company) => String(company.id)),
     role_ids: user.roles.map((role) => String(role.id)),
@@ -296,7 +294,7 @@ export function SettingsScreen({
     [companies],
   );
   const roleOptions = useMemo(
-    () => roles.map((role) => ({ value: String(role.id), label: role.name, is_system: role.is_system })),
+    () => roles.map((role) => ({ value: String(role.id), label: role.name, is_system: role.is_system, company: role.company })),
     [roles],
   );
   const permissionRoles = useMemo(() => {
@@ -652,12 +650,15 @@ export function SettingsScreen({
       const payload = {
         email: userForm.email.trim(),
         full_name: userForm.full_name.trim(),
-        role: user?.is_platform_admin ? userForm.role : "user",
+        role: "user",
         company_id: user?.is_platform_admin ? userForm.primary_company_id || null : selectedCompanyId || null,
-        company_ids: user?.is_platform_admin ? userForm.company_ids : selectedCompanyId ? [selectedCompanyId] : [],
         role_ids: userForm.role_ids,
         is_active: userForm.is_active,
       };
+
+      if (user?.is_platform_admin) {
+        payload.company_ids = userForm.company_ids;
+      }
 
       if (userForm.password.trim()) {
         payload.password = userForm.password.trim();
@@ -1047,7 +1048,7 @@ export function SettingsScreen({
                 <p className={styles.panelEyebrow}>Permissions</p>
                 <h2>Role permission matrix</h2>
                 <p className={styles.bodyCopy}>
-                  Permissions are configured per role. Platform Admin is excluded here because it always has full access. Non-platform companies never see platform-only roles or SaaS company administration permissions.
+                  Permissions are configured per role. Platform Admin is excluded here because it always has full access, and platform-only capabilities are kept out of this matrix entirely.
                 </p>
               </div>
               {user?.is_platform_admin && companyOptions.length ? (
@@ -1383,7 +1384,7 @@ export function SettingsScreen({
         {modalState.type === "user" ? (
           <SettingsModal
             title={modalState.mode === "edit" ? "Edit user" : "Create user"}
-            description="Users can have multiple roles and belong to multiple companies."
+            description="Assign company roles directly from this form."
             onClose={closeModal}
             onSubmit={handleUserSubmit}
             submitLabel={modalState.mode === "edit" ? "Save user" : "Create user"}
@@ -1407,14 +1408,6 @@ export function SettingsScreen({
                   placeholder={modalState.mode === "edit" ? "Leave blank to keep current password" : "Minimum 8 characters"}
                 />
               </label>
-              <label className={styles.field}>
-                <span>Fallback role</span>
-                <select name="role" value={user?.is_platform_admin ? userForm.role : "user"} onChange={updateUserForm} disabled={!user?.is_platform_admin}>
-                  {user?.is_platform_admin ? <option value="platform_admin">Platform admin</option> : null}
-                  {user?.is_platform_admin ? <option value="company_admin">Company admin</option> : null}
-                  <option value="user">User</option>
-                </select>
-              </label>
               {user?.is_platform_admin ? (
                 <label className={styles.field}>
                   <span>Primary company</span>
@@ -1427,29 +1420,24 @@ export function SettingsScreen({
                     ))}
                   </select>
                 </label>
-              ) : (
-                <label className={styles.field}>
-                  <span>Primary company</span>
-                  <input value={selectedCompany?.name || "No company selected"} readOnly />
-                </label>
-              )}
+              ) : null}
             </div>
 
             <div className={styles.assignmentSection}>
               <p className={styles.assignmentTitle}>Assigned roles</p>
               <div className={styles.optionGrid}>
                 {roleOptions
-                  .filter((option) => !option.is_system)
+                  .filter((option) => !option.is_system && (!option.company || String(option.company) === selectedCompanyId))
                   .map((option) => (
-                  <label key={option.value} className={styles.optionCard}>
-                    <input
-                      type="checkbox"
-                      checked={userForm.role_ids.includes(option.value)}
-                      onChange={() => toggleUserAssignment("role_ids", option.value)}
-                    />
-                    <span>{option.label}</span>
-                  </label>
-                ))}
+                    <label key={option.value} className={styles.optionCard}>
+                      <input
+                        type="checkbox"
+                        checked={userForm.role_ids.includes(option.value)}
+                        onChange={() => toggleUserAssignment("role_ids", option.value)}
+                      />
+                      <span>{option.label}</span>
+                    </label>
+                  ))}
               </div>
             </div>
 

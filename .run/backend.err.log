@@ -1,0 +1,424 @@
+Watching for file changes with StatReloader
+Not Found: /api
+[20/May/2026 14:26:57] "GET /api HTTP/1.1" 404 3626
+Not Found: /
+[20/May/2026 14:26:57] "GET / HTTP/1.1" 404 3599
+Not Found: /api
+[20/May/2026 14:26:57] "GET /api HTTP/1.1" 404 3626
+Not Found: /
+[20/May/2026 14:27:11] "GET / HTTP/1.1" 404 3599
+Not Found: /favicon.ico
+[20/May/2026 14:27:11] "GET /favicon.ico HTTP/1.1" 404 3650
+Not Found: /
+[20/May/2026 14:27:44] "GET / HTTP/1.1" 404 3599
+Not Found: /api
+[20/May/2026 14:27:44] "GET /api HTTP/1.1" 404 3626
+[20/May/2026 14:29:13] "POST /api/auth/login/ HTTP/1.1" 200 4069
+[20/May/2026 14:29:13,596] - Broken pipe from ('127.0.0.1', 55461)
+[20/May/2026 14:29:26] "POST /api/auth/login/ HTTP/1.1" 200 4069
+[20/May/2026 14:29:26,514] - Broken pipe from ('127.0.0.1', 59522)
+[20/May/2026 14:33:47] "OPTIONS /api/auth/login/ HTTP/1.1" 200 0
+[20/May/2026 14:33:49] "POST /api/auth/login/ HTTP/1.1" 200 4069
+[20/May/2026 14:33:49] "OPTIONS /api/auth/me/ HTTP/1.1" 200 0
+[20/May/2026 14:33:49] "OPTIONS /api/auth/me/ HTTP/1.1" 200 0
+[20/May/2026 14:33:50] "GET /api/auth/me/ HTTP/1.1" 200 3572
+[20/May/2026 14:33:51] "GET /api/auth/me/ HTTP/1.1" 200 3572
+[20/May/2026 14:33:51] "OPTIONS /api/master-data/currencies/?company_id=1 HTTP/1.1" 200 0
+[20/May/2026 14:33:51] "OPTIONS /api/master-data/currencies/?company_id=1 HTTP/1.1" 200 0
+[20/May/2026 14:33:51] "GET /api/master-data/currencies/?company_id=1 HTTP/1.1" 200 636
+[20/May/2026 14:33:51] "GET /api/master-data/currencies/?company_id=1 HTTP/1.1" 200 636
+[20/May/2026 14:33:58] "OPTIONS /api/auth/me/ HTTP/1.1" 200 0
+[20/May/2026 14:33:58] "OPTIONS /api/auth/me/ HTTP/1.1" 200 0
+[20/May/2026 14:33:58] "GET /api/auth/me/ HTTP/1.1" 200 3572
+[20/May/2026 14:33:58] "GET /api/auth/me/ HTTP/1.1" 200 3572
+[20/May/2026 14:33:58] "OPTIONS /api/companies/ HTTP/1.1" 200 0
+[20/May/2026 14:33:58] "OPTIONS /api/auth/users/ HTTP/1.1" 200 0
+[20/May/2026 14:33:58] "OPTIONS /api/auth/roles/ HTTP/1.1" 200 0
+[20/May/2026 14:33:58] "OPTIONS /api/auth/permissions/ HTTP/1.1" 200 0
+[20/May/2026 14:33:59] "GET /api/companies/ HTTP/1.1" 200 1071
+[20/May/2026 14:33:59] "GET /api/auth/permissions/ HTTP/1.1" 200 5945
+[20/May/2026 14:33:59] "GET /api/auth/roles/ HTTP/1.1" 200 2311
+[20/May/2026 14:33:59] "GET /api/auth/users/ HTTP/1.1" 200 6149
+[20/May/2026 14:33:59] "OPTIONS /api/master-data/pipeline-status-templates/?company_id=1 HTTP/1.1" 200 0
+[20/May/2026 14:33:59] "OPTIONS /api/master-data/company-industries/?company_id=1 HTTP/1.1" 200 0
+[20/May/2026 14:33:59] "OPTIONS /api/master-data/company-industries/?company_id=1 HTTP/1.1" 200 0
+[20/May/2026 14:33:59] "OPTIONS /api/master-data/currencies/?company_id=1 HTTP/1.1" 200 0
+[20/May/2026 14:33:59] "OPTIONS /api/master-data/currencies/?company_id=1 HTTP/1.1" 200 0
+[20/May/2026 14:33:59] "OPTIONS /api/master-data/pipeline-status-templates/?company_id=1 HTTP/1.1" 200 0
+[20/May/2026 14:34:00] "GET /api/master-data/company-industries/?company_id=1 HTTP/1.1" 200 773
+[20/May/2026 14:34:00] "GET /api/master-data/currencies/?company_id=1 HTTP/1.1" 200 636
+[20/May/2026 14:34:00] "GET /api/master-data/company-industries/?company_id=1 HTTP/1.1" 200 773
+[20/May/2026 14:34:00] "GET /api/master-data/pipeline-status-templates/?company_id=1 HTTP/1.1" 200 531
+[20/May/2026 14:34:00] "GET /api/master-data/pipeline-status-templates/?company_id=1 HTTP/1.1" 200 531
+[20/May/2026 14:34:00] "GET /api/master-data/currencies/?company_id=1 HTTP/1.1" 200 636
+[20/May/2026 14:34:09] "OPTIONS /api/master-data/company-industries/?company_id=3 HTTP/1.1" 200 0
+[20/May/2026 14:34:09] "OPTIONS /api/master-data/currencies/?company_id=3 HTTP/1.1" 200 0
+[20/May/2026 14:34:09] "OPTIONS /api/master-data/pipeline-status-templates/?company_id=3 HTTP/1.1" 200 0
+[20/May/2026 14:34:09] "GET /api/master-data/currencies/?company_id=3 HTTP/1.1" 200 637
+[20/May/2026 14:34:09] "GET /api/master-data/pipeline-status-templates/?company_id=3 HTTP/1.1" 200 532
+[20/May/2026 14:34:09] "GET /api/master-data/company-industries/?company_id=3 HTTP/1.1" 200 780
+[20/May/2026 14:34:10] "OPTIONS /api/master-data/company-industries/?company_id=1 HTTP/1.1" 200 0
+[20/May/2026 14:34:10] "OPTIONS /api/master-data/currencies/?company_id=1 HTTP/1.1" 200 0
+[20/May/2026 14:34:10] "OPTIONS /api/master-data/pipeline-status-templates/?company_id=1 HTTP/1.1" 200 0
+[20/May/2026 14:34:11] "GET /api/master-data/currencies/?company_id=1 HTTP/1.1" 200 636
+[20/May/2026 14:34:11] "GET /api/master-data/company-industries/?company_id=1 HTTP/1.1" 200 773
+[20/May/2026 14:34:11] "GET /api/master-data/pipeline-status-templates/?company_id=1 HTTP/1.1" 200 531
+[20/May/2026 14:34:12] "OPTIONS /api/master-data/company-industries/?company_id=3 HTTP/1.1" 200 0
+[20/May/2026 14:34:12] "OPTIONS /api/master-data/currencies/?company_id=3 HTTP/1.1" 200 0
+[20/May/2026 14:34:12] "OPTIONS /api/master-data/pipeline-status-templates/?company_id=3 HTTP/1.1" 200 0
+[20/May/2026 14:34:13] "GET /api/master-data/company-industries/?company_id=3 HTTP/1.1" 200 780
+[20/May/2026 14:34:13] "GET /api/master-data/currencies/?company_id=3 HTTP/1.1" 200 637
+[20/May/2026 14:34:13] "GET /api/master-data/pipeline-status-templates/?company_id=3 HTTP/1.1" 200 532
+[20/May/2026 14:34:14] "OPTIONS /api/master-data/company-industries/?company_id=1 HTTP/1.1" 200 0
+[20/May/2026 14:34:14] "OPTIONS /api/master-data/currencies/?company_id=1 HTTP/1.1" 200 0
+[20/May/2026 14:34:14] "OPTIONS /api/master-data/pipeline-status-templates/?company_id=1 HTTP/1.1" 200 0
+[20/May/2026 14:34:15] "GET /api/master-data/company-industries/?company_id=1 HTTP/1.1" 200 773
+[20/May/2026 14:34:15] "GET /api/master-data/currencies/?company_id=1 HTTP/1.1" 200 636
+[20/May/2026 14:34:15] "GET /api/master-data/pipeline-status-templates/?company_id=1 HTTP/1.1" 200 531
+[20/May/2026 14:41:23] "OPTIONS /api/master-data/company-industries/?company_id=3 HTTP/1.1" 200 0
+[20/May/2026 14:41:23] "OPTIONS /api/master-data/currencies/?company_id=3 HTTP/1.1" 200 0
+[20/May/2026 14:41:23] "OPTIONS /api/master-data/pipeline-status-templates/?company_id=3 HTTP/1.1" 200 0
+[20/May/2026 14:41:24] "OPTIONS /api/master-data/company-industries/?company_id=1 HTTP/1.1" 200 0
+[20/May/2026 14:41:24] "OPTIONS /api/master-data/currencies/?company_id=1 HTTP/1.1" 200 0
+[20/May/2026 14:41:24] "OPTIONS /api/master-data/pipeline-status-templates/?company_id=1 HTTP/1.1" 200 0
+[20/May/2026 14:41:24] "GET /api/master-data/company-industries/?company_id=3 HTTP/1.1" 200 780
+[20/May/2026 14:41:24] "GET /api/master-data/pipeline-status-templates/?company_id=3 HTTP/1.1" 200 532
+[20/May/2026 14:41:24] "GET /api/master-data/currencies/?company_id=3 HTTP/1.1" 200 637
+[20/May/2026 14:41:25] "GET /api/master-data/company-industries/?company_id=1 HTTP/1.1" 200 773
+[20/May/2026 14:41:25] "GET /api/master-data/currencies/?company_id=1 HTTP/1.1" 200 636
+[20/May/2026 14:41:25] "GET /api/master-data/pipeline-status-templates/?company_id=1 HTTP/1.1" 200 531
+D:\Youssef\Work\BIM Hive\CRM V2\backend\apps\accounts\permission_catalog.py changed, reloading.
+Watching for file changes with StatReloader
+D:\Youssef\Work\BIM Hive\CRM V2\backend\apps\accounts\serializers.py changed, reloading.
+Watching for file changes with StatReloader
+[20/May/2026 14:54:01] "OPTIONS /api/auth/me/ HTTP/1.1" 200 0
+[20/May/2026 14:54:04] "GET /api/auth/me/ HTTP/1.1" 200 3572
+[20/May/2026 14:54:04] "OPTIONS /api/auth/users/ HTTP/1.1" 200 0
+[20/May/2026 14:54:04] "OPTIONS /api/auth/roles/ HTTP/1.1" 200 0
+[20/May/2026 14:54:04] "OPTIONS /api/auth/permissions/ HTTP/1.1" 200 0
+[20/May/2026 14:54:04] "OPTIONS /api/companies/ HTTP/1.1" 200 0
+[20/May/2026 14:54:05] "GET /api/companies/ HTTP/1.1" 200 1071
+[20/May/2026 14:54:05] "GET /api/auth/permissions/ HTTP/1.1" 200 5706
+[20/May/2026 14:54:05] "GET /api/auth/roles/ HTTP/1.1" 200 2233
+[20/May/2026 14:54:06] "GET /api/auth/users/ HTTP/1.1" 200 5993
+[20/May/2026 14:54:06] "OPTIONS /api/master-data/company-industries/?company_id=1 HTTP/1.1" 200 0
+[20/May/2026 14:54:06] "OPTIONS /api/master-data/pipeline-status-templates/?company_id=1 HTTP/1.1" 200 0
+[20/May/2026 14:54:06] "OPTIONS /api/master-data/currencies/?company_id=1 HTTP/1.1" 200 0
+[20/May/2026 14:54:06] "OPTIONS /api/master-data/company-industries/?company_id=1 HTTP/1.1" 200 0
+[20/May/2026 14:54:06] "OPTIONS /api/master-data/currencies/?company_id=1 HTTP/1.1" 200 0
+[20/May/2026 14:54:06] "OPTIONS /api/master-data/pipeline-status-templates/?company_id=1 HTTP/1.1" 200 0
+[20/May/2026 14:54:06] "GET /api/master-data/company-industries/?company_id=1 HTTP/1.1" 200 773
+[20/May/2026 14:54:06] "GET /api/master-data/currencies/?company_id=1 HTTP/1.1" 200 636
+[20/May/2026 14:54:06] "GET /api/master-data/company-industries/?company_id=1 HTTP/1.1" 200 773
+[20/May/2026 14:54:06] "GET /api/master-data/pipeline-status-templates/?company_id=1 HTTP/1.1" 200 531
+[20/May/2026 14:54:07] "GET /api/master-data/currencies/?company_id=1 HTTP/1.1" 200 636
+[20/May/2026 14:54:07] "GET /api/master-data/pipeline-status-templates/?company_id=1 HTTP/1.1" 200 531
+[20/May/2026 14:55:48] "OPTIONS /api/auth/login/ HTTP/1.1" 200 0
+[20/May/2026 14:55:51] "POST /api/auth/login/ HTTP/1.1" 200 2915
+[20/May/2026 14:55:51] "OPTIONS /api/auth/me/ HTTP/1.1" 200 0
+[20/May/2026 14:55:51] "OPTIONS /api/auth/me/ HTTP/1.1" 200 0
+[20/May/2026 14:55:52] "GET /api/auth/me/ HTTP/1.1" 200 2418
+[20/May/2026 14:55:52] "OPTIONS /api/master-data/currencies/?company_id=3 HTTP/1.1" 200 0
+[20/May/2026 14:55:52] "OPTIONS /api/master-data/currencies/?company_id=3 HTTP/1.1" 200 0
+[20/May/2026 14:55:53] "GET /api/auth/me/ HTTP/1.1" 200 2418
+[20/May/2026 14:55:53] "GET /api/master-data/currencies/?company_id=3 HTTP/1.1" 200 637
+[20/May/2026 14:55:54] "OPTIONS /api/auth/me/ HTTP/1.1" 200 0
+[20/May/2026 14:55:54] "OPTIONS /api/auth/me/ HTTP/1.1" 200 0
+[20/May/2026 14:55:54] "GET /api/master-data/currencies/?company_id=3 HTTP/1.1" 200 637
+[20/May/2026 14:55:55] "GET /api/auth/me/ HTTP/1.1" 200 2418
+[20/May/2026 14:55:55] "OPTIONS /api/auth/users/ HTTP/1.1" 200 0
+[20/May/2026 14:55:55] "OPTIONS /api/auth/permissions/ HTTP/1.1" 200 0
+[20/May/2026 14:55:55] "OPTIONS /api/auth/roles/ HTTP/1.1" 200 0
+[20/May/2026 14:55:55] "OPTIONS /api/companies/ HTTP/1.1" 200 0
+[20/May/2026 14:55:55] "GET /api/auth/me/ HTTP/1.1" 200 2418
+[20/May/2026 14:55:56] "GET /api/auth/roles/ HTTP/1.1" 200 2
+[20/May/2026 14:55:56] "GET /api/companies/ HTTP/1.1" 200 327
+[20/May/2026 14:55:57] "GET /api/auth/permissions/ HTTP/1.1" 200 5706
+[20/May/2026 14:55:58] "GET /api/auth/users/ HTTP/1.1" 200 2420
+[20/May/2026 14:55:58] "OPTIONS /api/master-data/pipeline-status-templates/?company_id=3 HTTP/1.1" 200 0
+[20/May/2026 14:55:58] "OPTIONS /api/master-data/pipeline-status-templates/?company_id=3 HTTP/1.1" 200 0
+[20/May/2026 14:55:58] "OPTIONS /api/master-data/currencies/?company_id=3 HTTP/1.1" 200 0
+[20/May/2026 14:55:58] "OPTIONS /api/master-data/company-industries/?company_id=3 HTTP/1.1" 200 0
+[20/May/2026 14:55:58] "OPTIONS /api/master-data/currencies/?company_id=3 HTTP/1.1" 200 0
+[20/May/2026 14:55:58] "OPTIONS /api/master-data/company-industries/?company_id=3 HTTP/1.1" 200 0
+[20/May/2026 14:55:59] "GET /api/master-data/currencies/?company_id=3 HTTP/1.1" 200 637
+[20/May/2026 14:55:59] "GET /api/master-data/pipeline-status-templates/?company_id=3 HTTP/1.1" 200 532
+[20/May/2026 14:55:59] "GET /api/master-data/company-industries/?company_id=3 HTTP/1.1" 200 780
+[20/May/2026 14:55:59] "GET /api/master-data/company-industries/?company_id=3 HTTP/1.1" 200 780
+[20/May/2026 14:55:59] "GET /api/master-data/pipeline-status-templates/?company_id=3 HTTP/1.1" 200 532
+[20/May/2026 14:56:00] "GET /api/master-data/currencies/?company_id=3 HTTP/1.1" 200 637
+D:\Youssef\Work\BIM Hive\CRM V2\backend\apps\accounts\models.py changed, reloading.
+Watching for file changes with StatReloader
+D:\Youssef\Work\BIM Hive\CRM V2\backend\apps\masterdata\defaults.py changed, reloading.
+Watching for file changes with StatReloader
+[20/May/2026 15:06:36] "OPTIONS /api/auth/me/ HTTP/1.1" 200 0
+[20/May/2026 15:07:27] "OPTIONS /api/auth/login/ HTTP/1.1" 200 0
+[20/May/2026 15:07:31] "POST /api/auth/login/ HTTP/1.1" 200 3775
+[20/May/2026 15:07:31] "OPTIONS /api/auth/me/ HTTP/1.1" 200 0
+[20/May/2026 15:07:31] "OPTIONS /api/auth/me/ HTTP/1.1" 200 0
+[20/May/2026 15:07:32] "GET /api/auth/me/ HTTP/1.1" 200 3278
+[20/May/2026 15:07:32] "OPTIONS /api/master-data/currencies/?company_id=3 HTTP/1.1" 200 0
+[20/May/2026 15:07:32] "OPTIONS /api/master-data/currencies/?company_id=3 HTTP/1.1" 200 0
+[20/May/2026 15:07:33] "GET /api/master-data/currencies/?company_id=3 HTTP/1.1" 200 637
+[20/May/2026 15:07:38] "OPTIONS /api/auth/me/ HTTP/1.1" 200 0
+[20/May/2026 15:07:38] "OPTIONS /api/auth/me/ HTTP/1.1" 200 0
+[20/May/2026 15:07:39] "GET /api/auth/me/ HTTP/1.1" 200 3278
+[20/May/2026 15:08:36] "OPTIONS /api/auth/login/ HTTP/1.1" 200 0
+Internal Server Error: /api/auth/me/
+Traceback (most recent call last):
+  File "C:\Users\youss\AppData\Local\Programs\Python\Python310\lib\site-packages\django\db\backends\base\base.py", line 278, in ensure_connection
+    self.connect()
+  File "C:\Users\youss\AppData\Local\Programs\Python\Python310\lib\site-packages\django\utils\asyncio.py", line 26, in inner
+    return func(*args, **kwargs)
+  File "C:\Users\youss\AppData\Local\Programs\Python\Python310\lib\site-packages\django\db\backends\base\base.py", line 255, in connect
+    self.connection = self.get_new_connection(conn_params)
+  File "C:\Users\youss\AppData\Local\Programs\Python\Python310\lib\site-packages\django\utils\asyncio.py", line 26, in inner
+    return func(*args, **kwargs)
+  File "C:\Users\youss\AppData\Local\Programs\Python\Python310\lib\site-packages\django\db\backends\postgresql\base.py", line 332, in get_new_connection
+    connection = self.Database.connect(**conn_params)
+  File "C:\Users\youss\AppData\Local\Programs\Python\Python310\lib\site-packages\psycopg\connection.py", line 122, in connect
+    raise last_ex.with_traceback(None)
+psycopg.errors.ConnectionTimeout: connection timeout expired
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Users\youss\AppData\Local\Programs\Python\Python310\lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "C:\Users\youss\AppData\Local\Programs\Python\Python310\lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "C:\Users\youss\AppData\Local\Programs\Python\Python310\lib\site-packages\django\views\decorators\csrf.py", line 65, in _view_wrapper
+    return view_func(request, *args, **kwargs)
+  File "C:\Users\youss\AppData\Local\Programs\Python\Python310\lib\site-packages\django\views\generic\base.py", line 105, in view
+    return self.dispatch(request, *args, **kwargs)
+  File "C:\Users\youss\AppData\Local\Programs\Python\Python310\lib\site-packages\rest_framework\views.py", line 515, in dispatch
+    response = self.handle_exception(exc)
+  File "C:\Users\youss\AppData\Local\Programs\Python\Python310\lib\site-packages\rest_framework\views.py", line 475, in handle_exception
+    self.raise_uncaught_exception(exc)
+  File "C:\Users\youss\AppData\Local\Programs\Python\Python310\lib\site-packages\rest_framework\views.py", line 486, in raise_uncaught_exception
+    raise exc
+  File "C:\Users\youss\AppData\Local\Programs\Python\Python310\lib\site-packages\rest_framework\views.py", line 503, in dispatch
+    self.initial(request, *args, **kwargs)
+  File "C:\Users\youss\AppData\Local\Programs\Python\Python310\lib\site-packages\rest_framework\views.py", line 420, in initial
+    self.perform_authentication(request)
+  File "C:\Users\youss\AppData\Local\Programs\Python\Python310\lib\site-packages\rest_framework\views.py", line 330, in perform_authentication
+    request.user
+  File "C:\Users\youss\AppData\Local\Programs\Python\Python310\lib\site-packages\rest_framework\request.py", line 232, in user
+    self._authenticate()
+  File "C:\Users\youss\AppData\Local\Programs\Python\Python310\lib\site-packages\rest_framework\request.py", line 385, in _authenticate
+    user_auth_tuple = authenticator.authenticate(self)
+  File "C:\Users\youss\AppData\Local\Programs\Python\Python310\lib\site-packages\rest_framework_simplejwt\authentication.py", line 51, in authenticate
+    return self.get_user(validated_token), validated_token
+  File "C:\Users\youss\AppData\Local\Programs\Python\Python310\lib\site-packages\rest_framework_simplejwt\authentication.py", line 132, in get_user
+    user = self.user_model.objects.get(**{api_settings.USER_ID_FIELD: user_id})
+  File "C:\Users\youss\AppData\Local\Programs\Python\Python310\lib\site-packages\django\db\models\manager.py", line 87, in manager_method
+    return getattr(self.get_queryset(), name)(*args, **kwargs)
+  File "C:\Users\youss\AppData\Local\Programs\Python\Python310\lib\site-packages\django\db\models\query.py", line 647, in get
+    num = len(clone)
+  File "C:\Users\youss\AppData\Local\Programs\Python\Python310\lib\site-packages\django\db\models\query.py", line 384, in __len__
+    self._fetch_all()
+  File "C:\Users\youss\AppData\Local\Programs\Python\Python310\lib\site-packages\django\db\models\query.py", line 1933, in _fetch_all
+    self._result_cache = list(self._iterable_class(self))
+  File "C:\Users\youss\AppData\Local\Programs\Python\Python310\lib\site-packages\django\db\models\query.py", line 93, in __iter__
+    results = compiler.execute_sql(
+  File "C:\Users\youss\AppData\Local\Programs\Python\Python310\lib\site-packages\django\db\models\sql\compiler.py", line 1572, in execute_sql
+    cursor = self.connection.cursor()
+  File "C:\Users\youss\AppData\Local\Programs\Python\Python310\lib\site-packages\django\utils\asyncio.py", line 26, in inner
+    return func(*args, **kwargs)
+  File "C:\Users\youss\AppData\Local\Programs\Python\Python310\lib\site-packages\django\db\backends\base\base.py", line 319, in cursor
+    return self._cursor()
+  File "C:\Users\youss\AppData\Local\Programs\Python\Python310\lib\site-packages\django\db\backends\base\base.py", line 295, in _cursor
+    self.ensure_connection()
+  File "C:\Users\youss\AppData\Local\Programs\Python\Python310\lib\site-packages\django\utils\asyncio.py", line 26, in inner
+    return func(*args, **kwargs)
+  File "C:\Users\youss\AppData\Local\Programs\Python\Python310\lib\site-packages\django\db\backends\base\base.py", line 277, in ensure_connection
+    with self.wrap_database_errors:
+  File "C:\Users\youss\AppData\Local\Programs\Python\Python310\lib\site-packages\django\db\utils.py", line 91, in __exit__
+    raise dj_exc_value.with_traceback(traceback) from exc_value
+  File "C:\Users\youss\AppData\Local\Programs\Python\Python310\lib\site-packages\django\db\backends\base\base.py", line 278, in ensure_connection
+    self.connect()
+  File "C:\Users\youss\AppData\Local\Programs\Python\Python310\lib\site-packages\django\utils\asyncio.py", line 26, in inner
+    return func(*args, **kwargs)
+  File "C:\Users\youss\AppData\Local\Programs\Python\Python310\lib\site-packages\django\db\backends\base\base.py", line 255, in connect
+    self.connection = self.get_new_connection(conn_params)
+  File "C:\Users\youss\AppData\Local\Programs\Python\Python310\lib\site-packages\django\utils\asyncio.py", line 26, in inner
+    return func(*args, **kwargs)
+  File "C:\Users\youss\AppData\Local\Programs\Python\Python310\lib\site-packages\django\db\backends\postgresql\base.py", line 332, in get_new_connection
+    connection = self.Database.connect(**conn_params)
+  File "C:\Users\youss\AppData\Local\Programs\Python\Python310\lib\site-packages\psycopg\connection.py", line 122, in connect
+    raise last_ex.with_traceback(None)
+django.db.utils.OperationalError: connection timeout expired
+[20/May/2026 15:09:03,448] - Broken pipe from ('127.0.0.1', 64503)
+Internal Server Error: /api/master-data/currencies/
+Traceback (most recent call last):
+  File "C:\Users\youss\AppData\Local\Programs\Python\Python310\lib\site-packages\django\db\backends\base\base.py", line 278, in ensure_connection
+    self.connect()
+  File "C:\Users\youss\AppData\Local\Programs\Python\Python310\lib\site-packages\django\utils\asyncio.py", line 26, in inner
+    return func(*args, **kwargs)
+  File "C:\Users\youss\AppData\Local\Programs\Python\Python310\lib\site-packages\django\db\backends\base\base.py", line 255, in connect
+    self.connection = self.get_new_connection(conn_params)
+  File "C:\Users\youss\AppData\Local\Programs\Python\Python310\lib\site-packages\django\utils\asyncio.py", line 26, in inner
+    return func(*args, **kwargs)
+  File "C:\Users\youss\AppData\Local\Programs\Python\Python310\lib\site-packages\django\db\backends\postgresql\base.py", line 332, in get_new_connection
+    connection = self.Database.connect(**conn_params)
+  File "C:\Users\youss\AppData\Local\Programs\Python\Python310\lib\site-packages\psycopg\connection.py", line 122, in connect
+    raise last_ex.with_traceback(None)
+psycopg.errors.ConnectionTimeout: connection timeout expired
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Users\youss\AppData\Local\Programs\Python\Python310\lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "C:\Users\youss\AppData\Local\Programs\Python\Python310\lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "C:\Users\youss\AppData\Local\Programs\Python\Python310\lib\site-packages\django\views\decorators\csrf.py", line 65, in _view_wrapper
+    return view_func(request, *args, **kwargs)
+  File "C:\Users\youss\AppData\Local\Programs\Python\Python310\lib\site-packages\django\views\generic\base.py", line 105, in view
+    return self.dispatch(request, *args, **kwargs)
+  File "C:\Users\youss\AppData\Local\Programs\Python\Python310\lib\site-packages\rest_framework\views.py", line 515, in dispatch
+    response = self.handle_exception(exc)
+  File "C:\Users\youss\AppData\Local\Programs\Python\Python310\lib\site-packages\rest_framework\views.py", line 475, in handle_exception
+    self.raise_uncaught_exception(exc)
+  File "C:\Users\youss\AppData\Local\Programs\Python\Python310\lib\site-packages\rest_framework\views.py", line 486, in raise_uncaught_exception
+    raise exc
+  File "C:\Users\youss\AppData\Local\Programs\Python\Python310\lib\site-packages\rest_framework\views.py", line 503, in dispatch
+    self.initial(request, *args, **kwargs)
+  File "C:\Users\youss\AppData\Local\Programs\Python\Python310\lib\site-packages\rest_framework\views.py", line 420, in initial
+    self.perform_authentication(request)
+  File "C:\Users\youss\AppData\Local\Programs\Python\Python310\lib\site-packages\rest_framework\views.py", line 330, in perform_authentication
+    request.user
+  File "C:\Users\youss\AppData\Local\Programs\Python\Python310\lib\site-packages\rest_framework\request.py", line 232, in user
+    self._authenticate()
+  File "C:\Users\youss\AppData\Local\Programs\Python\Python310\lib\site-packages\rest_framework\request.py", line 385, in _authenticate
+    user_auth_tuple = authenticator.authenticate(self)
+  File "C:\Users\youss\AppData\Local\Programs\Python\Python310\lib\site-packages\rest_framework_simplejwt\authentication.py", line 51, in authenticate
+    return self.get_user(validated_token), validated_token
+  File "C:\Users\youss\AppData\Local\Programs\Python\Python310\lib\site-packages\rest_framework_simplejwt\authentication.py", line 132, in get_user
+    user = self.user_model.objects.get(**{api_settings.USER_ID_FIELD: user_id})
+  File "C:\Users\youss\AppData\Local\Programs\Python\Python310\lib\site-packages\django\db\models\manager.py", line 87, in manager_method
+    return getattr(self.get_queryset(), name)(*args, **kwargs)
+  File "C:\Users\youss\AppData\Local\Programs\Python\Python310\lib\site-packages\django\db\models\query.py", line 647, in get
+    num = len(clone)
+  File "C:\Users\youss\AppData\Local\Programs\Python\Python310\lib\site-packages\django\db\models\query.py", line 384, in __len__
+    self._fetch_all()
+  File "C:\Users\youss\AppData\Local\Programs\Python\Python310\lib\site-packages\django\db\models\query.py", line 1933, in _fetch_all
+    self._result_cache = list(self._iterable_class(self))
+  File "C:\Users\youss\AppData\Local\Programs\Python\Python310\lib\site-packages\django\db\models\query.py", line 93, in __iter__
+    results = compiler.execute_sql(
+  File "C:\Users\youss\AppData\Local\Programs\Python\Python310\lib\site-packages\django\db\models\sql\compiler.py", line 1572, in execute_sql
+    cursor = self.connection.cursor()
+  File "C:\Users\youss\AppData\Local\Programs\Python\Python310\lib\site-packages\django\utils\asyncio.py", line 26, in inner
+    return func(*args, **kwargs)
+  File "C:\Users\youss\AppData\Local\Programs\Python\Python310\lib\site-packages\django\db\backends\base\base.py", line 319, in cursor
+    return self._cursor()
+  File "C:\Users\youss\AppData\Local\Programs\Python\Python310\lib\site-packages\django\db\backends\base\base.py", line 295, in _cursor
+    self.ensure_connection()
+  File "C:\Users\youss\AppData\Local\Programs\Python\Python310\lib\site-packages\django\utils\asyncio.py", line 26, in inner
+    return func(*args, **kwargs)
+  File "C:\Users\youss\AppData\Local\Programs\Python\Python310\lib\site-packages\django\db\backends\base\base.py", line 277, in ensure_connection
+    with self.wrap_database_errors:
+  File "C:\Users\youss\AppData\Local\Programs\Python\Python310\lib\site-packages\django\db\utils.py", line 91, in __exit__
+    raise dj_exc_value.with_traceback(traceback) from exc_value
+  File "C:\Users\youss\AppData\Local\Programs\Python\Python310\lib\site-packages\django\db\backends\base\base.py", line 278, in ensure_connection
+    self.connect()
+  File "C:\Users\youss\AppData\Local\Programs\Python\Python310\lib\site-packages\django\utils\asyncio.py", line 26, in inner
+    return func(*args, **kwargs)
+  File "C:\Users\youss\AppData\Local\Programs\Python\Python310\lib\site-packages\django\db\backends\base\base.py", line 255, in connect
+    self.connection = self.get_new_connection(conn_params)
+  File "C:\Users\youss\AppData\Local\Programs\Python\Python310\lib\site-packages\django\utils\asyncio.py", line 26, in inner
+    return func(*args, **kwargs)
+  File "C:\Users\youss\AppData\Local\Programs\Python\Python310\lib\site-packages\django\db\backends\postgresql\base.py", line 332, in get_new_connection
+    connection = self.Database.connect(**conn_params)
+  File "C:\Users\youss\AppData\Local\Programs\Python\Python310\lib\site-packages\psycopg\connection.py", line 122, in connect
+    raise last_ex.with_traceback(None)
+django.db.utils.OperationalError: connection timeout expired
+[20/May/2026 15:09:43,867] - Broken pipe from ('127.0.0.1', 64492)
+Internal Server Error: /api/auth/me/
+Traceback (most recent call last):
+  File "C:\Users\youss\AppData\Local\Programs\Python\Python310\lib\site-packages\django\db\backends\base\base.py", line 278, in ensure_connection
+    self.connect()
+  File "C:\Users\youss\AppData\Local\Programs\Python\Python310\lib\site-packages\django\utils\asyncio.py", line 26, in inner
+    return func(*args, **kwargs)
+  File "C:\Users\youss\AppData\Local\Programs\Python\Python310\lib\site-packages\django\db\backends\base\base.py", line 255, in connect
+    self.connection = self.get_new_connection(conn_params)
+  File "C:\Users\youss\AppData\Local\Programs\Python\Python310\lib\site-packages\django\utils\asyncio.py", line 26, in inner
+    return func(*args, **kwargs)
+  File "C:\Users\youss\AppData\Local\Programs\Python\Python310\lib\site-packages\django\db\backends\postgresql\base.py", line 332, in get_new_connection
+    connection = self.Database.connect(**conn_params)
+  File "C:\Users\youss\AppData\Local\Programs\Python\Python310\lib\site-packages\psycopg\connection.py", line 122, in connect
+    raise last_ex.with_traceback(None)
+psycopg.errors.ConnectionTimeout: connection timeout expired
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Users\youss\AppData\Local\Programs\Python\Python310\lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "C:\Users\youss\AppData\Local\Programs\Python\Python310\lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "C:\Users\youss\AppData\Local\Programs\Python\Python310\lib\site-packages\django\views\decorators\csrf.py", line 65, in _view_wrapper
+    return view_func(request, *args, **kwargs)
+  File "C:\Users\youss\AppData\Local\Programs\Python\Python310\lib\site-packages\django\views\generic\base.py", line 105, in view
+    return self.dispatch(request, *args, **kwargs)
+  File "C:\Users\youss\AppData\Local\Programs\Python\Python310\lib\site-packages\rest_framework\views.py", line 515, in dispatch
+    response = self.handle_exception(exc)
+  File "C:\Users\youss\AppData\Local\Programs\Python\Python310\lib\site-packages\rest_framework\views.py", line 475, in handle_exception
+    self.raise_uncaught_exception(exc)
+  File "C:\Users\youss\AppData\Local\Programs\Python\Python310\lib\site-packages\rest_framework\views.py", line 486, in raise_uncaught_exception
+    raise exc
+  File "C:\Users\youss\AppData\Local\Programs\Python\Python310\lib\site-packages\rest_framework\views.py", line 503, in dispatch
+    self.initial(request, *args, **kwargs)
+  File "C:\Users\youss\AppData\Local\Programs\Python\Python310\lib\site-packages\rest_framework\views.py", line 420, in initial
+    self.perform_authentication(request)
+  File "C:\Users\youss\AppData\Local\Programs\Python\Python310\lib\site-packages\rest_framework\views.py", line 330, in perform_authentication
+    request.user
+  File "C:\Users\youss\AppData\Local\Programs\Python\Python310\lib\site-packages\rest_framework\request.py", line 232, in user
+    self._authenticate()
+  File "C:\Users\youss\AppData\Local\Programs\Python\Python310\lib\site-packages\rest_framework\request.py", line 385, in _authenticate
+    user_auth_tuple = authenticator.authenticate(self)
+  File "C:\Users\youss\AppData\Local\Programs\Python\Python310\lib\site-packages\rest_framework_simplejwt\authentication.py", line 51, in authenticate
+    return self.get_user(validated_token), validated_token
+  File "C:\Users\youss\AppData\Local\Programs\Python\Python310\lib\site-packages\rest_framework_simplejwt\authentication.py", line 132, in get_user
+    user = self.user_model.objects.get(**{api_settings.USER_ID_FIELD: user_id})
+  File "C:\Users\youss\AppData\Local\Programs\Python\Python310\lib\site-packages\django\db\models\manager.py", line 87, in manager_method
+    return getattr(self.get_queryset(), name)(*args, **kwargs)
+  File "C:\Users\youss\AppData\Local\Programs\Python\Python310\lib\site-packages\django\db\models\query.py", line 647, in get
+    num = len(clone)
+  File "C:\Users\youss\AppData\Local\Programs\Python\Python310\lib\site-packages\django\db\models\query.py", line 384, in __len__
+    self._fetch_all()
+  File "C:\Users\youss\AppData\Local\Programs\Python\Python310\lib\site-packages\django\db\models\query.py", line 1933, in _fetch_all
+    self._result_cache = list(self._iterable_class(self))
+  File "C:\Users\youss\AppData\Local\Programs\Python\Python310\lib\site-packages\django\db\models\query.py", line 93, in __iter__
+    results = compiler.execute_sql(
+  File "C:\Users\youss\AppData\Local\Programs\Python\Python310\lib\site-packages\django\db\models\sql\compiler.py", line 1572, in execute_sql
+    cursor = self.connection.cursor()
+  File "C:\Users\youss\AppData\Local\Programs\Python\Python310\lib\site-packages\django\utils\asyncio.py", line 26, in inner
+    return func(*args, **kwargs)
+  File "C:\Users\youss\AppData\Local\Programs\Python\Python310\lib\site-packages\django\db\backends\base\base.py", line 319, in cursor
+    return self._cursor()
+  File "C:\Users\youss\AppData\Local\Programs\Python\Python310\lib\site-packages\django\db\backends\base\base.py", line 295, in _cursor
+    self.ensure_connection()
+  File "C:\Users\youss\AppData\Local\Programs\Python\Python310\lib\site-packages\django\utils\asyncio.py", line 26, in inner
+    return func(*args, **kwargs)
+  File "C:\Users\youss\AppData\Local\Programs\Python\Python310\lib\site-packages\django\db\backends\base\base.py", line 277, in ensure_connection
+    with self.wrap_database_errors:
+  File "C:\Users\youss\AppData\Local\Programs\Python\Python310\lib\site-packages\django\db\utils.py", line 91, in __exit__
+    raise dj_exc_value.with_traceback(traceback) from exc_value
+  File "C:\Users\youss\AppData\Local\Programs\Python\Python310\lib\site-packages\django\db\backends\base\base.py", line 278, in ensure_connection
+    self.connect()
+  File "C:\Users\youss\AppData\Local\Programs\Python\Python310\lib\site-packages\django\utils\asyncio.py", line 26, in inner
+    return func(*args, **kwargs)
+  File "C:\Users\youss\AppData\Local\Programs\Python\Python310\lib\site-packages\django\db\backends\base\base.py", line 255, in connect
+    self.connection = self.get_new_connection(conn_params)
+  File "C:\Users\youss\AppData\Local\Programs\Python\Python310\lib\site-packages\django\utils\asyncio.py", line 26, in inner
+    return func(*args, **kwargs)
+  File "C:\Users\youss\AppData\Local\Programs\Python\Python310\lib\site-packages\django\db\backends\postgresql\base.py", line 332, in get_new_connection
+    connection = self.Database.connect(**conn_params)
+  File "C:\Users\youss\AppData\Local\Programs\Python\Python310\lib\site-packages\psycopg\connection.py", line 122, in connect
+    raise last_ex.with_traceback(None)
+django.db.utils.OperationalError: connection timeout expired
+[20/May/2026 15:09:45,919] - Broken pipe from ('127.0.0.1', 55429)
+[20/May/2026 15:10:02] "OPTIONS /api/auth/login/ HTTP/1.1" 200 0
+[20/May/2026 15:10:07,902] - Broken pipe from ('127.0.0.1', 64827)
+[20/May/2026 15:10:10] "OPTIONS /api/auth/login/ HTTP/1.1" 200 0

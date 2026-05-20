@@ -2,6 +2,7 @@ import os
 
 from django.core.management.base import BaseCommand
 
+from apps.accounts.defaults import ensure_default_company_roles
 from apps.accounts.models import Role, User, UserRole
 from apps.accounts.permission_catalog import SYSTEM_ROLE_DEFAULTS
 from apps.companies.models import Company
@@ -21,6 +22,7 @@ class Command(BaseCommand):
         if not admin_company.is_platform_owner:
             admin_company.is_platform_owner = True
             admin_company.save(update_fields=["is_platform_owner"])
+        ensure_default_company_roles(admin_company)
 
         platform_role, _ = Role.objects.get_or_create(
             slug=UserRole.PLATFORM_ADMIN,
