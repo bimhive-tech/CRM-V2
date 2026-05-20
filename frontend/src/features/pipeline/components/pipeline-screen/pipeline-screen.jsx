@@ -13,15 +13,18 @@ import {
   deletePipelineStatus,
   listContacts,
   listDeals,
+  listPipelineMemberships,
   listPipelines,
   updateContact,
   updateDeal,
+  updatePipelineMembership,
+  deletePipelineMembership,
   updatePipeline,
   updatePipelineStatus,
 } from "@/lib/api/admin";
 import { getAccessToken } from "@/lib/session";
 
-import { ConfirmDeleteModal, PipelineModal } from "./pipeline-modal";
+import { ConfirmDeleteModal, PipelineModal, PipelineTeamModal } from "./pipeline-modal";
 import styles from "./pipeline-screen.module.css";
 
 const DEFAULT_STATUS_COLOR = "#7C5F35";
@@ -135,6 +138,13 @@ export function PipelineScreen({ user }) {
   const [dragState, setDragState] = useState({ draggingId: null, previewStatuses: null });
   const [draggingCardId, setDraggingCardId] = useState(null);
   const [dropStatusId, setDropStatusId] = useState(null);
+  const [teamState, setTeamState] = useState({
+    open: false,
+    loading: false,
+    memberships: [],
+    membershipSavingId: null,
+    membershipRemovingId: null,
+  });
 
   const copy = getTabCopy(activeTab);
   const selectedPipeline = useMemo(
@@ -142,6 +152,7 @@ export function PipelineScreen({ user }) {
     [pipelines, selectedPipelineId],
   );
   const selectedPipelineAccess = selectedPipeline?.access || null;
+  const selectedPipelineTeam = selectedPipeline?.team || [];
   const visibleStatuses = useMemo(
     () => dragState.previewStatuses || selectedPipeline?.statuses || [],
     [dragState.previewStatuses, selectedPipeline?.statuses],
@@ -364,6 +375,93 @@ export function PipelineScreen({ user }) {
     setModalState({ type: null, statusId: null });
   }
 
+  async function openTeamModal() {
+    if (!selectedPipeline) {
+      return;
+    }
+    setStatus((current) => ({ ...current, error: "" }));
+    setTeamState((current) => ({ ...current, open: true, loading: true }));
+    try {
+      const memberships = await listPipelineMemberships(token, { pipeline_id: selectedPipeline.id });
+      setTeamState({
+        open: true,
+        loading: false,
+        memberships: memberships || [],
+        membershipSavingId: null,
+        membershipRemovingId: null,
+      });
+    } catch (error) {
+      setTeamState((current) => ({ ...current, open: false, loading: false }));
+      setStatus({ loading: false, error: error.message || "Unable to load pipeline team.", success: "" });
+    }
+  }
+
+  function closeTeamModal() {
+    setTeamState({
+      open: false,
+      loading: false,
+      memberships: [],
+      membershipSavingId: null,
+      membershipRemovingId: null,
+    });
+  }
+
+  async function handleTeamPermissionChange(membershipId, field, checked) {
+    const membership = teamState.memberships.find((item) => item.id === membershipId);
+    if (!membership) {
+      return;
+    }
+
+    setTeamState((current) => ({ ...current, membershipSavingId: membershipId }));
+    setStatus((current) => ({ ...current, error: "", success: "" }));
+
+    try {
+      const updated = await updatePipelineMembership(token, membershipId, {
+        has_full_access: field === "has_full_access" ? checked : membership.has_full_access,
+        can_invite_members: field === "can_invite_members" ? checked : membership.can_invite_members,
+        can_edit_pipeline: field === "can_edit_pipeline" ? checked : membership.can_edit_pipeline,
+        can_delete_pipeline: field === "can_delete_pipeline" ? checked : membership.can_delete_pipeline,
+        can_manage_statuses: field === "can_manage_statuses" ? checked : membership.can_manage_statuses,
+        can_view_contacts: field === "can_view_contacts" ? checked : membership.can_view_contacts,
+        can_move_contacts: field === "can_move_contacts" ? checked : membership.can_move_contacts,
+        can_manage_contacts: field === "can_manage_contacts" ? checked : membership.can_manage_contacts,
+        can_view_companies: field === "can_view_companies" ? checked : membership.can_view_companies,
+        can_manage_companies: field === "can_manage_companies" ? checked : membership.can_manage_companies,
+        can_view_deals: field === "can_view_deals" ? checked : membership.can_view_deals,
+        can_move_deals: field === "can_move_deals" ? checked : membership.can_move_deals,
+        can_manage_deals: field === "can_manage_deals" ? checked : membership.can_manage_deals,
+      });
+      setTeamState((current) => ({
+        ...current,
+        membershipSavingId: null,
+        memberships: current.memberships.map((item) => (item.id === membershipId ? { ...item, ...updated } : item)),
+      }));
+      await loadPipelines(activeTab, selectedPipelineId);
+      setStatus({ loading: false, error: "", success: "Pipeline team updated." });
+    } catch (error) {
+      setTeamState((current) => ({ ...current, membershipSavingId: null }));
+      setStatus({ loading: false, error: error.message || "Unable to update pipeline team.", success: "" });
+    }
+  }
+
+  async function handleTeamMembershipRemove(membershipId) {
+    setTeamState((current) => ({ ...current, membershipRemovingId: membershipId }));
+    setStatus((current) => ({ ...current, error: "", success: "" }));
+    try {
+      await deletePipelineMembership(token, membershipId);
+      setTeamState((current) => ({
+        ...current,
+        membershipRemovingId: null,
+        memberships: current.memberships.filter((item) => item.id !== membershipId),
+      }));
+      await loadPipelines(activeTab, selectedPipelineId);
+      setStatus({ loading: false, error: "", success: "Pipeline member removed." });
+    } catch (error) {
+      setTeamState((current) => ({ ...current, membershipRemovingId: null }));
+      setStatus({ loading: false, error: error.message || "Unable to remove pipeline member.", success: "" });
+    }
+  }
+
   function startStatusEditing(statusItem) {
     setEditingStatusId(statusItem.id);
     setEditingName(statusItem.name);
@@ -542,6 +640,9 @@ export function PipelineScreen({ user }) {
       topbar={
         <Topbar
           user={user}
+          memberUsers={selectedPipelineTeam}
+          onManageTeam={selectedPipeline ? openTeamModal : null}
+          manageTeamDisabled={!selectedPipeline || !selectedPipelineAccess?.can_invite_members}
           breadcrumbs={[
             { label: "Workspace", href: "/dashboard" },
             { label: "Pipeline", href: "/pipeline" },
@@ -973,6 +1074,19 @@ export function PipelineScreen({ user }) {
           onClose={closeModal}
           onSubmit={handleDeleteStatus}
           submitLabel="Remove status"
+        />
+      ) : null}
+
+      {teamState.open ? (
+        <PipelineTeamModal
+          pipelineName={selectedPipeline?.name}
+          memberships={teamState.memberships}
+          loading={teamState.loading}
+          membershipSavingId={teamState.membershipSavingId}
+          membershipRemovingId={teamState.membershipRemovingId}
+          onPermissionChange={handleTeamPermissionChange}
+          onMembershipRemove={handleTeamMembershipRemove}
+          onClose={closeTeamModal}
         />
       ) : null}
 

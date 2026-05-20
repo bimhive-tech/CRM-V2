@@ -35,10 +35,19 @@ class Pipeline(models.Model):
 class PipelineMember(models.Model):
     pipeline = models.ForeignKey(Pipeline, on_delete=models.CASCADE, related_name="memberships")
     user = models.ForeignKey("accounts.User", on_delete=models.CASCADE, related_name="pipeline_memberships")
+    has_full_access = models.BooleanField(default=False)
     can_invite_members = models.BooleanField(default=False)
     can_edit_pipeline = models.BooleanField(default=False)
     can_delete_pipeline = models.BooleanField(default=False)
     can_manage_statuses = models.BooleanField(default=False)
+    can_view_contacts = models.BooleanField(default=False)
+    can_move_contacts = models.BooleanField(default=False)
+    can_manage_contacts = models.BooleanField(default=False)
+    can_view_companies = models.BooleanField(default=False)
+    can_manage_companies = models.BooleanField(default=False)
+    can_view_deals = models.BooleanField(default=False)
+    can_move_deals = models.BooleanField(default=False)
+    can_manage_deals = models.BooleanField(default=False)
     created_at = models.DateTimeField(default=timezone.now, editable=False)
 
     class Meta:

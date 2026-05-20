@@ -12,7 +12,13 @@ from apps.accounts.permissions import HasAppPermission
 from apps.crm.models import CRMCompany, CRMContact, CRMContactCompanyLink
 from apps.contacts.importer import import_contact_records, parse_workbook
 from apps.contacts.serializers import ContactSerializer
-from apps.pipelines.access import accessible_pipelines_queryset
+from apps.pipelines.access import (
+    accessible_pipelines_queryset,
+    pipelines_with_contact_visibility_queryset,
+    user_can_manage_pipeline_contacts,
+    user_can_move_pipeline_contacts,
+    user_can_view_pipeline_contacts,
+)
 from apps.pipelines.models import Pipeline
 from config.pagination import StandardResultsSetPagination
 
@@ -35,13 +41,14 @@ def resolve_default_tenant_company(user):
 
 class ContactListCreateView(generics.ListCreateAPIView):
     serializer_class = ContactSerializer
-    permission_classes = [permissions.IsAuthenticated, HasAppPermission]
-    permission_map = {"GET": "contacts.view", "POST": "contacts.create"}
+    permission_classes = [permissions.IsAuthenticated]
     pagination_class = StandardResultsSetPagination
 
     def get_queryset(self):
         queryset = contacts_queryset_for_user(self.request.user)
         query_params = self.request.query_params
+        has_global_view = self.request.user.has_app_permission("contacts.view")
+        visible_pipelines = pipelines_with_contact_visibility_queryset(self.request.user)
 
         search = query_params.get("search", "").strip()
         status = query_params.get("status", "").strip()
@@ -68,33 +75,52 @@ class ContactListCreateView(generics.ListCreateAPIView):
             queryset = queryset.filter(company_id=company_id)
 
         if pipeline_id:
-            generics.get_object_or_404(accessible_pipelines_queryset(self.request.user), pk=pipeline_id)
+            pipeline = generics.get_object_or_404(accessible_pipelines_queryset(self.request.user), pk=pipeline_id)
+            if not has_global_view and not user_can_view_pipeline_contacts(self.request.user, pipeline):
+                raise ValidationError({"detail": "You do not have permission to view contacts in this pipeline."})
             queryset = queryset.filter(pipeline_id=pipeline_id)
+        elif not has_global_view and not (self.request.user.is_platform_admin or self.request.user.is_company_admin):
+            queryset = queryset.filter(pipeline__in=visible_pipelines).distinct()
 
         return queryset
 
     def perform_create(self, serializer):
+        pipeline = serializer.validated_data.get("pipeline")
+        if not self.request.user.has_app_permission("contacts.create"):
+            if pipeline is None or not user_can_manage_pipeline_contacts(self.request.user, pipeline):
+                raise ValidationError({"detail": "You do not have permission to create contacts here."})
         company = serializer.validated_data["company"]
         serializer.save(tenant_company=company.tenant_company, owner=self.request.user, contact={"last_touch": timezone.localdate(), **serializer.validated_data.get("contact", {})})
 
 
 class ContactDetailView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = ContactSerializer
-    permission_classes = [permissions.IsAuthenticated, HasAppPermission]
-    permission_map = {
-        "GET": "contacts.view",
-        "PUT": "contacts.update",
-        "PATCH": "contacts.update",
-        "DELETE": "contacts.delete",
-    }
+    permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        return contacts_queryset_for_user(self.request.user)
+        queryset = contacts_queryset_for_user(self.request.user)
+        if self.request.user.is_platform_admin or self.request.user.is_company_admin or self.request.user.has_app_permission("contacts.view"):
+            return queryset
+        visible_pipelines = pipelines_with_contact_visibility_queryset(self.request.user)
+        return queryset.filter(pipeline__in=visible_pipelines).distinct()
 
     def perform_update(self, serializer):
+        instance = self.get_object()
+        target_pipeline = serializer.validated_data.get("pipeline", instance.pipeline)
+        if not self.request.user.has_app_permission("contacts.update"):
+            update_fields = set(self.request.data.keys())
+            status_only_fields = {"status", "pipeline_id"}
+            if update_fields and update_fields.issubset(status_only_fields):
+                if target_pipeline is None or not user_can_move_pipeline_contacts(self.request.user, target_pipeline):
+                    raise ValidationError({"detail": "You do not have permission to move contacts in this pipeline."})
+            elif target_pipeline is None or not user_can_manage_pipeline_contacts(self.request.user, target_pipeline):
+                raise ValidationError({"detail": "You do not have permission to update this contact."})
         serializer.save(contact={"last_touch": timezone.localdate(), **serializer.validated_data.get("contact", {})})
 
     def perform_destroy(self, instance):
+        if not self.request.user.has_app_permission("contacts.delete"):
+            if instance.pipeline is None or not user_can_manage_pipeline_contacts(self.request.user, instance.pipeline):
+                raise ValidationError({"detail": "You do not have permission to delete this contact."})
         contact = instance.contact
         instance.delete()
         if not contact.company_links.exists():
@@ -122,8 +148,7 @@ class ContactImportPreviewView(APIView):
 
 
 class ContactImportExecuteView(APIView):
-    permission_classes = [permissions.IsAuthenticated, HasAppPermission]
-    permission_required = "contacts.import_execute"
+    permission_classes = [permissions.IsAuthenticated]
     parser_classes = [MultiPartParser, FormParser]
 
     def post(self, request):
@@ -149,6 +174,9 @@ class ContactImportExecuteView(APIView):
         selected_pipeline = None
         if pipeline_id:
             selected_pipeline = generics.get_object_or_404(accessible_pipelines_queryset(request.user), pk=pipeline_id, company=tenant_company)
+        if not request.user.has_app_permission("contacts.import_execute"):
+            if selected_pipeline is None or not user_can_manage_pipeline_contacts(request.user, selected_pipeline):
+                raise ValidationError({"detail": "You do not have permission to import contacts into this pipeline."})
         result = import_contact_records(parsed["records"], tenant_company, pipeline=selected_pipeline, imported_by=request.user)
         return Response(
             {

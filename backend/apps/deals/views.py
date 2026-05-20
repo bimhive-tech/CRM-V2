@@ -1,9 +1,14 @@
 from django.db.models import Q
 from rest_framework import generics, permissions, serializers
 
-from apps.accounts.permissions import HasAppPermission
 from apps.deals.models import Deal
-from apps.pipelines.access import accessible_pipelines_queryset
+from apps.pipelines.access import (
+    accessible_pipelines_queryset,
+    pipelines_with_deal_visibility_queryset,
+    user_can_manage_pipeline_deals,
+    user_can_move_pipeline_deals,
+    user_can_view_pipeline_deals,
+)
 from apps.deals.serializers import DealSerializer
 from config.pagination import StandardResultsSetPagination
 
@@ -24,12 +29,13 @@ def deals_queryset_for_user(user):
 
 class DealListCreateView(generics.ListCreateAPIView):
     serializer_class = DealSerializer
-    permission_classes = [permissions.IsAuthenticated, HasAppPermission]
-    permission_map = {"GET": "deals.view", "POST": "deals.create"}
+    permission_classes = [permissions.IsAuthenticated]
     pagination_class = StandardResultsSetPagination
 
     def get_queryset(self):
         queryset = deals_queryset_for_user(self.request.user)
+        has_global_view = self.request.user.has_app_permission("deals.view")
+        visible_pipelines = pipelines_with_deal_visibility_queryset(self.request.user)
         search = self.request.query_params.get("search", "").strip()
         pipeline_id = self.request.query_params.get("pipeline_id", "").strip()
         company_id = self.request.query_params.get("company_id", "").strip()
@@ -43,8 +49,12 @@ class DealListCreateView(generics.ListCreateAPIView):
                 | Q(owner__full_name__icontains=search)
             )
         if pipeline_id:
-            generics.get_object_or_404(accessible_pipelines_queryset(self.request.user), pk=pipeline_id)
+            pipeline = generics.get_object_or_404(accessible_pipelines_queryset(self.request.user), pk=pipeline_id)
+            if not has_global_view and not user_can_view_pipeline_deals(self.request.user, pipeline):
+                raise serializers.ValidationError({"detail": "You do not have permission to view deals in this pipeline."})
             queryset = queryset.filter(pipeline_id=pipeline_id)
+        elif not has_global_view and not (self.request.user.is_platform_admin or self.request.user.is_company_admin):
+            queryset = queryset.filter(pipeline__in=visible_pipelines).distinct()
         if company_id:
             queryset = queryset.filter(company_id=company_id)
         if stage:
@@ -53,18 +63,39 @@ class DealListCreateView(generics.ListCreateAPIView):
         return queryset
 
     def perform_create(self, serializer):
+        pipeline = serializer.validated_data.get("pipeline")
+        if not self.request.user.has_app_permission("deals.create"):
+            if pipeline is None or not user_can_manage_pipeline_deals(self.request.user, pipeline):
+                raise serializers.ValidationError({"detail": "You do not have permission to create deals here."})
         serializer.save()
 
 
 class DealDetailView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = DealSerializer
-    permission_classes = [permissions.IsAuthenticated, HasAppPermission]
-    permission_map = {
-        "GET": "deals.view",
-        "PUT": "deals.update",
-        "PATCH": "deals.update",
-        "DELETE": "deals.delete",
-    }
+    permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        return deals_queryset_for_user(self.request.user)
+        queryset = deals_queryset_for_user(self.request.user)
+        if self.request.user.is_platform_admin or self.request.user.is_company_admin or self.request.user.has_app_permission("deals.view"):
+            return queryset
+        visible_pipelines = pipelines_with_deal_visibility_queryset(self.request.user)
+        return queryset.filter(pipeline__in=visible_pipelines).distinct()
+
+    def perform_update(self, serializer):
+        instance = self.get_object()
+        target_pipeline = serializer.validated_data.get("pipeline", instance.pipeline)
+        if not self.request.user.has_app_permission("deals.update"):
+            update_fields = set(self.request.data.keys())
+            stage_only_fields = {"stage", "pipeline_id"}
+            if update_fields and update_fields.issubset(stage_only_fields):
+                if target_pipeline is None or not user_can_move_pipeline_deals(self.request.user, target_pipeline):
+                    raise serializers.ValidationError({"detail": "You do not have permission to move deals in this pipeline."})
+            elif target_pipeline is None or not user_can_manage_pipeline_deals(self.request.user, target_pipeline):
+                raise serializers.ValidationError({"detail": "You do not have permission to update this deal."})
+        serializer.save()
+
+    def perform_destroy(self, instance):
+        if not self.request.user.has_app_permission("deals.delete"):
+            if instance.pipeline is None or not user_can_manage_pipeline_deals(self.request.user, instance.pipeline):
+                raise serializers.ValidationError({"detail": "You do not have permission to delete this deal."})
+        instance.delete()

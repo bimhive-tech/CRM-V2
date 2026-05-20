@@ -6,10 +6,7 @@ import { useState } from "react";
 import { BellIcon, PlusIcon } from "@/components/dashboard/dashboard-icons";
 import {
   assignPipelineMemberships,
-  deletePipelineMembership,
   listPipelineInviteOptions,
-  listPipelineMemberships,
-  updatePipelineMembership,
 } from "@/lib/api/admin";
 import { getAccessToken } from "@/lib/session";
 import { NoticeModal, PipelineInviteModal } from "@/features/pipeline/components/pipeline-screen/pipeline-modal";
@@ -19,10 +16,19 @@ import styles from "./topbar.module.css";
 const inviteInitialState = {
   userId: "",
   pipelineIds: [],
+  has_full_access: false,
   can_invite_members: false,
   can_edit_pipeline: false,
   can_delete_pipeline: false,
   can_manage_statuses: false,
+  can_view_contacts: false,
+  can_move_contacts: false,
+  can_manage_contacts: false,
+  can_view_companies: false,
+  can_manage_companies: false,
+  can_view_deals: false,
+  can_move_deals: false,
+  can_manage_deals: false,
 };
 
 function hasPermission(user, permissionCode) {
@@ -37,7 +43,32 @@ function hasPermission(user, permissionCode) {
   return Array.isArray(user.permissions) && user.permissions.includes(permissionCode);
 }
 
-export function Topbar({ user, title = "Dashboard", breadcrumbs = null, onInvite = null, inviteDisabled = false, inviteLabel = "Invite" }) {
+function initialsForName(name) {
+  return (
+    (name || "")
+      .split(" ")
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((part) => part[0]?.toUpperCase())
+      .join("") || "U"
+  );
+}
+
+function hueForName(name) {
+  return (name || "user").split("").reduce((sum, character) => sum + character.charCodeAt(0), 0) % 360;
+}
+
+export function Topbar({
+  user,
+  title = "Dashboard",
+  breadcrumbs = null,
+  onInvite = null,
+  inviteDisabled = false,
+  inviteLabel = "Invite",
+  memberUsers = [],
+  onManageTeam = null,
+  manageTeamDisabled = false,
+}) {
   const token = getAccessToken();
   const companyName = user?.company?.name || user?.companies?.[0]?.name || "No company assigned";
   const crumbItems = breadcrumbs?.length ? breadcrumbs : [{ label: "Workspace" }, { label: title }];
@@ -48,11 +79,6 @@ export function Topbar({ user, title = "Dashboard", breadcrumbs = null, onInvite
     users: [],
     pipelines: [],
     accessiblePipelineCount: 0,
-    managePipelineId: "",
-    memberships: [],
-    membershipsLoading: false,
-    membershipSavingId: null,
-    membershipRemovingId: null,
     form: inviteInitialState,
   });
   const [noticeState, setNoticeState] = useState({ open: false, title: "", description: "" });
@@ -64,44 +90,8 @@ export function Topbar({ user, title = "Dashboard", breadcrumbs = null, onInvite
       users: [],
       pipelines: [],
       accessiblePipelineCount: 0,
-      managePipelineId: "",
-      memberships: [],
-      membershipsLoading: false,
-      membershipSavingId: null,
-      membershipRemovingId: null,
       form: inviteInitialState,
     });
-  }
-
-  async function loadManageMemberships(pipelineId) {
-    if (!pipelineId) {
-      setInviteState((current) => ({ ...current, memberships: [], membershipsLoading: false }));
-      return;
-    }
-
-    setInviteState((current) => ({
-      ...current,
-      managePipelineId: pipelineId,
-      membershipsLoading: true,
-      memberships: current.managePipelineId === pipelineId ? current.memberships : [],
-    }));
-
-    try {
-      const memberships = await listPipelineMemberships(token, { pipeline_id: pipelineId });
-      setInviteState((current) => ({
-        ...current,
-        managePipelineId: pipelineId,
-        memberships: memberships || [],
-        membershipsLoading: false,
-      }));
-    } catch (error) {
-      setInviteState((current) => ({ ...current, membershipsLoading: false }));
-      setNoticeState({
-        open: true,
-        title: "Unable to load pipeline members",
-        description: error.message || "Please try again in a moment.",
-      });
-    }
   }
 
   async function openGlobalInviteModal() {
@@ -127,19 +117,12 @@ export function Topbar({ user, title = "Dashboard", breadcrumbs = null, onInvite
         return;
       }
 
-      const defaultManagePipelineId = String(options.pipelines[0].id);
-      const memberships = await listPipelineMemberships(token, { pipeline_id: defaultManagePipelineId });
       setInviteState({
         open: true,
         loading: false,
         users: options.users || [],
         pipelines: options.pipelines || [],
         accessiblePipelineCount: options.accessible_pipeline_count || 0,
-        managePipelineId: defaultManagePipelineId,
-        memberships: memberships || [],
-        membershipsLoading: false,
-        membershipSavingId: null,
-        membershipRemovingId: null,
         form: inviteInitialState,
       });
     } catch (error) {
@@ -172,6 +155,29 @@ export function Topbar({ user, title = "Dashboard", breadcrumbs = null, onInvite
   }
 
   function updateInvitePermission(field, checked) {
+    if (field === "has_full_access") {
+      setInviteState((current) => ({
+        ...current,
+        form: {
+          ...current.form,
+          has_full_access: checked,
+          can_invite_members: checked ? true : current.form.can_invite_members,
+          can_edit_pipeline: checked ? true : current.form.can_edit_pipeline,
+          can_delete_pipeline: checked ? true : current.form.can_delete_pipeline,
+          can_manage_statuses: checked ? true : current.form.can_manage_statuses,
+          can_view_contacts: checked ? true : current.form.can_view_contacts,
+          can_move_contacts: checked ? true : current.form.can_move_contacts,
+          can_manage_contacts: checked ? true : current.form.can_manage_contacts,
+          can_view_companies: checked ? true : current.form.can_view_companies,
+          can_manage_companies: checked ? true : current.form.can_manage_companies,
+          can_view_deals: checked ? true : current.form.can_view_deals,
+          can_move_deals: checked ? true : current.form.can_move_deals,
+          can_manage_deals: checked ? true : current.form.can_manage_deals,
+        },
+      }));
+      return;
+    }
+
     setInviteState((current) => ({
       ...current,
       form: { ...current.form, [field]: checked },
@@ -186,19 +192,23 @@ export function Topbar({ user, title = "Dashboard", breadcrumbs = null, onInvite
       await assignPipelineMemberships(token, {
         user_id: Number(inviteState.form.userId),
         pipeline_ids: inviteState.form.pipelineIds.map((id) => Number(id)),
+        has_full_access: inviteState.form.has_full_access,
         can_invite_members: inviteState.form.can_invite_members,
         can_edit_pipeline: inviteState.form.can_edit_pipeline,
         can_delete_pipeline: inviteState.form.can_delete_pipeline,
         can_manage_statuses: inviteState.form.can_manage_statuses,
+        can_view_contacts: inviteState.form.can_view_contacts,
+        can_move_contacts: inviteState.form.can_move_contacts,
+        can_manage_contacts: inviteState.form.can_manage_contacts,
+        can_view_companies: inviteState.form.can_view_companies,
+        can_manage_companies: inviteState.form.can_manage_companies,
+        can_view_deals: inviteState.form.can_view_deals,
+        can_move_deals: inviteState.form.can_move_deals,
+        can_manage_deals: inviteState.form.can_manage_deals,
       });
-      let nextMemberships = inviteState.memberships;
-      if (inviteState.managePipelineId && inviteState.form.pipelineIds.includes(inviteState.managePipelineId)) {
-        nextMemberships = await listPipelineMemberships(token, { pipeline_id: inviteState.managePipelineId });
-      }
       setInviteState((current) => ({
         ...current,
         loading: false,
-        memberships: nextMemberships || [],
         form: inviteInitialState,
       }));
     } catch (error) {
@@ -206,60 +216,6 @@ export function Topbar({ user, title = "Dashboard", breadcrumbs = null, onInvite
       setNoticeState({
         open: true,
         title: "Unable to send access",
-        description: error.message || "Please try again in a moment.",
-      });
-    }
-  }
-
-  async function handleManagePipelineChange(pipelineId) {
-    await loadManageMemberships(pipelineId);
-  }
-
-  async function handleMembershipPermissionChange(membershipId, field, checked) {
-    const membership = inviteState.memberships.find((item) => item.id === membershipId);
-    if (!membership) {
-      return;
-    }
-
-    setInviteState((current) => ({ ...current, membershipSavingId: membershipId }));
-
-    try {
-      const updated = await updatePipelineMembership(token, membershipId, {
-        can_invite_members: field === "can_invite_members" ? checked : membership.can_invite_members,
-        can_edit_pipeline: field === "can_edit_pipeline" ? checked : membership.can_edit_pipeline,
-        can_delete_pipeline: field === "can_delete_pipeline" ? checked : membership.can_delete_pipeline,
-        can_manage_statuses: field === "can_manage_statuses" ? checked : membership.can_manage_statuses,
-      });
-      setInviteState((current) => ({
-        ...current,
-        membershipSavingId: null,
-        memberships: current.memberships.map((item) => (item.id === membershipId ? { ...item, ...updated } : item)),
-      }));
-    } catch (error) {
-      setInviteState((current) => ({ ...current, membershipSavingId: null }));
-      setNoticeState({
-        open: true,
-        title: "Unable to update member",
-        description: error.message || "Please try again in a moment.",
-      });
-    }
-  }
-
-  async function handleMembershipRemove(membershipId) {
-    setInviteState((current) => ({ ...current, membershipRemovingId: membershipId }));
-
-    try {
-      await deletePipelineMembership(token, membershipId);
-      setInviteState((current) => ({
-        ...current,
-        membershipRemovingId: null,
-        memberships: current.memberships.filter((item) => item.id !== membershipId),
-      }));
-    } catch (error) {
-      setInviteState((current) => ({ ...current, membershipRemovingId: null }));
-      setNoticeState({
-        open: true,
-        title: "Unable to remove member",
         description: error.message || "Please try again in a moment.",
       });
     }
@@ -299,6 +255,31 @@ export function Topbar({ user, title = "Dashboard", breadcrumbs = null, onInvite
           <button className={styles.iconButton} type="button" aria-label="Notifications">
             <BellIcon />
           </button>
+          {memberUsers.length ? (
+            <div className={styles.memberStack}>
+              {memberUsers.slice(0, 5).map((member) => {
+                const hue = hueForName(member.full_name);
+                return (
+                  <span
+                    key={member.id}
+                    className={styles.memberAvatar}
+                    title={member.full_name}
+                    style={{
+                      background: `oklch(0.91 0.07 ${hue})`,
+                      color: `oklch(0.42 0.11 ${hue})`,
+                    }}
+                  >
+                    {initialsForName(member.full_name)}
+                  </span>
+                );
+              })}
+            </div>
+          ) : null}
+          {onManageTeam ? (
+            <button className={styles.teamButton} type="button" onClick={onManageTeam} disabled={manageTeamDisabled}>
+              Manage team
+            </button>
+          ) : null}
           <div className={styles.identity}>
             <span>{companyName}</span>
           </div>
@@ -313,19 +294,11 @@ export function Topbar({ user, title = "Dashboard", breadcrumbs = null, onInvite
         <PipelineInviteModal
           users={inviteState.users}
           pipelines={inviteState.pipelines}
-          memberships={inviteState.memberships}
           value={inviteState.form}
-          managePipelineId={inviteState.managePipelineId}
           loading={inviteState.loading}
-          membershipsLoading={inviteState.membershipsLoading}
-          membershipSavingId={inviteState.membershipSavingId}
-          membershipRemovingId={inviteState.membershipRemovingId}
           onUserChange={updateInviteUser}
           onTogglePipeline={toggleInvitePipeline}
           onPermissionChange={updateInvitePermission}
-          onManagePipelineChange={handleManagePipelineChange}
-          onMembershipPermissionChange={handleMembershipPermissionChange}
-          onMembershipRemove={handleMembershipRemove}
           onClose={closeInviteModal}
           onSubmit={handleInviteSubmit}
         />

@@ -12,6 +12,7 @@ from apps.pipelines.access import (
     accessible_pipeline_statuses_queryset,
     company_ids_for_user,
     inviteable_pipelines_queryset,
+    normalize_pipeline_member_permissions,
     update_pipeline_membership,
     user_can_delete_pipeline,
     user_can_edit_pipeline,
@@ -272,10 +273,19 @@ class PipelineMembershipBulkAssignView(generics.GenericAPIView):
         target_user = serializer.validated_data["user"]
         pipelines = serializer.validated_data["pipelines"]
         permissions_payload = {
+            "has_full_access": serializer.validated_data["has_full_access"],
             "can_invite_members": serializer.validated_data["can_invite_members"],
             "can_edit_pipeline": serializer.validated_data["can_edit_pipeline"],
             "can_delete_pipeline": serializer.validated_data["can_delete_pipeline"],
             "can_manage_statuses": serializer.validated_data["can_manage_statuses"],
+            "can_view_contacts": serializer.validated_data["can_view_contacts"],
+            "can_move_contacts": serializer.validated_data["can_move_contacts"],
+            "can_manage_contacts": serializer.validated_data["can_manage_contacts"],
+            "can_view_companies": serializer.validated_data["can_view_companies"],
+            "can_manage_companies": serializer.validated_data["can_manage_companies"],
+            "can_view_deals": serializer.validated_data["can_view_deals"],
+            "can_move_deals": serializer.validated_data["can_move_deals"],
+            "can_manage_deals": serializer.validated_data["can_manage_deals"],
         }
 
         target_company_ids = set(target_user.companies.values_list("id", flat=True))
@@ -331,7 +341,22 @@ class PipelineMembershipDetailView(generics.RetrieveUpdateDestroyAPIView):
         membership = self.get_object()
         if not user_can_invite_to_pipeline(self.request.user, membership.pipeline):
             raise ValidationError({"detail": "You do not have permission to manage members on this pipeline."})
-        serializer.save()
+        merged_permissions = {
+            "has_full_access": serializer.validated_data.get("has_full_access", membership.has_full_access),
+            "can_invite_members": serializer.validated_data.get("can_invite_members", membership.can_invite_members),
+            "can_edit_pipeline": serializer.validated_data.get("can_edit_pipeline", membership.can_edit_pipeline),
+            "can_delete_pipeline": serializer.validated_data.get("can_delete_pipeline", membership.can_delete_pipeline),
+            "can_manage_statuses": serializer.validated_data.get("can_manage_statuses", membership.can_manage_statuses),
+            "can_view_contacts": serializer.validated_data.get("can_view_contacts", membership.can_view_contacts),
+            "can_move_contacts": serializer.validated_data.get("can_move_contacts", membership.can_move_contacts),
+            "can_manage_contacts": serializer.validated_data.get("can_manage_contacts", membership.can_manage_contacts),
+            "can_view_companies": serializer.validated_data.get("can_view_companies", membership.can_view_companies),
+            "can_manage_companies": serializer.validated_data.get("can_manage_companies", membership.can_manage_companies),
+            "can_view_deals": serializer.validated_data.get("can_view_deals", membership.can_view_deals),
+            "can_move_deals": serializer.validated_data.get("can_move_deals", membership.can_move_deals),
+            "can_manage_deals": serializer.validated_data.get("can_manage_deals", membership.can_manage_deals),
+        }
+        serializer.save(**normalize_pipeline_member_permissions(merged_permissions))
 
     def perform_destroy(self, instance):
         if not user_can_invite_to_pipeline(self.request.user, instance.pipeline):

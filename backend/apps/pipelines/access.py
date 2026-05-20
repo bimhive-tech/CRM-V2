@@ -3,6 +3,22 @@ from django.db.models import Q
 from apps.pipelines.models import Pipeline, PipelineMember, PipelineStatus
 
 
+PIPELINE_MEMBER_PERMISSION_FIELDS = [
+    "can_invite_members",
+    "can_edit_pipeline",
+    "can_delete_pipeline",
+    "can_manage_statuses",
+    "can_view_contacts",
+    "can_move_contacts",
+    "can_manage_contacts",
+    "can_view_companies",
+    "can_manage_companies",
+    "can_view_deals",
+    "can_move_deals",
+    "can_manage_deals",
+]
+
+
 def company_ids_for_user(user):
     ids = list(user.companies.values_list("id", flat=True))
     if user.company_id and user.company_id not in ids:
@@ -11,7 +27,7 @@ def company_ids_for_user(user):
 
 
 def accessible_pipelines_queryset(user):
-    queryset = Pipeline.objects.select_related("company", "created_by").prefetch_related("statuses", "memberships")
+    queryset = Pipeline.objects.select_related("company", "created_by").prefetch_related("statuses", "memberships", "memberships__user")
     if getattr(user, "is_platform_admin", False):
         return queryset
     if getattr(user, "is_company_admin", False):
@@ -44,26 +60,27 @@ def get_pipeline_membership(user, pipeline):
     return pipeline.memberships.filter(user=user).first()
 
 
+def _membership_allows(membership, field):
+    if membership is None:
+        return False
+    return bool(membership.has_full_access or getattr(membership, field, False))
+
+
 def pipeline_access_flags(user, pipeline):
     is_platform_admin = getattr(user, "is_platform_admin", False)
     is_company_admin = getattr(user, "is_company_admin", False)
     is_creator = bool(user and getattr(user, "id", None) and pipeline.created_by_id == user.id)
     membership = get_pipeline_membership(user, pipeline)
-    can_view = bool(
-        is_platform_admin
-        or is_company_admin
-        or is_creator
-        or membership is not None
-    )
+    can_view = bool(is_platform_admin or is_company_admin or is_creator or membership is not None)
 
-    return {
+    flags = {
         "can_view": can_view,
-        "can_invite_members": bool(is_platform_admin or is_company_admin or is_creator or (membership and membership.can_invite_members)),
-        "can_edit_pipeline": bool(is_platform_admin or is_company_admin or is_creator or (membership and membership.can_edit_pipeline)),
-        "can_delete_pipeline": bool(is_platform_admin or is_company_admin or is_creator or (membership and membership.can_delete_pipeline)),
-        "can_manage_statuses": bool(is_platform_admin or is_company_admin or is_creator or (membership and membership.can_manage_statuses)),
         "is_creator": is_creator,
+        "has_full_access": bool(is_platform_admin or is_company_admin or is_creator or _membership_allows(membership, "has_full_access")),
     }
+    for field in PIPELINE_MEMBER_PERMISSION_FIELDS:
+        flags[field] = bool(is_platform_admin or is_company_admin or is_creator or _membership_allows(membership, field))
+    return flags
 
 
 def user_can_access_pipeline(user, pipeline):
@@ -86,24 +103,101 @@ def user_can_manage_pipeline_statuses(user, pipeline):
     return pipeline_access_flags(user, pipeline)["can_manage_statuses"]
 
 
+def user_can_view_pipeline_contacts(user, pipeline):
+    return pipeline_access_flags(user, pipeline)["can_view_contacts"]
+
+
+def user_can_move_pipeline_contacts(user, pipeline):
+    flags = pipeline_access_flags(user, pipeline)
+    return bool(flags["can_move_contacts"] or flags["can_manage_contacts"])
+
+
+def user_can_manage_pipeline_contacts(user, pipeline):
+    return pipeline_access_flags(user, pipeline)["can_manage_contacts"]
+
+
+def user_can_view_pipeline_companies(user, pipeline):
+    flags = pipeline_access_flags(user, pipeline)
+    return bool(flags["can_view_companies"] or flags["can_manage_companies"])
+
+
+def user_can_manage_pipeline_companies(user, pipeline):
+    return pipeline_access_flags(user, pipeline)["can_manage_companies"]
+
+
+def user_can_view_pipeline_deals(user, pipeline):
+    return pipeline_access_flags(user, pipeline)["can_view_deals"]
+
+
+def user_can_move_pipeline_deals(user, pipeline):
+    flags = pipeline_access_flags(user, pipeline)
+    return bool(flags["can_move_deals"] or flags["can_manage_deals"])
+
+
+def user_can_manage_pipeline_deals(user, pipeline):
+    return pipeline_access_flags(user, pipeline)["can_manage_deals"]
+
+
 def inviteable_pipelines_queryset(user):
     queryset = accessible_pipelines_queryset(user)
     if getattr(user, "is_platform_admin", False) or getattr(user, "is_company_admin", False):
         return queryset
     return queryset.filter(
-        Q(created_by=user) | Q(memberships__user=user, memberships__can_invite_members=True)
+        Q(created_by=user) | Q(memberships__user=user, memberships__has_full_access=True) | Q(memberships__user=user, memberships__can_invite_members=True)
     ).distinct()
+
+
+def pipelines_with_contact_visibility_queryset(user):
+    queryset = accessible_pipelines_queryset(user)
+    if getattr(user, "is_platform_admin", False) or getattr(user, "is_company_admin", False):
+        return queryset
+    return queryset.filter(
+        Q(created_by=user)
+        | Q(memberships__user=user, memberships__has_full_access=True)
+        | Q(memberships__user=user, memberships__can_view_contacts=True)
+        | Q(memberships__user=user, memberships__can_move_contacts=True)
+        | Q(memberships__user=user, memberships__can_manage_contacts=True)
+    ).distinct()
+
+
+def pipelines_with_company_visibility_queryset(user):
+    queryset = accessible_pipelines_queryset(user)
+    if getattr(user, "is_platform_admin", False) or getattr(user, "is_company_admin", False):
+        return queryset
+    return queryset.filter(
+        Q(created_by=user)
+        | Q(memberships__user=user, memberships__has_full_access=True)
+        | Q(memberships__user=user, memberships__can_view_companies=True)
+        | Q(memberships__user=user, memberships__can_manage_companies=True)
+    ).distinct()
+
+
+def pipelines_with_deal_visibility_queryset(user):
+    queryset = accessible_pipelines_queryset(user)
+    if getattr(user, "is_platform_admin", False) or getattr(user, "is_company_admin", False):
+        return queryset
+    return queryset.filter(
+        Q(created_by=user)
+        | Q(memberships__user=user, memberships__has_full_access=True)
+        | Q(memberships__user=user, memberships__can_view_deals=True)
+        | Q(memberships__user=user, memberships__can_move_deals=True)
+        | Q(memberships__user=user, memberships__can_manage_deals=True)
+    ).distinct()
+
+
+def normalize_pipeline_member_permissions(permissions):
+    defaults = {field: bool(permissions.get(field)) for field in PIPELINE_MEMBER_PERMISSION_FIELDS}
+    defaults["has_full_access"] = bool(permissions.get("has_full_access"))
+    if defaults["has_full_access"]:
+        for field in PIPELINE_MEMBER_PERMISSION_FIELDS:
+            defaults[field] = True
+    return defaults
 
 
 def update_pipeline_membership(pipeline, user, permissions):
     membership, _ = PipelineMember.objects.update_or_create(
         pipeline=pipeline,
         user=user,
-        defaults={
-            "can_invite_members": bool(permissions.get("can_invite_members")),
-            "can_edit_pipeline": bool(permissions.get("can_edit_pipeline")),
-            "can_delete_pipeline": bool(permissions.get("can_delete_pipeline")),
-            "can_manage_statuses": bool(permissions.get("can_manage_statuses")),
-        },
+        defaults=normalize_pipeline_member_permissions(permissions),
     )
     return membership
