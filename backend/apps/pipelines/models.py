@@ -13,6 +13,13 @@ class Pipeline(models.Model):
     name = models.CharField(max_length=255)
     company = models.ForeignKey("companies.Company", on_delete=models.CASCADE, related_name="pipelines")
     kind = models.CharField(max_length=20, choices=KIND_CHOICES, default=KIND_CONTACTS)
+    created_by = models.ForeignKey(
+        "accounts.User",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="created_pipelines",
+    )
     created_at = models.DateTimeField(default=timezone.now, editable=False)
 
     class Meta:
@@ -23,6 +30,25 @@ class Pipeline(models.Model):
 
     def __str__(self):
         return self.name
+
+
+class PipelineMember(models.Model):
+    pipeline = models.ForeignKey(Pipeline, on_delete=models.CASCADE, related_name="memberships")
+    user = models.ForeignKey("accounts.User", on_delete=models.CASCADE, related_name="pipeline_memberships")
+    can_invite_members = models.BooleanField(default=False)
+    can_edit_pipeline = models.BooleanField(default=False)
+    can_delete_pipeline = models.BooleanField(default=False)
+    can_manage_statuses = models.BooleanField(default=False)
+    created_at = models.DateTimeField(default=timezone.now, editable=False)
+
+    class Meta:
+        ordering = ["pipeline_id", "user_id"]
+        constraints = [
+            models.UniqueConstraint(fields=["pipeline", "user"], name="unique_pipeline_member"),
+        ]
+
+    def __str__(self):
+        return f"{self.user_id} in {self.pipeline_id}"
 
 
 class PipelineStatus(models.Model):

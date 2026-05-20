@@ -7,12 +7,14 @@ import { CheckIcon, ClipboardIcon, DealsIcon, PeopleIcon, PipelineIcon, PlusIcon
 import { Sidebar } from "@/components/dashboard/sidebar/sidebar";
 import { Topbar } from "@/components/dashboard/topbar/topbar";
 import {
+  assignPipelineMemberships,
   createPipeline,
   createPipelineStatus,
   deletePipeline,
   deletePipelineStatus,
   listContacts,
   listDeals,
+  listPipelineInviteOptions,
   listPipelines,
   updateContact,
   updateDeal,
@@ -21,10 +23,18 @@ import {
 } from "@/lib/api/admin";
 import { getAccessToken } from "@/lib/session";
 
-import { ConfirmDeleteModal, PipelineModal } from "./pipeline-modal";
+import { ConfirmDeleteModal, PipelineInviteModal, PipelineModal } from "./pipeline-modal";
 import styles from "./pipeline-screen.module.css";
 
 const DEFAULT_STATUS_COLOR = "#7C5F35";
+const inviteInitialState = {
+  userId: "",
+  pipelineIds: [],
+  can_invite_members: false,
+  can_edit_pipeline: false,
+  can_delete_pipeline: false,
+  can_manage_statuses: false,
+};
 const PIPELINE_TABS = [
   { id: "contacts", label: "Contacts", icon: PeopleIcon },
   { id: "deals", label: "Deals", icon: DealsIcon },
@@ -135,15 +145,27 @@ export function PipelineScreen({ user }) {
   const [dragState, setDragState] = useState({ draggingId: null, previewStatuses: null });
   const [draggingCardId, setDraggingCardId] = useState(null);
   const [dropStatusId, setDropStatusId] = useState(null);
+  const [inviteState, setInviteState] = useState({
+    open: false,
+    loading: false,
+    users: [],
+    pipelines: [],
+    form: inviteInitialState,
+  });
 
   const copy = getTabCopy(activeTab);
   const selectedPipeline = useMemo(
     () => pipelines.find((pipeline) => String(pipeline.id) === selectedPipelineId) || null,
     [pipelines, selectedPipelineId],
   );
+  const selectedPipelineAccess = selectedPipeline?.access || null;
   const visibleStatuses = useMemo(
     () => dragState.previewStatuses || selectedPipeline?.statuses || [],
     [dragState.previewStatuses, selectedPipeline?.statuses],
+  );
+  const hasInviteablePipeline = useMemo(
+    () => pipelines.some((pipeline) => pipeline.access?.can_invite_members),
+    [pipelines],
   );
   const boardItems = activeTab === "deals" ? pipelineDeals : pipelineContacts;
   const itemsByStatus = useMemo(
@@ -363,6 +385,86 @@ export function PipelineScreen({ user }) {
     setModalState({ type: null, statusId: null });
   }
 
+  async function openInviteModal() {
+    setStatus((current) => ({ ...current, error: "" }));
+    setInviteState((current) => ({ ...current, open: true, loading: true }));
+    try {
+      const options = await listPipelineInviteOptions(token);
+      const defaultPipelineIds = selectedPipeline && options.pipelines.some((pipeline) => pipeline.id === selectedPipeline.id)
+        ? [String(selectedPipeline.id)]
+        : [];
+      setInviteState({
+        open: true,
+        loading: false,
+        users: options.users || [],
+        pipelines: options.pipelines || [],
+        form: { ...inviteInitialState, pipelineIds: defaultPipelineIds },
+      });
+    } catch (error) {
+      setInviteState((current) => ({ ...current, open: false, loading: false }));
+      setStatus({ loading: false, error: error.message || "Unable to load pipeline invite options.", success: "" });
+    }
+  }
+
+  function closeInviteModal() {
+    setInviteState({
+      open: false,
+      loading: false,
+      users: [],
+      pipelines: [],
+      form: inviteInitialState,
+    });
+  }
+
+  function updateInviteUser(userId) {
+    setInviteState((current) => ({
+      ...current,
+      form: { ...current.form, userId },
+    }));
+  }
+
+  function toggleInvitePipeline(pipelineId) {
+    setInviteState((current) => {
+      const nextPipelineIds = current.form.pipelineIds.includes(pipelineId)
+        ? current.form.pipelineIds.filter((value) => value !== pipelineId)
+        : [...current.form.pipelineIds, pipelineId];
+      return {
+        ...current,
+        form: { ...current.form, pipelineIds: nextPipelineIds },
+      };
+    });
+  }
+
+  function updateInvitePermission(field, checked) {
+    setInviteState((current) => ({
+      ...current,
+      form: { ...current.form, [field]: checked },
+    }));
+  }
+
+  async function handleInviteSubmit(event) {
+    event.preventDefault();
+    setInviteState((current) => ({ ...current, loading: true }));
+    setStatus((current) => ({ ...current, error: "", success: "" }));
+
+    try {
+      await assignPipelineMemberships(token, {
+        user_id: Number(inviteState.form.userId),
+        pipeline_ids: inviteState.form.pipelineIds.map((id) => Number(id)),
+        can_invite_members: inviteState.form.can_invite_members,
+        can_edit_pipeline: inviteState.form.can_edit_pipeline,
+        can_delete_pipeline: inviteState.form.can_delete_pipeline,
+        can_manage_statuses: inviteState.form.can_manage_statuses,
+      });
+      await loadPipelines(activeTab, selectedPipelineId);
+      closeInviteModal();
+      setStatus({ loading: false, error: "", success: "Pipeline access updated." });
+    } catch (error) {
+      setInviteState((current) => ({ ...current, loading: false }));
+      setStatus({ loading: false, error: error.message || "Unable to invite user to pipelines.", success: "" });
+    }
+  }
+
   function startStatusEditing(statusItem) {
     setEditingStatusId(statusItem.id);
     setEditingName(statusItem.name);
@@ -541,6 +643,8 @@ export function PipelineScreen({ user }) {
       topbar={
         <Topbar
           user={user}
+          onInvite={openInviteModal}
+          inviteDisabled={!hasInviteablePipeline}
           breadcrumbs={[
             { label: "Workspace", href: "/dashboard" },
             { label: "Pipeline", href: "/pipeline" },
@@ -592,10 +696,20 @@ export function PipelineScreen({ user }) {
                 )}
               </select>
             </label>
-            <button className={styles.secondaryButton} type="button" onClick={() => openModal("pipeline-edit")} disabled={!selectedPipeline}>
+            <button
+              className={styles.secondaryButton}
+              type="button"
+              onClick={() => openModal("pipeline-edit")}
+              disabled={!selectedPipeline || !selectedPipelineAccess?.can_edit_pipeline}
+            >
               Edit pipeline
             </button>
-            <button className={styles.secondaryButton} type="button" onClick={() => openModal("pipeline-delete")} disabled={!selectedPipeline}>
+            <button
+              className={styles.secondaryButton}
+              type="button"
+              onClick={() => openModal("pipeline-delete")}
+              disabled={!selectedPipeline || !selectedPipelineAccess?.can_delete_pipeline}
+            >
               Delete pipeline
             </button>
             <button className={styles.primaryButton} type="button" onClick={() => openModal("pipeline")}>
@@ -627,7 +741,12 @@ export function PipelineScreen({ user }) {
                 <p className={styles.boardEyebrow}>{copy.boardEyebrow}</p>
                 <h2>{selectedPipeline?.name || "Pipeline"}</h2>
               </div>
-              <button className={styles.secondaryButton} type="button" onClick={() => openModal("status")} disabled={!selectedPipeline}>
+              <button
+                className={styles.secondaryButton}
+                type="button"
+                onClick={() => openModal("status")}
+                disabled={!selectedPipeline || !selectedPipelineAccess?.can_manage_statuses}
+              >
                 <PlusIcon />
                 <span>{copy.addStatusLabel}</span>
               </button>
@@ -724,7 +843,12 @@ export function PipelineScreen({ user }) {
                                 </button>
                               </div>
                             ) : (
-                              <button className={styles.inlineTitleButton} type="button" onClick={() => startStatusEditing(statusItem)}>
+                              <button
+                                className={styles.inlineTitleButton}
+                                type="button"
+                                onClick={() => startStatusEditing(statusItem)}
+                                disabled={!selectedPipelineAccess?.can_manage_statuses}
+                              >
                                 <span className={styles.columnTitle}>{statusItem.name}</span>
                               </button>
                             )}
@@ -732,13 +856,14 @@ export function PipelineScreen({ user }) {
                           </div>
                         </div>
                         <div className={styles.columnActions}>
-                          <button
-                            className={styles.deleteAction}
-                            type="button"
-                            onClick={() => openModal("delete-status", statusItem)}
-                            aria-label={`Remove ${statusItem.name}`}
-                            title="Remove status"
-                          >
+                            <button
+                              className={styles.deleteAction}
+                              type="button"
+                              onClick={() => openModal("delete-status", statusItem)}
+                              disabled={!selectedPipelineAccess?.can_manage_statuses}
+                              aria-label={`Remove ${statusItem.name}`}
+                              title="Remove status"
+                            >
                             <TrashIcon />
                           </button>
                         </div>
@@ -860,7 +985,12 @@ export function PipelineScreen({ user }) {
                     </article>
                   ))}
 
-                  <button className={styles.addColumnCard} type="button" onClick={() => openModal("status")} disabled={!selectedPipeline}>
+                  <button
+                    className={styles.addColumnCard}
+                    type="button"
+                    onClick={() => openModal("status")}
+                    disabled={!selectedPipeline || !selectedPipelineAccess?.can_manage_statuses}
+                  >
                     <PlusIcon />
                     <span>Add status</span>
                   </button>
@@ -946,6 +1076,20 @@ export function PipelineScreen({ user }) {
           onClose={closeModal}
           onSubmit={handleDeleteStatus}
           submitLabel="Remove status"
+        />
+      ) : null}
+
+      {inviteState.open ? (
+        <PipelineInviteModal
+          users={inviteState.users}
+          pipelines={inviteState.pipelines}
+          value={inviteState.form}
+          loading={inviteState.loading}
+          onUserChange={updateInviteUser}
+          onTogglePipeline={toggleInvitePipeline}
+          onPermissionChange={updateInvitePermission}
+          onClose={closeInviteModal}
+          onSubmit={handleInviteSubmit}
         />
       ) : null}
     </DashboardShell>

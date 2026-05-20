@@ -3,6 +3,7 @@ from rest_framework import serializers
 
 from apps.crm.models import CRMCompany, CRMContactCompanyLink
 from apps.deals.models import Deal
+from apps.pipelines.access import user_can_access_pipeline
 from apps.pipelines.models import Pipeline
 
 
@@ -114,6 +115,9 @@ class DealSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError({"pipeline_id": "The selected pipeline is not available for this company."})
         if pipeline.kind != Pipeline.KIND_DEALS:
             raise serializers.ValidationError({"pipeline_id": "The selected pipeline is not a deals pipeline."})
+        request = self.context.get("request")
+        if request and request.user.is_authenticated and not user_can_access_pipeline(request.user, pipeline):
+            raise serializers.ValidationError({"pipeline_id": "You do not have access to the selected pipeline."})
         if contact_link and contact_link.company_id != company.id:
             raise serializers.ValidationError({"contact_id": "The selected contact does not belong to this company."})
 

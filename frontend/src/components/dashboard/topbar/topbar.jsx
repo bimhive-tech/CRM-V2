@@ -4,7 +4,7 @@ import { BellIcon, PlusIcon } from "@/components/dashboard/dashboard-icons";
 
 import styles from "./topbar.module.css";
 
-export function Topbar({ user, title = "Dashboard", breadcrumbs = null }) {
+export function Topbar({ user, title = "Dashboard", breadcrumbs = null, onInvite = null, inviteDisabled = false, inviteLabel = "Invite" }) {
   const companyName = user?.company?.name || user?.companies?.[0]?.name || "No company assigned";
   const crumbItems = breadcrumbs?.length ? breadcrumbs : [{ label: "Workspace" }, { label: title }];
 
@@ -37,9 +37,9 @@ export function Topbar({ user, title = "Dashboard", breadcrumbs = null }) {
         <div className={styles.identity}>
           <span>{companyName}</span>
         </div>
-        <button className={styles.inviteButton} type="button">
+        <button className={styles.inviteButton} type="button" onClick={onInvite || undefined} disabled={!onInvite || inviteDisabled}>
           <PlusIcon />
-          <span>Invite</span>
+          <span>{inviteLabel}</span>
         </button>
       </div>
     </div>

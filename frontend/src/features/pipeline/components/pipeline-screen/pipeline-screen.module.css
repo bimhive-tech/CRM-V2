@@ -99,7 +99,8 @@
 }
 
 .pipelineSelect select,
-.field input {
+.field input,
+.field select {
   width: 100%;
   min-height: 38px;
   padding: 7px 12px;
@@ -117,6 +118,7 @@
 
 .pipelineSelect select:focus,
 .field input:focus,
+.field select:focus,
 .inlineEditInput:focus {
   border-color: var(--accent);
 }
@@ -571,6 +573,47 @@
   gap: 8px;
 }
 
+.assignmentSection {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.assignmentTitle {
+  margin: 0;
+  color: var(--ink-3);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.optionGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.optionCard {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-button);
+  background: var(--surface);
+  color: var(--ink-2);
+  font-size: 13px;
+}
+
+.optionCard input {
+  accent-color: var(--accent);
+}
+
+.inviteModal {
+  width: min(680px, 100%);
+}
+
 .colorField {
   display: flex;
   align-items: center;
@@ -623,6 +666,10 @@
 }
 
 @media (max-width: 720px) {
+  .optionGrid {
+    grid-template-columns: 1fr;
+  }
+
   .boardScroller {
     padding: 16px;
   }

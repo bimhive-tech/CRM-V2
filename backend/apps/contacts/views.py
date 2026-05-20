@@ -12,6 +12,7 @@ from apps.accounts.permissions import HasAppPermission
 from apps.crm.models import CRMCompany, CRMContact, CRMContactCompanyLink
 from apps.contacts.importer import import_contact_records, parse_workbook
 from apps.contacts.serializers import ContactSerializer
+from apps.pipelines.access import accessible_pipelines_queryset
 from apps.pipelines.models import Pipeline
 from config.pagination import StandardResultsSetPagination
 
@@ -67,6 +68,7 @@ class ContactListCreateView(generics.ListCreateAPIView):
             queryset = queryset.filter(company_id=company_id)
 
         if pipeline_id:
+            generics.get_object_or_404(accessible_pipelines_queryset(self.request.user), pk=pipeline_id)
             queryset = queryset.filter(pipeline_id=pipeline_id)
 
         return queryset
@@ -146,7 +148,7 @@ class ContactImportExecuteView(APIView):
         tenant_company = resolve_default_tenant_company(request.user)
         selected_pipeline = None
         if pipeline_id:
-            selected_pipeline = generics.get_object_or_404(Pipeline, pk=pipeline_id, company=tenant_company)
+            selected_pipeline = generics.get_object_or_404(accessible_pipelines_queryset(request.user), pk=pipeline_id, company=tenant_company)
         result = import_contact_records(parsed["records"], tenant_company, pipeline=selected_pipeline, imported_by=request.user)
         return Response(
             {

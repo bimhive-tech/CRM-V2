@@ -2,6 +2,7 @@ from rest_framework import serializers
 
 from apps.accounts.models import User
 from apps.crm.models import CRMCompany, CRMContact, CRMContactCompanyLink
+from apps.pipelines.access import user_can_access_pipeline
 
 
 def normalize_optional_url(value):
@@ -177,6 +178,9 @@ class CRMContactSerializer(serializers.ModelSerializer):
 
         if pipeline is not None and company is not None and pipeline.company_id != company.tenant_company_id:
             raise serializers.ValidationError({"pipeline_id": "The selected pipeline is not available for this company."})
+        request = self.context.get("request")
+        if pipeline is not None and request and request.user.is_authenticated and not user_can_access_pipeline(request.user, pipeline):
+            raise serializers.ValidationError({"pipeline_id": "You do not have access to the selected pipeline."})
 
         return attrs
 

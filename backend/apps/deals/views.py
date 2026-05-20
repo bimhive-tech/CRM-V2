@@ -3,6 +3,7 @@ from rest_framework import generics, permissions, serializers
 
 from apps.accounts.permissions import HasAppPermission
 from apps.deals.models import Deal
+from apps.pipelines.access import accessible_pipelines_queryset
 from apps.deals.serializers import DealSerializer
 from config.pagination import StandardResultsSetPagination
 
@@ -42,6 +43,7 @@ class DealListCreateView(generics.ListCreateAPIView):
                 | Q(owner__full_name__icontains=search)
             )
         if pipeline_id:
+            generics.get_object_or_404(accessible_pipelines_queryset(self.request.user), pk=pipeline_id)
             queryset = queryset.filter(pipeline_id=pipeline_id)
         if company_id:
             queryset = queryset.filter(company_id=company_id)

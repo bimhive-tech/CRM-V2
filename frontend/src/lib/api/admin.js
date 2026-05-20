@@ -432,3 +432,18 @@ export function deletePipelineStatus(token, statusId) {
     headers: authHeaders(token),
   });
 }
+
+export function listPipelineInviteOptions(token) {
+  return apiRequest("/pipelines/invite-options/", {
+    method: "GET",
+    headers: authHeaders(token),
+  });
+}
+
+export function assignPipelineMemberships(token, payload) {
+  return apiRequest("/pipelines/memberships/assign/", {
+    method: "POST",
+    headers: authHeaders(token),
+    body: JSON.stringify(payload),
+  });
+}
