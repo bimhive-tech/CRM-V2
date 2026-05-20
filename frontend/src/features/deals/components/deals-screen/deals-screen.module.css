@@ -91,6 +91,7 @@
 .metaBadge {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   min-height: 32px;
   padding: 6px 10px;
   border: 1px solid var(--border);
@@ -99,6 +100,16 @@
   color: var(--ink-2);
   font-size: 12px;
   font-weight: 500;
+  cursor: pointer;
+  transition:
+    background 0.12s ease,
+    color 0.12s ease,
+    border-color 0.12s ease;
+}
+
+.metaBadge:hover {
+  background: var(--surface-2);
+  color: var(--ink);
 }
 
 .error,
@@ -314,12 +325,15 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  vertical-align: middle;
+  line-height: 1;
   border-radius: 0.7rem;
   box-shadow: inset 0 0 0 1px color-mix(in oklch, var(--border) 70%, transparent);
   font-size: 0.72rem;
   font-weight: 700;
   flex: none;
   letter-spacing: 0.04em;
+  text-align: center;
 }
 
 .amountCell {
@@ -336,7 +350,8 @@
 
 .ownerCell {
   display: flex;
-  justify-content: flex-end;
+  align-items: center;
+  justify-content: center;
 }
 
 .ownerAvatar {

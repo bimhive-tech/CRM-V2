@@ -227,6 +227,7 @@ export function DealsScreen({ user }) {
   const [selectedPipelineId, setSelectedPipelineId] = useState("");
   const [search, setSearch] = useState("");
   const [companyFilter, setCompanyFilter] = useState("all");
+  const [isGroupedByStage, setIsGroupedByStage] = useState(true);
   const [status, setStatus] = useState({ loading: true, error: "", success: "" });
   const [modalState, setModalState] = useState({ open: false, mode: "create", dealId: null });
   const [dealForm, setDealForm] = useState(emptyDealForm);
@@ -527,7 +528,14 @@ export function DealsScreen({ user }) {
             </p>
           </div>
           <div className={styles.heroActions}>
-            <div className={styles.metaBadge}>Grouped by stage</div>
+            <button
+              className={styles.metaBadge}
+              type="button"
+              onClick={() => setIsGroupedByStage((current) => !current)}
+              aria-pressed={isGroupedByStage}
+            >
+              {isGroupedByStage ? "Grouped by stage" : "Normal view"}
+            </button>
             <button className={styles.primaryButton} type="button" onClick={openCreateModal} disabled={!pipelines.length}>
               <PlusIcon />
               <span>New deal</span>
@@ -571,7 +579,7 @@ export function DealsScreen({ user }) {
           </label>
         </section>
 
-        {selectedPipeline && groupedDeals.length ? (
+        {selectedPipeline && visibleDeals.length ? (
           <section className={styles.panel}>
             <div className={styles.tableHeader}>
               <span>Deal</span>
@@ -582,75 +590,134 @@ export function DealsScreen({ user }) {
               <span>Owner</span>
               <span className={styles.actionHeader}>Actions</span>
             </div>
-            {groupedDeals.map((group) => (
-              <article key={group.id} className={styles.stageSection}>
-                <div className={styles.stageHeader}>
-                  <div className={styles.stageLead}>
-                    <span className={styles.stageDot} style={{ background: group.color }} />
-                    <strong>{group.name}</strong>
-                    <span className={styles.stageCount}>{group.deals.length}</span>
-                  </div>
-                  <span className={styles.stageTotal}>{formatCurrency(currencySymbol, group.total)}</span>
-                </div>
+            {isGroupedByStage
+              ? groupedDeals.map((group) => (
+                  <article key={group.id} className={styles.stageSection}>
+                    <div className={styles.stageHeader}>
+                      <div className={styles.stageLead}>
+                        <span className={styles.stageDot} style={{ background: group.color }} />
+                        <strong>{group.name}</strong>
+                        <span className={styles.stageCount}>{group.deals.length}</span>
+                      </div>
+                      <span className={styles.stageTotal}>{formatCurrency(currencySymbol, group.total)}</span>
+                    </div>
 
-                <div className={styles.rows}>
-                  {group.deals.map((deal) => (
-                    <div
-                      key={deal.id}
-                      className={styles.dealRow}
-                      role="button"
-                      tabIndex={0}
-                      onClick={() => router.push(`/deals/${deal.id}`)}
-                      onKeyDown={(event) => {
-                        if (event.key === "Enter" || event.key === " ") {
-                          event.preventDefault();
-                          router.push(`/deals/${deal.id}`);
-                        }
-                      }}
-                    >
-                      <div className={styles.dealIdentity}>
-                        <CompanyAvatar name={deal.company?.name || "No company"} />
-                        <div>
-                          <strong>{deal.name}</strong>
-                          <span>{deal.company?.name || "No company"}</span>
+                    <div className={styles.rows}>
+                      {group.deals.map((deal) => (
+                        <div
+                          key={deal.id}
+                          className={styles.dealRow}
+                          role="button"
+                          tabIndex={0}
+                          onClick={() => router.push(`/deals/${deal.id}`)}
+                          onKeyDown={(event) => {
+                            if (event.key === "Enter" || event.key === " ") {
+                              event.preventDefault();
+                              router.push(`/deals/${deal.id}`);
+                            }
+                          }}
+                        >
+                          <div className={styles.dealIdentity}>
+                            <CompanyAvatar name={deal.company?.name || "No company"} />
+                            <div>
+                              <strong>{deal.name}</strong>
+                              <span>{deal.company?.name || "No company"}</span>
+                            </div>
+                          </div>
+                          <div className={styles.amountCell}>{formatCurrency(currencySymbol, deal.amount)}</div>
+                          <div className={styles.contactCell}>{deal.contact?.full_name || "No contact"}</div>
+                          <div className={styles.dateCell}>{formatShortDate(deal.expected_close_date)}</div>
+                          <div className={styles.daysCell}>{deal.days_in_stage}d</div>
+                          <div className={styles.ownerCell}>
+                            <OwnerAvatar name={deal.owner?.full_name || "Unassigned"} />
+                          </div>
+                          <div className={styles.rowActions}>
+                            <button
+                              className={styles.inlineIconButton}
+                              type="button"
+                              aria-label={`Edit ${deal.name}`}
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                openEditModal(deal);
+                              }}
+                            >
+                              <EditIcon />
+                            </button>
+                            <button
+                              className={styles.deleteIconButton}
+                              type="button"
+                              aria-label={`Delete ${deal.name}`}
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                handleDeleteDeal(deal);
+                              }}
+                            >
+                              <TrashIcon />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </article>
+                ))
+              : (
+                  <div className={styles.rows}>
+                    {visibleDeals.map((deal) => (
+                      <div
+                        key={deal.id}
+                        className={styles.dealRow}
+                        role="button"
+                        tabIndex={0}
+                        onClick={() => router.push(`/deals/${deal.id}`)}
+                        onKeyDown={(event) => {
+                          if (event.key === "Enter" || event.key === " ") {
+                            event.preventDefault();
+                            router.push(`/deals/${deal.id}`);
+                          }
+                        }}
+                      >
+                        <div className={styles.dealIdentity}>
+                          <CompanyAvatar name={deal.company?.name || "No company"} />
+                          <div>
+                            <strong>{deal.name}</strong>
+                            <span>{deal.company?.name || "No company"}</span>
+                          </div>
+                        </div>
+                        <div className={styles.amountCell}>{formatCurrency(currencySymbol, deal.amount)}</div>
+                        <div className={styles.contactCell}>{deal.contact?.full_name || "No contact"}</div>
+                        <div className={styles.dateCell}>{formatShortDate(deal.expected_close_date)}</div>
+                        <div className={styles.daysCell}>{deal.days_in_stage}d</div>
+                        <div className={styles.ownerCell}>
+                          <OwnerAvatar name={deal.owner?.full_name || "Unassigned"} />
+                        </div>
+                        <div className={styles.rowActions}>
+                          <button
+                            className={styles.inlineIconButton}
+                            type="button"
+                            aria-label={`Edit ${deal.name}`}
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              openEditModal(deal);
+                            }}
+                          >
+                            <EditIcon />
+                          </button>
+                          <button
+                            className={styles.deleteIconButton}
+                            type="button"
+                            aria-label={`Delete ${deal.name}`}
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              handleDeleteDeal(deal);
+                            }}
+                          >
+                            <TrashIcon />
+                          </button>
                         </div>
                       </div>
-                      <div className={styles.amountCell}>{formatCurrency(currencySymbol, deal.amount)}</div>
-                      <div className={styles.contactCell}>{deal.contact?.full_name || "No contact"}</div>
-                      <div className={styles.dateCell}>{formatShortDate(deal.expected_close_date)}</div>
-                      <div className={styles.daysCell}>{deal.days_in_stage}d</div>
-                      <div className={styles.ownerCell}>
-                        <OwnerAvatar name={deal.owner?.full_name || "Unassigned"} />
-                      </div>
-                      <div className={styles.rowActions}>
-                        <button
-                          className={styles.inlineIconButton}
-                          type="button"
-                          aria-label={`Edit ${deal.name}`}
-                          onClick={(event) => {
-                            event.stopPropagation();
-                            openEditModal(deal);
-                          }}
-                        >
-                          <EditIcon />
-                        </button>
-                        <button
-                          className={styles.deleteIconButton}
-                          type="button"
-                          aria-label={`Delete ${deal.name}`}
-                          onClick={(event) => {
-                            event.stopPropagation();
-                            handleDeleteDeal(deal);
-                          }}
-                        >
-                          <TrashIcon />
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </article>
-            ))}
+                    ))}
+                  </div>
+                )}
           </section>
         ) : (
           <section className={`${styles.panel} ${styles.emptyState}`}>
