@@ -3,28 +3,44 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { DashboardShell } from "@/components/dashboard/dashboard-shell/dashboard-shell";
-import { CheckIcon, ClipboardIcon, PipelineIcon, PlusIcon, TrashIcon } from "@/components/dashboard/dashboard-icons";
+import { CheckIcon, ClipboardIcon, DealsIcon, PeopleIcon, PipelineIcon, PlusIcon, TrashIcon } from "@/components/dashboard/dashboard-icons";
 import { Sidebar } from "@/components/dashboard/sidebar/sidebar";
 import { Topbar } from "@/components/dashboard/topbar/topbar";
-import { createPipeline, createPipelineStatus, deletePipeline, deletePipelineStatus, listContacts, listPipelines, updateContact, updatePipeline, updatePipelineStatus } from "@/lib/api/admin";
+import {
+  createPipeline,
+  createPipelineStatus,
+  deletePipeline,
+  deletePipelineStatus,
+  listContacts,
+  listDeals,
+  listPipelines,
+  updateContact,
+  updateDeal,
+  updatePipeline,
+  updatePipelineStatus,
+} from "@/lib/api/admin";
 import { getAccessToken } from "@/lib/session";
 
 import { ConfirmDeleteModal, PipelineModal } from "./pipeline-modal";
 import styles from "./pipeline-screen.module.css";
 
 const DEFAULT_STATUS_COLOR = "#7C5F35";
+const PIPELINE_TABS = [
+  { id: "contacts", label: "Contacts", icon: PeopleIcon },
+  { id: "deals", label: "Deals", icon: DealsIcon },
+];
 
-function getPipelineStorageKey(user) {
+function getPipelineStorageKey(user, kind) {
   const companyId = user?.company?.id || user?.companies?.[0]?.id || "default";
-  return `crm:last-pipeline:${companyId}`;
+  return `crm:last-pipeline:${companyId}:${kind}`;
 }
 
-function readStoredPipelineId(user) {
+function readStoredPipelineId(user, kind) {
   if (typeof window === "undefined") {
     return "";
   }
 
-  return window.localStorage.getItem(getPipelineStorageKey(user)) || "";
+  return window.localStorage.getItem(getPipelineStorageKey(user, kind)) || "";
 }
 
 function normalizePaginatedResponse(data) {
@@ -39,6 +55,13 @@ function normalizePaginatedResponse(data) {
     count: data?.count || 0,
     results: data?.results || [],
   };
+}
+
+function formatAmount(value) {
+  const numericValue = Number(value || 0);
+  return new Intl.NumberFormat("en-US", {
+    maximumFractionDigits: 0,
+  }).format(numericValue);
 }
 
 function StageBadge({ count }) {
@@ -58,12 +81,49 @@ function reorderStatuses(statuses, draggingId, targetIndex) {
   return ordered;
 }
 
+function getTabCopy(activeTab) {
+  if (activeTab === "deals") {
+    return {
+      eyebrow: "Pipeline",
+      title: "Manage deal stages separately from contact tracking",
+      copy: "Create deal-specific pipelines, move opportunities between stages, and keep every status column aligned with your deal flow.",
+      emptyTitle: "No deal pipelines yet",
+      emptyCopy: "Create your first deals pipeline to start organizing opportunities by stage.",
+      boardEyebrow: "Deals pipeline",
+      addStatusLabel: "Add status",
+      createPipelinePlaceholder: "Cairo Tenders",
+      createPipelineDescription: "Set up a new deals workflow with its own status columns.",
+      editPipelineDescription: "Rename this deals pipeline without changing the opportunities already assigned to it.",
+      deletePipelineDescription:
+        "Type Confirm to permanently delete this deals pipeline. Deals must be moved or deleted before the pipeline can be removed.",
+      emptyColumnCopy: (statusName) => `Deals assigned to ${statusName.toLowerCase()} will appear here.`,
+    };
+  }
+
+  return {
+    eyebrow: "Pipeline",
+    title: "Shape each workflow around your contact sales motion",
+    copy: "Switch between contact pipelines, create new stage flows, and keep every status column in the right order.",
+    emptyTitle: "No contact pipelines yet",
+    emptyCopy: "Create your first contacts pipeline to start organizing people by stage.",
+    boardEyebrow: "Contacts pipeline",
+    addStatusLabel: "Add status",
+    createPipelinePlaceholder: "Consultant Outreach",
+    createPipelineDescription: "Set up a new contacts workflow with its own status columns.",
+    editPipelineDescription: "Rename this contacts pipeline without changing the people already assigned to it.",
+    deletePipelineDescription:
+      "Type Confirm to permanently delete this contacts pipeline. Contacts will remain in the Contacts page, but their pipeline and status will be cleared.",
+    emptyColumnCopy: (statusName) => `Contacts assigned to ${statusName.toLowerCase()} will appear here.`,
+  };
+}
+
 export function PipelineScreen({ user }) {
   const token = getAccessToken();
   const dragCommittedRef = useRef(false);
-  const initialStoredPipelineId = useRef(readStoredPipelineId(user));
+  const [activeTab, setActiveTab] = useState("contacts");
   const [pipelines, setPipelines] = useState([]);
   const [pipelineContacts, setPipelineContacts] = useState([]);
+  const [pipelineDeals, setPipelineDeals] = useState([]);
   const [selectedPipelineId, setSelectedPipelineId] = useState("");
   const [status, setStatus] = useState({ loading: true, error: "", success: "" });
   const [modalState, setModalState] = useState({ type: null, statusId: null });
@@ -73,9 +133,10 @@ export function PipelineScreen({ user }) {
   const [editingName, setEditingName] = useState("");
   const [deleteConfirmValue, setDeleteConfirmValue] = useState("");
   const [dragState, setDragState] = useState({ draggingId: null, previewStatuses: null });
-  const [draggingContactId, setDraggingContactId] = useState(null);
-  const [contactDropStatusId, setContactDropStatusId] = useState(null);
+  const [draggingCardId, setDraggingCardId] = useState(null);
+  const [dropStatusId, setDropStatusId] = useState(null);
 
+  const copy = getTabCopy(activeTab);
   const selectedPipeline = useMemo(
     () => pipelines.find((pipeline) => String(pipeline.id) === selectedPipelineId) || null,
     [pipelines, selectedPipelineId],
@@ -84,32 +145,37 @@ export function PipelineScreen({ user }) {
     () => dragState.previewStatuses || selectedPipeline?.statuses || [],
     [dragState.previewStatuses, selectedPipeline?.statuses],
   );
-  const contactsByStatus = useMemo(
+  const boardItems = activeTab === "deals" ? pipelineDeals : pipelineContacts;
+  const itemsByStatus = useMemo(
     () =>
       visibleStatuses.reduce((groups, statusItem) => {
-        groups[statusItem.id] = pipelineContacts.filter((contact) => contact.status === statusItem.name);
+        groups[statusItem.id] = boardItems.filter((item) => (activeTab === "deals" ? item.stage : item.status) === statusItem.name);
         return groups;
       }, {}),
-    [pipelineContacts, visibleStatuses],
+    [activeTab, boardItems, visibleStatuses],
   );
 
-  async function loadPipelines() {
+  async function loadPipelines(nextTab = activeTab, nextSelectedPipelineId = "") {
     setStatus((current) => ({ ...current, loading: true }));
 
     try {
-      const nextPipelines = await listPipelines(token);
+      const nextPipelines = await listPipelines(token, { kind: nextTab });
+      const storedPipelineId = readStoredPipelineId(user, nextTab);
+      const resolvedPipelineId =
+        nextSelectedPipelineId && nextPipelines.some((pipeline) => String(pipeline.id) === nextSelectedPipelineId)
+          ? nextSelectedPipelineId
+          : storedPipelineId && nextPipelines.some((pipeline) => String(pipeline.id) === storedPipelineId)
+            ? storedPipelineId
+            : nextPipelines[0]
+              ? String(nextPipelines[0].id)
+              : "";
+
       setPipelines(nextPipelines);
-      setSelectedPipelineId((current) => {
-        if (current && nextPipelines.some((pipeline) => String(pipeline.id) === current)) {
-          return current;
-        }
-        if (initialStoredPipelineId.current && nextPipelines.some((pipeline) => String(pipeline.id) === initialStoredPipelineId.current)) {
-          return initialStoredPipelineId.current;
-        }
-        return nextPipelines[0] ? String(nextPipelines[0].id) : "";
-      });
+      setSelectedPipelineId(resolvedPipelineId);
       setStatus({ loading: false, error: "", success: "" });
     } catch (error) {
+      setPipelines([]);
+      setSelectedPipelineId("");
       setStatus({ loading: false, error: error.message || "Unable to load pipelines.", success: "" });
     }
   }
@@ -135,63 +201,115 @@ export function PipelineScreen({ user }) {
     );
   }
 
+  async function loadPipelineDeals(pipelineId) {
+    if (!pipelineId) {
+      setPipelineDeals([]);
+      return;
+    }
+
+    const response = normalizePaginatedResponse(await listDeals(token, { page: 1, page_size: 200, pipeline_id: pipelineId }));
+    setPipelineDeals(
+      response.results.map((deal) => ({
+        id: deal.id,
+        name: deal.name,
+        company: deal.company?.name || "No company",
+        contact: deal.contact?.full_name || "",
+        amount: deal.amount || 0,
+        stage: deal.stage,
+        owner: deal.owner?.full_name || "Unassigned",
+        expectedCloseDate: deal.expected_close_date || "",
+        daysInStage: deal.days_in_stage || 0,
+      })),
+    );
+  }
+
   useEffect(() => {
     let active = true;
 
-    async function hydrate() {
+    async function hydratePipelines() {
+      setStatus((current) => ({ ...current, loading: true }));
+
       try {
-        const nextPipelines = await listPipelines(token);
+        const nextPipelines = await listPipelines(token, { kind: activeTab });
         if (!active) {
           return;
         }
-        setPipelines(nextPipelines);
-        const nextSelectedPipelineId =
-          nextPipelines.find((pipeline) => String(pipeline.id) === initialStoredPipelineId.current)?.id
-            ? initialStoredPipelineId.current
+
+        const storedPipelineId = readStoredPipelineId(user, activeTab);
+        const resolvedPipelineId =
+          storedPipelineId && nextPipelines.some((pipeline) => String(pipeline.id) === storedPipelineId)
+            ? storedPipelineId
             : nextPipelines[0]
               ? String(nextPipelines[0].id)
               : "";
-        setSelectedPipelineId(nextSelectedPipelineId);
+
+        setPipelines(nextPipelines);
+        setSelectedPipelineId(resolvedPipelineId);
         setStatus({ loading: false, error: "", success: "" });
       } catch (error) {
         if (!active) {
           return;
         }
+        setPipelines([]);
+        setSelectedPipelineId("");
         setStatus({ loading: false, error: error.message || "Unable to load pipelines.", success: "" });
       }
     }
 
-    hydrate();
+    hydratePipelines();
 
     return () => {
       active = false;
     };
-  }, [token]);
+  }, [activeTab, token, user]);
 
   useEffect(() => {
     if (typeof window === "undefined") {
       return;
     }
 
-    const storageKey = getPipelineStorageKey(user);
+    const storageKey = getPipelineStorageKey(user, activeTab);
     if (selectedPipelineId) {
       window.localStorage.setItem(storageKey, selectedPipelineId);
       return;
     }
 
     window.localStorage.removeItem(storageKey);
-  }, [selectedPipelineId, user]);
+  }, [activeTab, selectedPipelineId, user]);
 
   useEffect(() => {
     let active = true;
 
-    async function hydrateContacts() {
+    async function hydrateItems() {
       if (!selectedPipelineId) {
         setPipelineContacts([]);
+        setPipelineDeals([]);
         return;
       }
 
       try {
+        if (activeTab === "deals") {
+          const response = normalizePaginatedResponse(await listDeals(token, { page: 1, page_size: 200, pipeline_id: selectedPipelineId }));
+          if (!active) {
+            return;
+          }
+          setPipelineDeals(
+            response.results.map((deal) => ({
+              id: deal.id,
+              name: deal.name,
+              company: deal.company?.name || "No company",
+              contact: deal.contact?.full_name || "",
+              amount: deal.amount || 0,
+              stage: deal.stage,
+              owner: deal.owner?.full_name || "Unassigned",
+              expectedCloseDate: deal.expected_close_date || "",
+              daysInStage: deal.days_in_stage || 0,
+            })),
+          );
+          setPipelineContacts([]);
+          return;
+        }
+
         const response = normalizePaginatedResponse(await listContacts(token, { page: 1, page_size: 200, pipeline_id: selectedPipelineId }));
         if (!active) {
           return;
@@ -208,20 +326,22 @@ export function PipelineScreen({ user }) {
             owner: contact.owner?.full_name || "Unassigned",
           })),
         );
+        setPipelineDeals([]);
       } catch {
         if (!active) {
           return;
         }
         setPipelineContacts([]);
+        setPipelineDeals([]);
       }
     }
 
-    hydrateContacts();
+    hydrateItems();
 
     return () => {
       active = false;
     };
-  }, [selectedPipelineId, token]);
+  }, [activeTab, selectedPipelineId, token]);
 
   function openModal(type, statusItem = null) {
     if (type === "pipeline-edit") {
@@ -258,10 +378,8 @@ export function PipelineScreen({ user }) {
     event.preventDefault();
 
     try {
-      const created = await createPipeline(token, { name: nameValue.trim() });
-      const nextPipelines = await listPipelines(token);
-      setPipelines(nextPipelines);
-      setSelectedPipelineId(String(created.id));
+      const created = await createPipeline(token, { name: nameValue.trim(), kind: activeTab });
+      await loadPipelines(activeTab, String(created.id));
       setStatus({ loading: false, error: "", success: "Pipeline created." });
       closeModal();
     } catch (error) {
@@ -278,7 +396,7 @@ export function PipelineScreen({ user }) {
 
     try {
       await updatePipeline(token, selectedPipeline.id, { name: nameValue.trim() });
-      await loadPipelines();
+      await loadPipelines(activeTab, selectedPipelineId);
       setStatus({ loading: false, error: "", success: "Pipeline updated." });
       closeModal();
     } catch (error) {
@@ -295,7 +413,12 @@ export function PipelineScreen({ user }) {
 
     try {
       await createPipelineStatus(token, selectedPipeline.id, { name: nameValue.trim(), color: colorValue });
-      await Promise.all([loadPipelines(), loadPipelineContacts(selectedPipeline.id)]);
+      await loadPipelines(activeTab, selectedPipelineId);
+      if (activeTab === "deals") {
+        await loadPipelineDeals(selectedPipeline.id);
+      } else {
+        await loadPipelineContacts(selectedPipeline.id);
+      }
       setStatus({ loading: false, error: "", success: "Status added." });
       closeModal();
     } catch (error) {
@@ -310,7 +433,7 @@ export function PipelineScreen({ user }) {
 
     try {
       await updatePipelineStatus(token, statusId, { name: editingName.trim() });
-      await loadPipelines();
+      await loadPipelines(activeTab, selectedPipelineId);
       setStatus({ loading: false, error: "", success: "Status updated." });
       cancelStatusEditing();
     } catch (error) {
@@ -327,7 +450,14 @@ export function PipelineScreen({ user }) {
 
     try {
       await deletePipelineStatus(token, modalState.statusId);
-      await Promise.all([loadPipelines(), loadPipelineContacts(selectedPipeline?.id)]);
+      await loadPipelines(activeTab, selectedPipelineId);
+      if (selectedPipeline?.id) {
+        if (activeTab === "deals") {
+          await loadPipelineDeals(selectedPipeline.id);
+        } else {
+          await loadPipelineContacts(selectedPipeline.id);
+        }
+      }
       setStatus({ loading: false, error: "", success: "Status removed." });
       closeModal();
     } catch (error) {
@@ -344,7 +474,9 @@ export function PipelineScreen({ user }) {
 
     try {
       await deletePipeline(token, selectedPipeline.id);
-      await Promise.all([loadPipelines(), loadPipelineContacts("")]);
+      await loadPipelines(activeTab);
+      setPipelineContacts([]);
+      setPipelineDeals([]);
       setStatus({ loading: false, error: "", success: "Pipeline removed." });
       closeModal();
     } catch (error) {
@@ -364,24 +496,31 @@ export function PipelineScreen({ user }) {
 
     try {
       await updatePipelineStatus(token, statusId, { position: nextPosition });
-      await loadPipelines();
+      await loadPipelines(activeTab, selectedPipelineId);
       setStatus({ loading: false, error: "", success: "Status order updated." });
     } catch (error) {
       setStatus({ loading: false, error: error.message || "Unable to reorder status.", success: "" });
     }
   }
 
-  async function moveContactToStatus(contactId, nextStatusName) {
+  async function moveCardToStatus(cardId, nextStatusName) {
     if (!selectedPipeline) {
       return;
     }
 
     try {
-      await updateContact(token, contactId, { pipeline_id: selectedPipeline.id, status: nextStatusName });
+      if (activeTab === "deals") {
+        await updateDeal(token, cardId, { stage: nextStatusName });
+        await loadPipelineDeals(selectedPipeline.id);
+        setStatus({ loading: false, error: "", success: "Deal stage updated." });
+        return;
+      }
+
+      await updateContact(token, cardId, { pipeline_id: selectedPipeline.id, status: nextStatusName });
       await loadPipelineContacts(selectedPipeline.id);
       setStatus({ loading: false, error: "", success: "Contact stage updated." });
     } catch (error) {
-      setStatus({ loading: false, error: error.message || "Unable to move contact.", success: "" });
+      setStatus({ loading: false, error: error.message || `Unable to move ${activeTab === "deals" ? "deal" : "contact"}.`, success: "" });
     }
   }
 
@@ -405,6 +544,7 @@ export function PipelineScreen({ user }) {
           breadcrumbs={[
             { label: "Workspace", href: "/dashboard" },
             { label: "Pipeline", href: "/pipeline" },
+            { label: activeTab === "deals" ? "Deals" : "Contacts" },
             ...(selectedPipeline?.name ? [{ label: selectedPipeline.name }] : []),
           ]}
         />
@@ -413,20 +553,34 @@ export function PipelineScreen({ user }) {
       <div className={styles.stack}>
         <section className={styles.hero}>
           <div>
-            <p className={styles.eyebrow}>Pipeline</p>
-            <h1>Shape each workflow around your sales motion</h1>
-            <p className={styles.copy}>
-              Switch between pipelines, create new stage flows, and keep every status column in the right order.
-            </p>
+            <p className={styles.eyebrow}>{copy.eyebrow}</p>
+            <h1>{copy.title}</h1>
+            <p className={styles.copy}>{copy.copy}</p>
           </div>
           <div className={styles.heroActions}>
+            <div className={styles.tabRow} role="tablist" aria-label="Pipeline type">
+              {PIPELINE_TABS.map((tab) => {
+                const Icon = tab.icon;
+                const isActive = tab.id === activeTab;
+
+                return (
+                  <button
+                    key={tab.id}
+                    className={`${styles.tabButton} ${isActive ? styles.tabButtonActive : ""}`}
+                    type="button"
+                    role="tab"
+                    aria-selected={isActive}
+                    onClick={() => setActiveTab(tab.id)}
+                  >
+                    <Icon />
+                    <span>{tab.label}</span>
+                  </button>
+                );
+              })}
+            </div>
             <label className={styles.pipelineSelect}>
               <span className={styles.visuallyHidden}>Choose pipeline</span>
-              <select
-                value={selectedPipelineId}
-                onChange={(event) => setSelectedPipelineId(event.target.value)}
-                disabled={!pipelines.length}
-              >
+              <select value={selectedPipelineId} onChange={(event) => setSelectedPipelineId(event.target.value)} disabled={!pipelines.length}>
                 {pipelines.length ? (
                   pipelines.map((pipeline) => (
                     <option key={pipeline.id} value={pipeline.id}>
@@ -459,8 +613,8 @@ export function PipelineScreen({ user }) {
             <span className={styles.emptyIcon}>
               <PipelineIcon />
             </span>
-            <strong>No pipelines yet</strong>
-            <p>Create your first pipeline to start organizing deals into a custom stage flow.</p>
+            <strong>{copy.emptyTitle}</strong>
+            <p>{copy.emptyCopy}</p>
             <button className={styles.primaryButton} type="button" onClick={() => openModal("pipeline")}>
               <PlusIcon />
               <span>Create pipeline</span>
@@ -470,12 +624,12 @@ export function PipelineScreen({ user }) {
           <section className={styles.boardSection}>
             <div className={styles.boardHeader}>
               <div>
-                <p className={styles.boardEyebrow}>Pipeline view</p>
+                <p className={styles.boardEyebrow}>{copy.boardEyebrow}</p>
                 <h2>{selectedPipeline?.name || "Pipeline"}</h2>
               </div>
               <button className={styles.secondaryButton} type="button" onClick={() => openModal("status")} disabled={!selectedPipeline}>
                 <PlusIcon />
-                <span>Add status</span>
+                <span>{copy.addStatusLabel}</span>
               </button>
             </div>
 
@@ -496,7 +650,7 @@ export function PipelineScreen({ user }) {
                       className={`${styles.column} ${dragState.draggingId === statusItem.id ? styles.columnDragging : ""}`}
                       draggable
                       onDragStart={() => {
-                        if (draggingContactId !== null) {
+                        if (draggingCardId !== null) {
                           return;
                         }
                         dragCommittedRef.current = false;
@@ -511,7 +665,7 @@ export function PipelineScreen({ user }) {
                       }}
                       onDragOver={(event) => {
                         event.preventDefault();
-                        if (draggingContactId !== null) {
+                        if (draggingCardId !== null) {
                           return;
                         }
                         if (!dragState.draggingId || dragState.draggingId === statusItem.id) {
@@ -524,10 +678,7 @@ export function PipelineScreen({ user }) {
                       }}
                       onDrop={async (event) => {
                         event.preventDefault();
-                        if (draggingContactId !== null) {
-                          return;
-                        }
-                        if (dragState.draggingId === null) {
+                        if (draggingCardId !== null || dragState.draggingId === null) {
                           return;
                         }
                         const draggingId = dragState.draggingId;
@@ -577,7 +728,7 @@ export function PipelineScreen({ user }) {
                                 <span className={styles.columnTitle}>{statusItem.name}</span>
                               </button>
                             )}
-                            <StageBadge count={(contactsByStatus[statusItem.id] || []).length} />
+                            <StageBadge count={(itemsByStatus[statusItem.id] || []).length} />
                           </div>
                         </div>
                         <div className={styles.columnActions}>
@@ -595,61 +746,72 @@ export function PipelineScreen({ user }) {
 
                       <div className={styles.columnBody}>
                         <div className={styles.columnContent}>
-                          {(contactsByStatus[statusItem.id] || []).length ? (
+                          {(itemsByStatus[statusItem.id] || []).length ? (
                             <div
-                              className={`${styles.contactStack} ${contactDropStatusId === statusItem.id ? styles.contactDropActive : ""}`}
+                              className={`${styles.contactStack} ${dropStatusId === statusItem.id ? styles.contactDropActive : ""}`}
                               onDragOver={(event) => {
-                                if (draggingContactId === null) {
+                                if (draggingCardId === null) {
                                   return;
                                 }
                                 event.preventDefault();
-                                setContactDropStatusId(statusItem.id);
+                                setDropStatusId(statusItem.id);
                               }}
                               onDragLeave={() => {
-                                if (contactDropStatusId === statusItem.id) {
-                                  setContactDropStatusId(null);
+                                if (dropStatusId === statusItem.id) {
+                                  setDropStatusId(null);
                                 }
                               }}
                               onDrop={async (event) => {
-                                if (draggingContactId === null) {
+                                if (draggingCardId === null) {
                                   return;
                                 }
                                 event.preventDefault();
-                                const contactId = draggingContactId;
-                                setDraggingContactId(null);
-                                setContactDropStatusId(null);
-                                await moveContactToStatus(contactId, statusItem.name);
+                                const cardId = draggingCardId;
+                                setDraggingCardId(null);
+                                setDropStatusId(null);
+                                await moveCardToStatus(cardId, statusItem.name);
                               }}
                             >
-                              {(contactsByStatus[statusItem.id] || []).map((contact) => (
+                              {(itemsByStatus[statusItem.id] || []).map((item) => (
                                 <article
-                                  key={contact.id}
+                                  key={item.id}
                                   className={styles.contactCard}
                                   draggable
                                   onDragStart={(event) => {
                                     event.stopPropagation();
-                                    setDraggingContactId(contact.id);
+                                    setDraggingCardId(item.id);
                                   }}
                                   onDragEnd={() => {
-                                    setDraggingContactId(null);
-                                    setContactDropStatusId(null);
+                                    setDraggingCardId(null);
+                                    setDropStatusId(null);
                                   }}
                                 >
                                   <div className={styles.contactCardHeader}>
                                     <div className={styles.contactCardMeta}>
-                                      <strong>{contact.fullName}</strong>
-                                      <span>{contact.title}</span>
+                                      <strong>{activeTab === "deals" ? item.name : item.fullName}</strong>
+                                      <span>{activeTab === "deals" ? item.company : item.title}</span>
                                     </div>
-                                    <div className={styles.contactOwnerDot} title={contact.owner}>
-                                      {renderOwnerInitials(contact.owner)}
+                                    <div className={styles.contactOwnerDot} title={item.owner}>
+                                      {renderOwnerInitials(item.owner)}
                                     </div>
                                   </div>
-                                  <p className={styles.contactCompany}>{contact.company}</p>
-                                  <p className={styles.contactMetaLine}>{contact.email}</p>
-                                  <p className={styles.contactMetaLine}>{contact.phone}</p>
+                                  <p className={styles.contactCompany}>{activeTab === "deals" ? item.contact || "No contact" : item.company}</p>
+                                  {activeTab === "deals" ? (
+                                    <>
+                                      <p className={styles.contactMetaLine}>Amount: {formatAmount(item.amount)}</p>
+                                      <p className={styles.contactMetaLine}>
+                                        {item.expectedCloseDate ? `Close: ${item.expectedCloseDate}` : `In stage: ${item.daysInStage}d`}
+                                      </p>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <p className={styles.contactMetaLine}>{item.email}</p>
+                                      <p className={styles.contactMetaLine}>{item.phone}</p>
+                                    </>
+                                  )}
                                   <label className={styles.contactStatusSelect}>
-                                    <span className={styles.visuallyHidden}>Move contact status</span>
-                                    <select value={contact.status} onChange={(event) => moveContactToStatus(contact.id, event.target.value)}>
+                                    <span className={styles.visuallyHidden}>Move {activeTab === "deals" ? "deal" : "contact"} status</span>
+                                    <select value={activeTab === "deals" ? item.stage : item.status} onChange={(event) => moveCardToStatus(item.id, event.target.value)}>
                                       {visibleStatuses.map((option) => (
                                         <option key={option.id} value={option.name}>
                                           {option.name}
@@ -662,35 +824,35 @@ export function PipelineScreen({ user }) {
                             </div>
                           ) : (
                             <div
-                              className={`${styles.columnEmpty} ${contactDropStatusId === statusItem.id ? styles.contactDropActive : ""}`}
+                              className={`${styles.columnEmpty} ${dropStatusId === statusItem.id ? styles.contactDropActive : ""}`}
                               onDragOver={(event) => {
-                                if (draggingContactId === null) {
+                                if (draggingCardId === null) {
                                   return;
                                 }
                                 event.preventDefault();
-                                setContactDropStatusId(statusItem.id);
+                                setDropStatusId(statusItem.id);
                               }}
                               onDragLeave={() => {
-                                if (contactDropStatusId === statusItem.id) {
-                                  setContactDropStatusId(null);
+                                if (dropStatusId === statusItem.id) {
+                                  setDropStatusId(null);
                                 }
                               }}
                               onDrop={async (event) => {
-                                if (draggingContactId === null) {
+                                if (draggingCardId === null) {
                                   return;
                                 }
                                 event.preventDefault();
-                                const contactId = draggingContactId;
-                                setDraggingContactId(null);
-                                setContactDropStatusId(null);
-                                await moveContactToStatus(contactId, statusItem.name);
+                                const cardId = draggingCardId;
+                                setDraggingCardId(null);
+                                setDropStatusId(null);
+                                await moveCardToStatus(cardId, statusItem.name);
                               }}
                             >
                               <span className={styles.columnEmptyIcon}>
                                 <ClipboardIcon />
                               </span>
-                              <strong>No contacts in this stage</strong>
-                              <p>Contacts assigned to {statusItem.name.toLowerCase()} will appear here.</p>
+                              <strong>No {activeTab === "deals" ? "deals" : "contacts"} in this stage</strong>
+                              <p>{copy.emptyColumnCopy(statusItem.name)}</p>
                             </div>
                           )}
                         </div>
@@ -720,7 +882,7 @@ export function PipelineScreen({ user }) {
       {modalState.type === "pipeline" ? (
         <PipelineModal
           title="Create pipeline"
-          description="Set up a new workflow with its own status columns."
+          description={copy.createPipelineDescription}
           value={nameValue}
           colorValue={colorValue}
           onChange={setNameValue}
@@ -728,14 +890,14 @@ export function PipelineScreen({ user }) {
           onClose={closeModal}
           onSubmit={handleCreatePipeline}
           submitLabel="Create pipeline"
-          placeholder="Cairo Projects"
+          placeholder={copy.createPipelinePlaceholder}
         />
       ) : null}
 
       {modalState.type === "pipeline-edit" ? (
         <PipelineModal
           title="Edit pipeline"
-          description="Rename this pipeline without changing the contacts already assigned to it."
+          description={copy.editPipelineDescription}
           value={nameValue}
           colorValue={colorValue}
           onChange={setNameValue}
@@ -743,7 +905,7 @@ export function PipelineScreen({ user }) {
           onClose={closeModal}
           onSubmit={handleUpdatePipeline}
           submitLabel="Save pipeline"
-          placeholder="Cairo Projects"
+          placeholder={copy.createPipelinePlaceholder}
         />
       ) : null}
 
@@ -758,7 +920,7 @@ export function PipelineScreen({ user }) {
           onClose={closeModal}
           onSubmit={handleCreateStatus}
           submitLabel="Add status"
-          placeholder="Site Visit"
+          placeholder={activeTab === "deals" ? "Negotiation Review" : "Site Visit"}
           showColorField
         />
       ) : null}
@@ -766,7 +928,7 @@ export function PipelineScreen({ user }) {
       {modalState.type === "pipeline-delete" ? (
         <ConfirmDeleteModal
           title="Delete pipeline"
-          description="Type Confirm to permanently delete this pipeline. This is irreversible. Contacts will remain in the Contacts page, but their pipeline and status will be cleared."
+          description={copy.deletePipelineDescription}
           value={deleteConfirmValue}
           onChange={setDeleteConfirmValue}
           onClose={closeModal}

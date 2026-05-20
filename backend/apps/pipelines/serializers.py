@@ -24,7 +24,7 @@ class PipelineSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Pipeline
-        fields = ["id", "name", "company_id", "statuses", "created_at"]
+        fields = ["id", "name", "kind", "company_id", "statuses", "created_at"]
         read_only_fields = ["id", "created_at", "statuses"]
 
 

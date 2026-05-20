@@ -6,6 +6,19 @@ from apps.deals.models import Deal
 from apps.pipelines.models import Pipeline
 
 
+def calculate_stage_probability(pipeline, stage_name):
+    statuses = list(pipeline.statuses.order_by("position", "id").values_list("name", flat=True))
+    if not statuses:
+        return 0
+    if len(statuses) == 1:
+        return 100
+    try:
+        index = statuses.index(stage_name)
+    except ValueError:
+        return 0
+    return round((index / (len(statuses) - 1)) * 100)
+
+
 class DealCompanySerializer(serializers.ModelSerializer):
     class Meta:
         model = CRMCompany
@@ -65,7 +78,7 @@ class DealSerializer(serializers.ModelSerializer):
             "created_at",
             "updated_at",
         ]
-        read_only_fields = ["id", "pipeline_name", "owner", "stage_color", "days_in_stage", "created_at", "updated_at"]
+        read_only_fields = ["id", "pipeline_name", "owner", "stage_color", "probability", "days_in_stage", "created_at", "updated_at"]
 
     def get_owner(self, obj):
         if not obj.owner:
@@ -98,6 +111,8 @@ class DealSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError({"pipeline_id": "Pipeline is required."})
         if pipeline.company_id != company.tenant_company_id:
             raise serializers.ValidationError({"pipeline_id": "The selected pipeline is not available for this company."})
+        if pipeline.kind != Pipeline.KIND_DEALS:
+            raise serializers.ValidationError({"pipeline_id": "The selected pipeline is not a deals pipeline."})
         if contact_link and contact_link.company_id != company.id:
             raise serializers.ValidationError({"contact_id": "The selected contact does not belong to this company."})
 
@@ -110,12 +125,16 @@ class DealSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         request = self.context.get("request")
         validated_data["tenant_company"] = validated_data["company"].tenant_company
+        validated_data["probability"] = calculate_stage_probability(validated_data["pipeline"], validated_data.get("stage", ""))
         if request and request.user.is_authenticated and "owner" not in validated_data:
             validated_data["owner"] = request.user
         return super().create(validated_data)
 
     def update(self, instance, validated_data):
         previous_stage = instance.stage
+        pipeline = validated_data.get("pipeline", instance.pipeline)
+        stage = validated_data.get("stage", instance.stage)
+        validated_data["probability"] = calculate_stage_probability(pipeline, stage)
         deal = super().update(instance, validated_data)
         if "stage" in validated_data and validated_data["stage"] != previous_stage:
             deal.stage_entered_at = timezone.now()

@@ -124,7 +124,11 @@ class PipelineListCreateView(generics.ListCreateAPIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        return pipelines_queryset_for_user(self.request.user)
+        queryset = pipelines_queryset_for_user(self.request.user)
+        pipeline_kind = self.request.query_params.get("kind", "").strip()
+        if pipeline_kind in {Pipeline.KIND_CONTACTS, Pipeline.KIND_DEALS}:
+            queryset = queryset.filter(kind=pipeline_kind)
+        return queryset
 
     @transaction.atomic
     def perform_create(self, serializer):
@@ -152,7 +156,15 @@ class PipelineDetailView(generics.RetrieveUpdateDestroyAPIView):
 
     @transaction.atomic
     def perform_destroy(self, instance):
-        CRMContactCompanyLink.objects.filter(pipeline=instance).update(pipeline=None, status="")
+        if instance.kind == Pipeline.KIND_CONTACTS:
+            CRMContactCompanyLink.objects.filter(pipeline=instance).update(pipeline=None, status="")
+            instance.delete()
+            return
+
+        from apps.deals.models import Deal
+
+        if Deal.objects.filter(pipeline=instance).exists():
+            raise ValidationError({"detail": "Move or delete the deals in this pipeline before removing it."})
         instance.delete()
 
 

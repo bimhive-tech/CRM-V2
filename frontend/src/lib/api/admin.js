@@ -336,8 +336,8 @@ export function deleteImportedContactData(token) {
   });
 }
 
-export function listPipelines(token) {
-  return apiRequest("/pipelines/", {
+export function listPipelines(token, query = {}) {
+  return apiRequest(buildApiPath("/pipelines/", query), {
     method: "GET",
     headers: authHeaders(token),
   });

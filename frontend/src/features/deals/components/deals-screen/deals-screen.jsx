@@ -18,7 +18,6 @@ const emptyDealForm = {
   pipelineId: "",
   stage: "",
   amount: "",
-  probability: "",
   expectedCloseDate: "",
   notes: "",
 };
@@ -170,10 +169,6 @@ function DealModal({
               <input name="amount" type="number" min="0" step="0.01" value={form.amount} onChange={onChange} placeholder="250000" required />
             </label>
             <label className={styles.field}>
-              <span>Probability</span>
-              <input name="probability" type="number" min="0" max="100" value={form.probability} onChange={onChange} placeholder="45" required />
-            </label>
-            <label className={styles.field}>
               <span>Expected close date</span>
               <input name="expectedCloseDate" type="date" value={form.expectedCloseDate} onChange={onChange} />
             </label>
@@ -227,9 +222,13 @@ export function DealsScreen({ user }) {
       label: `${contact.full_name} - ${contact.title || "Contact"}`,
     }));
   }, [contacts, dealForm.companyId]);
+  const selectedFormPipeline = useMemo(
+    () => pipelines.find((pipeline) => String(pipeline.id) === dealForm.pipelineId) || null,
+    [pipelines, dealForm.pipelineId],
+  );
   const stageOptions = useMemo(
-    () => (selectedPipeline?.statuses || []).map((statusItem) => ({ value: statusItem.name, label: statusItem.name })),
-    [selectedPipeline],
+    () => (selectedFormPipeline?.statuses || []).map((statusItem) => ({ value: statusItem.name, label: statusItem.name })),
+    [selectedFormPipeline],
   );
 
   const visibleDeals = useMemo(() => {
@@ -284,7 +283,7 @@ export function DealsScreen({ user }) {
     async function hydrate() {
       try {
         const [pipelinesData, companiesData, contactsData, currenciesData] = await Promise.all([
-          listPipelines(tokenValue),
+          listPipelines(tokenValue, { kind: "deals" }),
           listCrmCompanies(tokenValue, { page: 1, page_size: 200 }),
           listContacts(tokenValue, { page: 1, page_size: 300 }),
           listCurrencies(tokenValue, { company_id: selectedCompanyId }),
@@ -416,7 +415,6 @@ export function DealsScreen({ user }) {
       pipelineId: deal.pipeline_id ? String(deal.pipeline_id) : selectedPipelineId,
       stage: deal.stage || "",
       amount: String(deal.amount || ""),
-      probability: String(deal.probability ?? ""),
       expectedCloseDate: deal.expected_close_date || "",
       notes: deal.notes || "",
     });
@@ -449,7 +447,6 @@ export function DealsScreen({ user }) {
       pipeline_id: Number(dealForm.pipelineId),
       stage: dealForm.stage,
       amount: dealForm.amount ? Number(dealForm.amount) : 0,
-      probability: dealForm.probability ? Number(dealForm.probability) : 0,
       expected_close_date: dealForm.expectedCloseDate || null,
       notes: dealForm.notes.trim(),
     };
@@ -507,7 +504,7 @@ export function DealsScreen({ user }) {
           </div>
           <div className={styles.heroActions}>
             <div className={styles.metaBadge}>Grouped by stage</div>
-            <button className={styles.primaryButton} type="button" onClick={openCreateModal}>
+            <button className={styles.primaryButton} type="button" onClick={openCreateModal} disabled={!pipelines.length}>
               <PlusIcon />
               <span>New deal</span>
             </button>
@@ -574,12 +571,7 @@ export function DealsScreen({ user }) {
                         </div>
                       </div>
                       <div className={styles.amountCell}>{formatCurrency(currencySymbol, deal.amount)}</div>
-                      <div className={styles.progressCell}>
-                        <div className={styles.progressTrack}>
-                          <span className={styles.progressFill} style={{ width: `${deal.probability || 0}%`, background: group.color }} />
-                        </div>
-                        <span>{deal.probability || 0}%</span>
-                      </div>
+                      <div className={styles.contactCell}>{deal.contact?.full_name || "No contact"}</div>
                       <div className={styles.dateCell}>{formatShortDate(deal.expected_close_date)}</div>
                       <div className={styles.daysCell}>{deal.days_in_stage}d</div>
                       <div className={styles.ownerCell}>

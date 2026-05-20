@@ -3,14 +3,22 @@ from django.utils import timezone
 
 
 class Pipeline(models.Model):
+    KIND_CONTACTS = "contacts"
+    KIND_DEALS = "deals"
+    KIND_CHOICES = [
+        (KIND_CONTACTS, "Contacts"),
+        (KIND_DEALS, "Deals"),
+    ]
+
     name = models.CharField(max_length=255)
     company = models.ForeignKey("companies.Company", on_delete=models.CASCADE, related_name="pipelines")
+    kind = models.CharField(max_length=20, choices=KIND_CHOICES, default=KIND_CONTACTS)
     created_at = models.DateTimeField(default=timezone.now, editable=False)
 
     class Meta:
-        ordering = ["name", "id"]
+        ordering = ["kind", "name", "id"]
         constraints = [
-            models.UniqueConstraint(fields=["company", "name"], name="unique_pipeline_name_per_company"),
+            models.UniqueConstraint(fields=["company", "kind", "name"], name="unique_pipeline_name_per_company_and_kind"),
         ]
 
     def __str__(self):

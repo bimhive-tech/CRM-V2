@@ -66,6 +66,38 @@
   gap: 8px;
 }
 
+.tabRow {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface);
+}
+
+.tabButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 32px;
+  padding: 7px 12px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--ink-2);
+  cursor: pointer;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.tabButtonActive {
+  background: var(--accent-tint);
+  color: var(--accent-deep);
+}
+
 .pipelineSelect select,
 .field input {
   width: 100%;
@@ -108,6 +140,13 @@
   cursor: pointer;
   font-size: 13px;
   font-weight: 500;
+}
+
+.primaryButton:disabled,
+.secondaryButton:disabled,
+.tabButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .primaryButton {
