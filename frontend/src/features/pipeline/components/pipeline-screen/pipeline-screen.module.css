@@ -579,6 +579,121 @@
   gap: 10px;
 }
 
+.membersSection {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-top: 4px;
+  border-top: 1px solid var(--border);
+}
+
+.membersSectionHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.membersCopy,
+.memberIdentity p {
+  margin: 4px 0 0;
+  color: var(--ink-2);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.membersPipelineField {
+  min-width: 220px;
+}
+
+.membersPipelineField select {
+  width: 100%;
+  min-height: 38px;
+  padding: 7px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-input);
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 13px;
+  outline: none;
+}
+
+.membersPipelineField select:focus {
+  border-color: var(--accent);
+}
+
+.membersList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-height: 280px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.memberCard,
+.membersEmptyState {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface-2);
+}
+
+.memberCard {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px;
+}
+
+.memberIdentity {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.memberIdentity strong,
+.membersEmptyState strong {
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.memberPermissionGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.memberRemoveButton {
+  min-height: 32px;
+  padding: 7px 12px;
+  border: 1px solid color-mix(in oklch, var(--danger) 24%, var(--border));
+  border-radius: var(--radius-button);
+  background: color-mix(in oklch, var(--danger) 6%, var(--surface));
+  color: var(--danger);
+  cursor: pointer;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.memberRemoveButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.membersEmptyState {
+  padding: 16px;
+}
+
+.membersEmptyState p {
+  margin: 6px 0 0;
+  color: var(--ink-2);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
 .assignmentTitle {
   margin: 0;
   color: var(--ink-3);
@@ -651,7 +766,8 @@
 @media (max-width: 900px) {
   .hero,
   .boardHeader,
-  .modalHeader {
+  .modalHeader,
+  .membersSectionHeader {
     flex-direction: column;
     align-items: stretch;
   }
@@ -667,6 +783,10 @@
 
 @media (max-width: 720px) {
   .optionGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .memberPermissionGrid {
     grid-template-columns: 1fr;
   }
 

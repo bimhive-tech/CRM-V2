@@ -60,11 +60,20 @@ class PipelineInviteUserSerializer(serializers.ModelSerializer):
 
 class PipelineMembershipSerializer(serializers.ModelSerializer):
     user = PipelineInviteUserSerializer(read_only=True)
+    pipeline = serializers.SerializerMethodField()
+
+    def get_pipeline(self, obj):
+        return {
+            "id": obj.pipeline_id,
+            "name": obj.pipeline.name,
+            "kind": obj.pipeline.kind,
+        }
 
     class Meta:
         model = PipelineMember
         fields = [
             "id",
+            "pipeline",
             "user",
             "can_invite_members",
             "can_edit_pipeline",
@@ -78,6 +87,7 @@ class PipelineMembershipSerializer(serializers.ModelSerializer):
 class PipelineInviteOptionsSerializer(serializers.Serializer):
     pipelines = PipelineSerializer(many=True)
     users = PipelineInviteUserSerializer(many=True)
+    accessible_pipeline_count = serializers.IntegerField()
 
 
 class PipelineMembershipBulkAssignSerializer(serializers.Serializer):
@@ -87,3 +97,14 @@ class PipelineMembershipBulkAssignSerializer(serializers.Serializer):
     can_edit_pipeline = serializers.BooleanField(default=False)
     can_delete_pipeline = serializers.BooleanField(default=False)
     can_manage_statuses = serializers.BooleanField(default=False)
+
+
+class PipelineMembershipUpdateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PipelineMember
+        fields = [
+            "can_invite_members",
+            "can_edit_pipeline",
+            "can_delete_pipeline",
+            "can_manage_statuses",
+        ]

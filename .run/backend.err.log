@@ -709,3 +709,29 @@ D:\Youssef\Work\BIM Hive\CRM V2\backend\apps\deals\views.py changed, reloading.
 Watching for file changes with StatReloader
 D:\Youssef\Work\BIM Hive\CRM V2\backend\apps\pipelines\views.py changed, reloading.
 Watching for file changes with StatReloader
+D:\Youssef\Work\BIM Hive\CRM V2\backend\apps\accounts\permission_catalog.py changed, reloading.
+Watching for file changes with StatReloader
+D:\Youssef\Work\BIM Hive\CRM V2\backend\apps\pipelines\views.py changed, reloading.
+Watching for file changes with StatReloader
+[20/May/2026 17:14:18] "OPTIONS /api/auth/login/ HTTP/1.1" 200 0
+[20/May/2026 17:14:21] "POST /api/auth/login/ HTTP/1.1" 200 4096
+[20/May/2026 17:14:21] "OPTIONS /api/auth/me/ HTTP/1.1" 200 0
+[20/May/2026 17:14:21] "OPTIONS /api/auth/me/ HTTP/1.1" 200 0
+[20/May/2026 17:14:21] "GET /api/auth/me/ HTTP/1.1" 200 3599
+[20/May/2026 17:14:22] "GET /api/auth/me/ HTTP/1.1" 200 3599
+[20/May/2026 17:14:22] "OPTIONS /api/master-data/currencies/?company_id=1 HTTP/1.1" 200 0
+[20/May/2026 17:14:22] "OPTIONS /api/master-data/currencies/?company_id=1 HTTP/1.1" 200 0
+[20/May/2026 17:14:23] "GET /api/master-data/currencies/?company_id=1 HTTP/1.1" 200 636
+[20/May/2026 17:14:23] "GET /api/master-data/currencies/?company_id=1 HTTP/1.1" 200 636
+[20/May/2026 17:15:01] "OPTIONS /api/auth/me/ HTTP/1.1" 200 0
+[20/May/2026 17:15:03] "GET /api/auth/me/ HTTP/1.1" 200 3599
+[20/May/2026 17:15:03] "OPTIONS /api/pipelines/?kind=contacts HTTP/1.1" 200 0
+[20/May/2026 17:15:03] "OPTIONS /api/pipelines/?kind=contacts HTTP/1.1" 200 0
+[20/May/2026 17:15:05] "GET /api/pipelines/?kind=contacts HTTP/1.1" 200 3248
+[20/May/2026 17:15:05] "GET /api/pipelines/?kind=contacts HTTP/1.1" 200 3248
+[20/May/2026 17:15:05] "OPTIONS /api/contacts/?page=1&page_size=200&pipeline_id=3 HTTP/1.1" 200 0
+[20/May/2026 17:15:06] "GET /api/contacts/?page=1&page_size=200&pipeline_id=3 HTTP/1.1" 200 801
+[20/May/2026 17:15:15] "OPTIONS /api/pipelines/invite-options/ HTTP/1.1" 200 0
+[20/May/2026 17:15:17] "GET /api/pipelines/invite-options/ HTTP/1.1" 200 4091
+[20/May/2026 17:15:17] "OPTIONS /api/pipelines/memberships/?pipeline_id=3 HTTP/1.1" 200 0
+[20/May/2026 17:15:17] "GET /api/pipelines/memberships/?pipeline_id=3 HTTP/1.1" 200 2

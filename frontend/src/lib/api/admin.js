@@ -447,3 +447,25 @@ export function assignPipelineMemberships(token, payload) {
     body: JSON.stringify(payload),
   });
 }
+
+export function listPipelineMemberships(token, query = {}) {
+  return apiRequest(buildApiPath("/pipelines/memberships/", query), {
+    method: "GET",
+    headers: authHeaders(token),
+  });
+}
+
+export function updatePipelineMembership(token, membershipId, payload) {
+  return apiRequest(`/pipelines/memberships/${membershipId}/`, {
+    method: "PATCH",
+    headers: authHeaders(token),
+    body: JSON.stringify(payload),
+  });
+}
+
+export function deletePipelineMembership(token, membershipId) {
+  return apiRequest(`/pipelines/memberships/${membershipId}/`, {
+    method: "DELETE",
+    headers: authHeaders(token),
+  });
+}

@@ -93,13 +93,21 @@ export function ConfirmDeleteModal({ title, description, value, onChange, onClos
 export function PipelineInviteModal({
   users,
   pipelines,
+  memberships,
   value,
+  managePipelineId,
   onUserChange,
   onTogglePipeline,
   onPermissionChange,
+  onManagePipelineChange,
+  onMembershipPermissionChange,
+  onMembershipRemove,
   onClose,
   onSubmit,
   loading = false,
+  membershipsLoading = false,
+  membershipSavingId = null,
+  membershipRemovingId = null,
 }) {
   return (
     <div className={styles.modalOverlay} role="presentation">
@@ -180,6 +188,96 @@ export function PipelineInviteModal({
             </div>
           </div>
 
+          <div className={styles.membersSection}>
+            <div className={styles.membersSectionHeader}>
+              <div>
+                <p className={styles.assignmentTitle}>Manage members</p>
+                <p className={styles.membersCopy}>Review current access on a pipeline you can manage.</p>
+              </div>
+              <label className={styles.membersPipelineField}>
+                <span className={styles.visuallyHidden}>Choose pipeline members to manage</span>
+                <select value={managePipelineId} onChange={(event) => onManagePipelineChange(event.target.value)}>
+                  {pipelines.map((pipeline) => (
+                    <option key={pipeline.id} value={String(pipeline.id)}>
+                      {pipeline.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+
+            {membershipsLoading ? (
+              <div className={styles.membersEmptyState}>
+                <strong>Loading members</strong>
+                <p>Please wait while we load pipeline access.</p>
+              </div>
+            ) : memberships.length ? (
+              <div className={styles.membersList}>
+                {memberships.map((membership) => (
+                  <article key={membership.id} className={styles.memberCard}>
+                    <div className={styles.memberIdentity}>
+                      <div>
+                        <strong>{membership.user.full_name}</strong>
+                        <p>{membership.user.email}</p>
+                      </div>
+                      <button
+                        className={styles.memberRemoveButton}
+                        type="button"
+                        onClick={() => onMembershipRemove(membership.id)}
+                        disabled={membershipRemovingId === membership.id || membershipSavingId === membership.id}
+                      >
+                        {membershipRemovingId === membership.id ? "Removing..." : "Remove"}
+                      </button>
+                    </div>
+                    <div className={styles.memberPermissionGrid}>
+                      <label className={styles.optionCard}>
+                        <input
+                          type="checkbox"
+                          checked={membership.can_invite_members}
+                          onChange={(event) => onMembershipPermissionChange(membership.id, "can_invite_members", event.target.checked)}
+                          disabled={membershipSavingId === membership.id || membershipRemovingId === membership.id}
+                        />
+                        <span>Can invite members</span>
+                      </label>
+                      <label className={styles.optionCard}>
+                        <input
+                          type="checkbox"
+                          checked={membership.can_edit_pipeline}
+                          onChange={(event) => onMembershipPermissionChange(membership.id, "can_edit_pipeline", event.target.checked)}
+                          disabled={membershipSavingId === membership.id || membershipRemovingId === membership.id}
+                        />
+                        <span>Can edit pipeline</span>
+                      </label>
+                      <label className={styles.optionCard}>
+                        <input
+                          type="checkbox"
+                          checked={membership.can_delete_pipeline}
+                          onChange={(event) => onMembershipPermissionChange(membership.id, "can_delete_pipeline", event.target.checked)}
+                          disabled={membershipSavingId === membership.id || membershipRemovingId === membership.id}
+                        />
+                        <span>Can delete pipeline</span>
+                      </label>
+                      <label className={styles.optionCard}>
+                        <input
+                          type="checkbox"
+                          checked={membership.can_manage_statuses}
+                          onChange={(event) => onMembershipPermissionChange(membership.id, "can_manage_statuses", event.target.checked)}
+                          disabled={membershipSavingId === membership.id || membershipRemovingId === membership.id}
+                        />
+                        <span>Can manage statuses</span>
+                      </label>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            ) : (
+              <div className={styles.membersEmptyState}>
+                <strong>No invited members yet</strong>
+                <p>Invite a teammate above to start sharing this pipeline.</p>
+              </div>
+            )}
+          </div>
+
           <div className={styles.modalActions}>
             <button className={styles.secondaryButton} type="button" onClick={onClose}>
               Cancel
@@ -189,6 +287,36 @@ export function PipelineInviteModal({
             </button>
           </div>
         </form>
+      </div>
+    </div>
+  );
+}
+
+export function NoticeModal({ title, description, actionLabel, onAction, onClose }) {
+  return (
+    <div className={styles.modalOverlay} role="presentation">
+      <div className={styles.modal} role="dialog" aria-modal="true" aria-labelledby="pipeline-notice-modal-title">
+        <div className={styles.modalHeader}>
+          <div>
+            <h2 id="pipeline-notice-modal-title">{title}</h2>
+            <p>{description}</p>
+          </div>
+          <button className={styles.iconButton} type="button" onClick={onClose} aria-label="Close modal">
+            x
+          </button>
+        </div>
+        <div className={styles.modalBody}>
+          <div className={styles.modalActions}>
+            <button className={styles.secondaryButton} type="button" onClick={onClose}>
+              Close
+            </button>
+            {actionLabel && onAction ? (
+              <button className={styles.primaryButton} type="button" onClick={onAction}>
+                {actionLabel}
+              </button>
+            ) : null}
+          </div>
+        </div>
       </div>
     </div>
   );

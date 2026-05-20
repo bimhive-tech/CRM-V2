@@ -23,6 +23,8 @@ from apps.pipelines.serializers import (
     PipelineInviteOptionsSerializer,
     PipelineInviteUserSerializer,
     PipelineMembershipBulkAssignSerializer,
+    PipelineMembershipSerializer,
+    PipelineMembershipUpdateSerializer,
     PipelineSerializer,
     PipelineStatusCreateSerializer,
     PipelineStatusSerializer,
@@ -234,9 +236,11 @@ class PipelineStatusDetailView(generics.RetrieveUpdateDestroyAPIView):
 
 class PipelineInviteOptionsView(generics.GenericAPIView):
     permission_classes = [permissions.IsAuthenticated, HasAppPermission]
+    permission_required = "pipelines.manage_members"
 
     def get(self, request):
         inviteable_pipelines = list(inviteable_pipelines_queryset(request.user).order_by("kind", "name", "id"))
+        accessible_pipeline_count = accessible_pipelines_queryset(request.user).count()
         allowed_company_ids = {pipeline.company_id for pipeline in inviteable_pipelines}
         users_queryset = (
             request.user.__class__.objects.filter(companies__id__in=allowed_company_ids)
@@ -248,6 +252,7 @@ class PipelineInviteOptionsView(generics.GenericAPIView):
             {
                 "pipelines": inviteable_pipelines,
                 "users": users_queryset,
+                "accessible_pipeline_count": accessible_pipeline_count,
             },
             context={"request": request},
         )
@@ -256,6 +261,7 @@ class PipelineInviteOptionsView(generics.GenericAPIView):
 
 class PipelineMembershipBulkAssignView(generics.GenericAPIView):
     permission_classes = [permissions.IsAuthenticated, HasAppPermission]
+    permission_required = "pipelines.manage_members"
     serializer_class = PipelineMembershipBulkAssignSerializer
 
     @transaction.atomic
@@ -291,3 +297,43 @@ class PipelineMembershipBulkAssignView(generics.GenericAPIView):
                 "user": PipelineInviteUserSerializer(target_user).data,
             }
         )
+
+
+class PipelineMembershipListView(generics.ListAPIView):
+    permission_classes = [permissions.IsAuthenticated, HasAppPermission]
+    permission_required = "pipelines.manage_members"
+    serializer_class = PipelineMembershipSerializer
+
+    def get_queryset(self):
+        queryset = (
+            PipelineMembershipSerializer.Meta.model.objects.select_related("pipeline", "user", "pipeline__company")
+            .filter(pipeline__in=inviteable_pipelines_queryset(self.request.user))
+            .order_by("pipeline__kind", "pipeline__name", "user__full_name", "user__email")
+        )
+        pipeline_id = self.request.query_params.get("pipeline_id", "").strip()
+        if pipeline_id:
+            queryset = queryset.filter(pipeline_id=pipeline_id)
+        return queryset
+
+
+class PipelineMembershipDetailView(generics.RetrieveUpdateDestroyAPIView):
+    permission_classes = [permissions.IsAuthenticated, HasAppPermission]
+    permission_required = "pipelines.manage_members"
+    serializer_class = PipelineMembershipUpdateSerializer
+
+    def get_queryset(self):
+        return (
+            PipelineMembershipUpdateSerializer.Meta.model.objects.select_related("pipeline", "user")
+            .filter(pipeline__in=inviteable_pipelines_queryset(self.request.user))
+        )
+
+    def perform_update(self, serializer):
+        membership = self.get_object()
+        if not user_can_invite_to_pipeline(self.request.user, membership.pipeline):
+            raise ValidationError({"detail": "You do not have permission to manage members on this pipeline."})
+        serializer.save()
+
+    def perform_destroy(self, instance):
+        if not user_can_invite_to_pipeline(self.request.user, instance.pipeline):
+            raise ValidationError({"detail": "You do not have permission to manage members on this pipeline."})
+        instance.delete()

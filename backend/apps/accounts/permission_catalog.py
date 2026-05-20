@@ -163,6 +163,13 @@ PERMISSION_GROUPS = [
             {"code": "pipelines.update", "label": "Edit pipelines", "description": "Update pipelines.", "platform_only": False, "configurable": True},
             {"code": "pipelines.delete", "label": "Delete pipelines", "description": "Delete pipelines.", "platform_only": False, "configurable": True},
             {
+                "code": "pipelines.manage_members",
+                "label": "Manage pipeline members",
+                "description": "Invite teammates, edit pipeline member access, and remove members.",
+                "platform_only": False,
+                "configurable": True,
+            },
+            {
                 "code": "pipeline_statuses.manage",
                 "label": "Manage pipeline statuses",
                 "description": "Create, edit, reorder, and delete pipeline statuses.",
