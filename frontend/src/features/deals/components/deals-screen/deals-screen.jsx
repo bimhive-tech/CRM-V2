@@ -68,12 +68,17 @@ function stringToHue(value) {
 }
 
 function getInitials(value, fallback = "NA") {
-  const initials = (value || "")
+  const parts = (value || "")
     .split(" ")
     .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0]?.toUpperCase())
-    .join("");
+    .slice(0, 2);
+
+  const initials =
+    parts.length >= 2
+      ? parts.map((part) => part[0]?.toUpperCase()).join("")
+      : parts[0]
+        ? parts[0].slice(0, 2).toUpperCase()
+        : "";
   return initials || fallback;
 }
 
