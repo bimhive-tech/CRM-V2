@@ -307,6 +307,12 @@ class AdminRoleCreateUpdateSerializer(serializers.ModelSerializer):
 
         return sorted(set(value))
 
+    def validate(self, attrs):
+        instance = getattr(self, "instance", None)
+        if instance and instance.slug == UserRole.PLATFORM_ADMIN and "permissions" in attrs:
+            raise serializers.ValidationError({"permissions": "Platform Admin permissions are implicit and cannot be edited."})
+        return attrs
+
 
 class CRMTokenObtainPairSerializer(TokenObtainPairSerializer):
     username_field = User.EMAIL_FIELD

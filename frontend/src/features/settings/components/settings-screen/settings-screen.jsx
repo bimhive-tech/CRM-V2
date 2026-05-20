@@ -301,7 +301,7 @@ export function SettingsScreen({
   );
   const permissionRoles = useMemo(() => {
     if (user?.is_platform_admin) {
-      return roles.filter((role) => role.is_system || String(role.company) === selectedCompanyId);
+      return roles.filter((role) => role.slug !== "platform_admin" && (role.is_system || String(role.company) === selectedCompanyId));
     }
     return roles.filter((role) => !role.is_system && String(role.company) === selectedCompanyId);
   }, [roles, selectedCompanyId, user]);
@@ -1047,7 +1047,7 @@ export function SettingsScreen({
                 <p className={styles.panelEyebrow}>Permissions</p>
                 <h2>Role permission matrix</h2>
                 <p className={styles.bodyCopy}>
-                  Permissions are configured per role. Non-platform companies never see platform-only roles or SaaS company administration permissions.
+                  Permissions are configured per role. Platform Admin is excluded here because it always has full access. Non-platform companies never see platform-only roles or SaaS company administration permissions.
                 </p>
               </div>
               {user?.is_platform_admin && companyOptions.length ? (
