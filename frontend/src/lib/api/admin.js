@@ -105,6 +105,13 @@ export function listRoles(token) {
   });
 }
 
+export function listPermissionCatalog(token) {
+  return apiRequest("/auth/permissions/", {
+    method: "GET",
+    headers: authHeaders(token),
+  });
+}
+
 export function listCurrencies(token, query = {}) {
   return apiRequest(buildApiPath("/master-data/currencies/", query), {
     method: "GET",

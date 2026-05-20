@@ -6,6 +6,7 @@ from django.utils.text import slugify
 class Company(models.Model):
     name = models.CharField(max_length=255, unique=True)
     slug = models.SlugField(max_length=255, unique=True, blank=True)
+    is_platform_owner = models.BooleanField(default=False)
     owner_name = models.CharField(max_length=255, blank=True)
     email = models.EmailField(blank=True)
     phone_number = models.CharField(max_length=64, blank=True)

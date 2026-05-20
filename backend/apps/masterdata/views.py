@@ -3,7 +3,7 @@ from rest_framework import generics, permissions, serializers
 from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 
-from apps.accounts.permissions import CanAccessSettings
+from apps.accounts.permissions import CanAccessSettings, HasAppPermission
 from apps.masterdata.defaults import (
     create_missing_default_company_industries,
     create_missing_default_currencies,
@@ -83,7 +83,8 @@ def reorder_company_industry(industry, next_position):
 
 class CurrencyListCreateView(generics.ListCreateAPIView):
     serializer_class = CurrencySerializer
-    permission_classes = [permissions.IsAuthenticated, CanAccessSettings]
+    permission_classes = [permissions.IsAuthenticated, CanAccessSettings, HasAppPermission]
+    permission_map = {"GET": "master_data.view", "POST": "master_data.manage_currencies"}
 
     def get_queryset(self):
         company = resolve_company_for_settings(self.request.user, self.request.query_params.get("company_id"))
@@ -98,7 +99,13 @@ class CurrencyListCreateView(generics.ListCreateAPIView):
 
 class CurrencyDetailView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = CurrencySerializer
-    permission_classes = [permissions.IsAuthenticated, CanAccessSettings]
+    permission_classes = [permissions.IsAuthenticated, CanAccessSettings, HasAppPermission]
+    permission_map = {
+        "GET": "master_data.view",
+        "PUT": "master_data.manage_currencies",
+        "PATCH": "master_data.manage_currencies",
+        "DELETE": "master_data.manage_currencies",
+    }
 
     def get_queryset(self):
         queryset = Currency.objects.select_related("company")
@@ -126,7 +133,8 @@ class CurrencyDetailView(generics.RetrieveUpdateDestroyAPIView):
 
 class PipelineStatusTemplateListCreateView(generics.ListCreateAPIView):
     serializer_class = PipelineStatusTemplateSerializer
-    permission_classes = [permissions.IsAuthenticated, CanAccessSettings]
+    permission_classes = [permissions.IsAuthenticated, CanAccessSettings, HasAppPermission]
+    permission_map = {"GET": "master_data.view", "POST": "master_data.manage_pipeline_templates"}
 
     def get_queryset(self):
         company = resolve_company_for_settings(self.request.user, self.request.query_params.get("company_id"))
@@ -140,7 +148,13 @@ class PipelineStatusTemplateListCreateView(generics.ListCreateAPIView):
 
 class PipelineStatusTemplateDetailView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = PipelineStatusTemplateSerializer
-    permission_classes = [permissions.IsAuthenticated, CanAccessSettings]
+    permission_classes = [permissions.IsAuthenticated, CanAccessSettings, HasAppPermission]
+    permission_map = {
+        "GET": "master_data.view",
+        "PUT": "master_data.manage_pipeline_templates",
+        "PATCH": "master_data.manage_pipeline_templates",
+        "DELETE": "master_data.manage_pipeline_templates",
+    }
 
     def get_queryset(self):
         queryset = PipelineStatusTemplate.objects.select_related("company")
@@ -165,7 +179,8 @@ class PipelineStatusTemplateDetailView(generics.RetrieveUpdateDestroyAPIView):
 
 class CompanyIndustryListCreateView(generics.ListCreateAPIView):
     serializer_class = CompanyIndustrySerializer
-    permission_classes = [permissions.IsAuthenticated, CanAccessSettings]
+    permission_classes = [permissions.IsAuthenticated, CanAccessSettings, HasAppPermission]
+    permission_map = {"GET": "master_data.view", "POST": "master_data.manage_industries"}
 
     def get_queryset(self):
         company = resolve_company_for_settings(self.request.user, self.request.query_params.get("company_id"))
@@ -179,7 +194,13 @@ class CompanyIndustryListCreateView(generics.ListCreateAPIView):
 
 class CompanyIndustryDetailView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = CompanyIndustrySerializer
-    permission_classes = [permissions.IsAuthenticated, CanAccessSettings]
+    permission_classes = [permissions.IsAuthenticated, CanAccessSettings, HasAppPermission]
+    permission_map = {
+        "GET": "master_data.view",
+        "PUT": "master_data.manage_industries",
+        "PATCH": "master_data.manage_industries",
+        "DELETE": "master_data.manage_industries",
+    }
 
     def get_queryset(self):
         queryset = CompanyIndustry.objects.select_related("company")
@@ -203,7 +224,8 @@ class CompanyIndustryDetailView(generics.RetrieveUpdateDestroyAPIView):
 
 
 class CurrencyRestoreDefaultsView(generics.GenericAPIView):
-    permission_classes = [permissions.IsAuthenticated, CanAccessSettings]
+    permission_classes = [permissions.IsAuthenticated, CanAccessSettings, HasAppPermission]
+    permission_required = "master_data.restore_defaults"
 
     def post(self, request):
         company = resolve_company_for_settings(request.user, request.query_params.get("company_id"))
@@ -212,7 +234,8 @@ class CurrencyRestoreDefaultsView(generics.GenericAPIView):
 
 
 class PipelineStatusTemplateRestoreDefaultsView(generics.GenericAPIView):
-    permission_classes = [permissions.IsAuthenticated, CanAccessSettings]
+    permission_classes = [permissions.IsAuthenticated, CanAccessSettings, HasAppPermission]
+    permission_required = "master_data.restore_defaults"
 
     def post(self, request):
         company = resolve_company_for_settings(request.user, request.query_params.get("company_id"))
@@ -226,7 +249,8 @@ class PipelineStatusTemplateRestoreDefaultsView(generics.GenericAPIView):
 
 
 class CompanyIndustryRestoreDefaultsView(generics.GenericAPIView):
-    permission_classes = [permissions.IsAuthenticated, CanAccessSettings]
+    permission_classes = [permissions.IsAuthenticated, CanAccessSettings, HasAppPermission]
+    permission_required = "master_data.restore_defaults"
 
     def post(self, request):
         company = resolve_company_for_settings(request.user, request.query_params.get("company_id"))

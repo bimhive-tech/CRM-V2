@@ -1,6 +1,7 @@
 from django.db.models import Q
 from rest_framework import generics, permissions, serializers
 
+from apps.accounts.permissions import HasAppPermission
 from apps.deals.models import Deal
 from apps.deals.serializers import DealSerializer
 from config.pagination import StandardResultsSetPagination
@@ -22,7 +23,8 @@ def deals_queryset_for_user(user):
 
 class DealListCreateView(generics.ListCreateAPIView):
     serializer_class = DealSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, HasAppPermission]
+    permission_map = {"GET": "deals.view", "POST": "deals.create"}
     pagination_class = StandardResultsSetPagination
 
     def get_queryset(self):
@@ -54,8 +56,13 @@ class DealListCreateView(generics.ListCreateAPIView):
 
 class DealDetailView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = DealSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, HasAppPermission]
+    permission_map = {
+        "GET": "deals.view",
+        "PUT": "deals.update",
+        "PATCH": "deals.update",
+        "DELETE": "deals.delete",
+    }
 
     def get_queryset(self):
         return deals_queryset_for_user(self.request.user)
-

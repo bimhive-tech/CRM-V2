@@ -8,6 +8,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from django.utils import timezone
 
+from apps.accounts.permissions import HasAppPermission
 from apps.crm.models import CRMCompany, CRMContact, CRMContactCompanyLink
 from apps.contacts.importer import import_contact_records, parse_workbook
 from apps.contacts.serializers import ContactSerializer
@@ -33,7 +34,8 @@ def resolve_default_tenant_company(user):
 
 class ContactListCreateView(generics.ListCreateAPIView):
     serializer_class = ContactSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, HasAppPermission]
+    permission_map = {"GET": "contacts.view", "POST": "contacts.create"}
     pagination_class = StandardResultsSetPagination
 
     def get_queryset(self):
@@ -76,7 +78,13 @@ class ContactListCreateView(generics.ListCreateAPIView):
 
 class ContactDetailView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = ContactSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, HasAppPermission]
+    permission_map = {
+        "GET": "contacts.view",
+        "PUT": "contacts.update",
+        "PATCH": "contacts.update",
+        "DELETE": "contacts.delete",
+    }
 
     def get_queryset(self):
         return contacts_queryset_for_user(self.request.user)
@@ -92,7 +100,8 @@ class ContactDetailView(generics.RetrieveUpdateDestroyAPIView):
 
 
 class ContactImportPreviewView(APIView):
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, HasAppPermission]
+    permission_required = "contacts.import_preview"
     parser_classes = [MultiPartParser, FormParser]
 
     def post(self, request):
@@ -111,7 +120,8 @@ class ContactImportPreviewView(APIView):
 
 
 class ContactImportExecuteView(APIView):
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, HasAppPermission]
+    permission_required = "contacts.import_execute"
     parser_classes = [MultiPartParser, FormParser]
 
     def post(self, request):
@@ -147,12 +157,10 @@ class ContactImportExecuteView(APIView):
 
 
 class ContactImportDeleteImportedView(APIView):
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, HasAppPermission]
+    permission_required = "contacts.delete_imported"
 
     def post(self, request):
-        if not getattr(request.user, "is_platform_admin", False):
-            raise ValidationError({"detail": "Only platform admins can delete imported data."})
-
         tenant_company = resolve_default_tenant_company(request.user)
 
         imported_links = CRMContactCompanyLink.objects.filter(

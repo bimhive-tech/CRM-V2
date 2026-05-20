@@ -23,6 +23,7 @@ import {
   listCompanyIndustries,
   listCompanies,
   listCurrencies,
+  listPermissionCatalog,
   listPipelineStatusTemplates,
   listRoles,
   listUsers,
@@ -72,15 +73,29 @@ function formatRoleName(value) {
   return value.replaceAll("_", " ");
 }
 
-function getVisibleTabs(user) {
-  const items = [
-    { id: "company-info", label: "Company Info" },
-    { id: "users", label: "User Management" },
-    { id: "roles", label: "Roles" },
-    { id: "master-data", label: "Master Data" },
-  ];
+function hasPermission(user, permissionCode) {
+  return Boolean(user?.is_platform_admin || user?.permissions?.includes(permissionCode));
+}
 
-  if (user?.is_platform_admin) {
+function getVisibleTabs(user) {
+  const items = [];
+
+  if (hasPermission(user, "company_profile.view") || hasPermission(user, "company_profile.update")) {
+    items.push({ id: "company-info", label: "Company Info" });
+  }
+  if (hasPermission(user, "users.view")) {
+    items.push({ id: "users", label: "User Management" });
+  }
+  if (hasPermission(user, "roles.view")) {
+    items.push({ id: "roles", label: "Roles" });
+  }
+  if (hasPermission(user, "roles.manage_permissions")) {
+    items.push({ id: "permissions", label: "Permissions" });
+  }
+  if (hasPermission(user, "master_data.view")) {
+    items.push({ id: "master-data", label: "Master Data" });
+  }
+  if (hasPermission(user, "companies.view")) {
     items.push({ id: "companies", label: "Companies" });
   }
 
@@ -231,13 +246,15 @@ export function SettingsScreen({
   companies: initialCompanies,
   users: initialUsers,
   roles: initialRoles,
+  permissionGroups: initialPermissionGroups,
 }) {
   const token = getAccessToken();
   const tabs = useMemo(() => getVisibleTabs(user), [user]);
-  const [activeTab, setActiveTab] = useState("company-info");
+  const [activeTab, setActiveTab] = useState(() => tabs[0]?.id || "company-info");
   const [companies, setCompanies] = useState(initialCompanies);
   const [users, setUsers] = useState(initialUsers);
   const [roles, setRoles] = useState(initialRoles);
+  const [permissionGroups, setPermissionGroups] = useState(initialPermissionGroups);
   const [currencies, setCurrencies] = useState([]);
   const [industries, setIndustries] = useState([]);
   const [statusTemplates, setStatusTemplates] = useState([]);
@@ -255,6 +272,7 @@ export function SettingsScreen({
   const [currencyForm, setCurrencyForm] = useState(currencyInitialState);
   const [industryForm, setIndustryForm] = useState(industryInitialState);
   const [statusTemplateForm, setStatusTemplateForm] = useState(statusTemplateInitialState);
+  const currentTab = tabs.some((tab) => tab.id === activeTab) ? activeTab : tabs[0]?.id || "company-info";
 
   const selectedCompany = companies.find((company) => String(company.id) === selectedCompanyId) || null;
   const shellUser = useMemo(() => {
@@ -281,6 +299,12 @@ export function SettingsScreen({
     () => roles.map((role) => ({ value: String(role.id), label: role.name, is_system: role.is_system })),
     [roles],
   );
+  const permissionRoles = useMemo(() => {
+    if (user?.is_platform_admin) {
+      return roles.filter((role) => role.is_system || String(role.company) === selectedCompanyId);
+    }
+    return roles.filter((role) => !role.is_system && String(role.company) === selectedCompanyId);
+  }, [roles, selectedCompanyId, user]);
   const visibleUsers = useMemo(() => {
     if (user?.is_platform_admin) {
       return users;
@@ -288,6 +312,14 @@ export function SettingsScreen({
     return users.filter((targetUser) => targetUser.companies.some((company) => String(company.id) === selectedCompanyId));
   }, [selectedCompanyId, user, users]);
   const visibleRoles = useMemo(() => roles.filter((role) => !role.is_system || user?.is_platform_admin), [roles, user]);
+  const canCreateRole = hasPermission(user, "roles.create");
+  const canUpdateRole = hasPermission(user, "roles.update");
+  const canDeleteRole = hasPermission(user, "roles.delete");
+  const canManagePermissions = hasPermission(user, "roles.manage_permissions");
+  const canCreateUser = hasPermission(user, "users.create");
+  const canDeleteUser = hasPermission(user, "users.delete");
+  const canCreateCompany = hasPermission(user, "companies.create");
+  const canUpdateCompanyProfile = hasPermission(user, "company_profile.update") || hasPermission(user, "companies.update");
 
   useEffect(() => {
     if (!selectedCompanyId) {
@@ -334,14 +366,18 @@ export function SettingsScreen({
   }
 
   async function refreshAll() {
-    const [nextCompanies, nextUsers, nextRoles] = await Promise.all([
+    const canViewUsers = hasPermission(user, "users.view");
+    const canViewRoles = hasPermission(user, "roles.view");
+    const [nextCompanies, nextUsers, nextRoles, nextPermissionCatalog] = await Promise.all([
       listCompanies(token),
-      listUsers(token),
-      listRoles(token),
+      canViewUsers ? listUsers(token) : Promise.resolve([]),
+      canViewRoles ? listRoles(token) : Promise.resolve([]),
+      listPermissionCatalog(token),
     ]);
     setCompanies(nextCompanies);
     setUsers(nextUsers);
     setRoles(nextRoles);
+    setPermissionGroups(nextPermissionCatalog.groups || []);
     const nextSelectedCompanyId =
       nextCompanies.find((company) => String(company.id) === selectedCompanyId)?.id
         ? selectedCompanyId
@@ -462,6 +498,37 @@ export function SettingsScreen({
             : current.primary_company_id,
       };
     });
+  }
+
+  async function handleRolePermissionToggle(roleId, permissionCode) {
+    setMessage();
+    const targetRole = roles.find((role) => role.id === roleId);
+    if (!targetRole) {
+      return;
+    }
+
+    const nextPermissions = targetRole.permissions.includes(permissionCode)
+      ? targetRole.permissions.filter((code) => code !== permissionCode)
+      : [...targetRole.permissions, permissionCode];
+
+    setRoles((current) =>
+      current.map((role) =>
+        role.id === roleId ? { ...role, permissions: [...nextPermissions].sort() } : role,
+      ),
+    );
+
+    try {
+      await updateRole(token, roleId, {
+        name: targetRole.name,
+        description: targetRole.description || "",
+        permissions: nextPermissions,
+      });
+      await refreshAll();
+      setMessage("", "Permissions updated.");
+    } catch (error) {
+      await refreshAll();
+      setMessage(error.message || "Unable to update role permissions.");
+    }
   }
 
   async function handleCompanySubmit(event) {
@@ -808,7 +875,7 @@ export function SettingsScreen({
           {tabs.map((tab) => (
             <button
               key={tab.id}
-              className={`${styles.tabButton} ${activeTab === tab.id ? styles.tabButtonActive : ""}`}
+              className={`${styles.tabButton} ${currentTab === tab.id ? styles.tabButtonActive : ""}`}
               type="button"
               onClick={() => setActiveTab(tab.id)}
             >
@@ -817,7 +884,7 @@ export function SettingsScreen({
           ))}
         </section>
 
-        {activeTab === "company-info" ? (
+        {currentTab === "company-info" ? (
           <section className={styles.panel}>
             <div className={styles.panelHeader}>
               <div>
@@ -851,7 +918,7 @@ export function SettingsScreen({
               />
 
               <div className={styles.modalActions}>
-                <button className={styles.primaryButton} type="submit" disabled={!selectedCompany}>
+                <button className={styles.primaryButton} type="submit" disabled={!selectedCompany || !canUpdateCompanyProfile}>
                   Save company info
                 </button>
               </div>
@@ -859,14 +926,14 @@ export function SettingsScreen({
           </section>
         ) : null}
 
-        {activeTab === "users" ? (
+        {currentTab === "users" ? (
           <section className={styles.panel}>
             <div className={styles.panelHeader}>
               <div>
                 <p className={styles.panelEyebrow}>User Management</p>
                 <h2>Users and assignments</h2>
               </div>
-              <button className={styles.primaryButton} type="button" onClick={() => openUserModal("create")}>
+              <button className={styles.primaryButton} type="button" onClick={() => openUserModal("create")} disabled={!canCreateUser}>
                 Create user
               </button>
             </div>
@@ -902,6 +969,7 @@ export function SettingsScreen({
                         <button
                           className={styles.inlineDanger}
                           type="button"
+                          disabled={!canDeleteUser}
                           onClick={() => handleDelete("user", targetUser.id, targetUser.full_name)}
                         >
                           Delete
@@ -915,17 +983,32 @@ export function SettingsScreen({
           </section>
         ) : null}
 
-        {activeTab === "roles" ? (
+        {currentTab === "roles" ? (
           <section className={styles.panel}>
             <div className={styles.panelHeader}>
               <div>
                 <p className={styles.panelEyebrow}>Roles</p>
                 <h2>Reusable permission labels</h2>
               </div>
-              <button className={styles.primaryButton} type="button" onClick={() => openRoleModal("create")}>
+              <button className={styles.primaryButton} type="button" onClick={() => openRoleModal("create")} disabled={!canCreateRole}>
                 Create role
               </button>
             </div>
+
+            {user?.is_platform_admin && companyOptions.length ? (
+              <div className={styles.contextBar}>
+                <label className={styles.field}>
+                  <span>Company context</span>
+                  <select value={selectedCompanyId} onChange={handleSelectedCompanyChange}>
+                    {companyOptions.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+            ) : null}
 
             <div className={styles.listGrid}>
               {visibleRoles.map((role) => (
@@ -939,13 +1022,13 @@ export function SettingsScreen({
                   </div>
                   <p className={styles.bodyCopy}>{role.description || "No description yet."}</p>
                   <div className={styles.cardActions}>
-                    <button className={styles.inlineButton} type="button" onClick={() => openRoleModal("edit", role)}>
+                    <button className={styles.inlineButton} type="button" onClick={() => openRoleModal("edit", role)} disabled={!canUpdateRole}>
                       Edit
                     </button>
                     <button
                       className={styles.inlineDanger}
                       type="button"
-                      disabled={role.is_system}
+                      disabled={role.is_system || !canDeleteRole}
                       onClick={() => handleDelete("role", role.id, role.name)}
                     >
                       Delete
@@ -957,7 +1040,77 @@ export function SettingsScreen({
           </section>
         ) : null}
 
-        {activeTab === "master-data" ? (
+        {currentTab === "permissions" ? (
+          <section className={styles.panel}>
+            <div className={styles.panelHeader}>
+              <div>
+                <p className={styles.panelEyebrow}>Permissions</p>
+                <h2>Role permission matrix</h2>
+                <p className={styles.bodyCopy}>
+                  Permissions are configured per role. Non-platform companies never see platform-only roles or SaaS company administration permissions.
+                </p>
+              </div>
+              {user?.is_platform_admin && companyOptions.length ? (
+                <label className={styles.field}>
+                  <span>Company context</span>
+                  <select value={selectedCompanyId} onChange={handleSelectedCompanyChange}>
+                    {companyOptions.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              ) : null}
+            </div>
+
+            <div className={styles.permissionWrap}>
+              <table className={styles.permissionTable}>
+                <thead>
+                  <tr>
+                    <th>Permission</th>
+                    {permissionRoles.map((role) => (
+                      <th key={role.id}>{role.name}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {permissionGroups.map((group) => (
+                    group.permissions.map((permission, index) => (
+                      <tr key={permission.code}>
+                        <td className={styles.permissionLabelCell}>
+                          {index === 0 ? <span className={styles.permissionGroupLabel}>{group.label}</span> : null}
+                          <strong>{permission.label}</strong>
+                          <p>{permission.description}</p>
+                        </td>
+                        {permissionRoles.map((role) => (
+                          <td key={`${permission.code}-${role.id}`} className={styles.permissionCell}>
+                            <label className={styles.permissionToggle}>
+                              <input
+                                type="checkbox"
+                                checked={role.permissions.includes(permission.code)}
+                                disabled={!canManagePermissions}
+                                onChange={() => handleRolePermissionToggle(role.id, permission.code)}
+                              />
+                              <span className={styles.srOnly}>{`${role.name}: ${permission.label}`}</span>
+                            </label>
+                          </td>
+                        ))}
+                      </tr>
+                    ))
+                  ))}
+                </tbody>
+              </table>
+              {!permissionRoles.length ? (
+                <div className={styles.emptyState}>
+                  <p className={styles.bodyCopy}>Create a role in this company first, then come back here to configure its permissions.</p>
+                </div>
+              ) : null}
+            </div>
+          </section>
+        ) : null}
+
+        {currentTab === "master-data" ? (
           <section className={styles.panel}>
             <div className={styles.panelHeader}>
               <div>
@@ -1138,14 +1291,14 @@ export function SettingsScreen({
           </section>
         ) : null}
 
-        {activeTab === "companies" ? (
+        {currentTab === "companies" ? (
           <section className={styles.panel}>
             <div className={styles.panelHeader}>
               <div>
                 <p className={styles.panelEyebrow}>Companies</p>
                 <h2>Company records</h2>
               </div>
-              <button className={styles.primaryButton} type="button" onClick={() => openCompanyModal("create")}>
+              <button className={styles.primaryButton} type="button" onClick={() => openCompanyModal("create")} disabled={!canCreateCompany}>
                 Create company
               </button>
             </div>

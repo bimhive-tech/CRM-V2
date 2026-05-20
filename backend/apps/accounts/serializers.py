@@ -3,6 +3,7 @@ from rest_framework import serializers
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
 from apps.accounts.models import Role, User, UserRole
+from apps.accounts.permission_catalog import ALL_PERMISSION_CODES, get_visible_permission_groups
 from apps.companies.models import Company
 from apps.companies.storage import signed_logo_url
 
@@ -30,6 +31,7 @@ class CompanySummarySerializer(serializers.ModelSerializer):
             "address_line",
             "employee_count",
             "logo_url",
+            "is_platform_owner",
             "is_active",
         ]
 
@@ -37,14 +39,14 @@ class CompanySummarySerializer(serializers.ModelSerializer):
 class RoleSerializer(serializers.ModelSerializer):
     class Meta:
         model = Role
-        fields = ["id", "name", "slug", "description", "is_system", "created_at", "company"]
+        fields = ["id", "name", "slug", "description", "is_system", "permissions", "created_at", "company"]
         read_only_fields = ["id", "slug", "created_at", "is_system", "company"]
 
 
 class RoleSummarySerializer(serializers.ModelSerializer):
     class Meta:
         model = Role
-        fields = ["id", "name", "slug", "is_system", "company"]
+        fields = ["id", "name", "slug", "is_system", "permissions", "company"]
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -75,6 +77,7 @@ class UserSerializer(serializers.ModelSerializer):
     is_platform_admin = serializers.BooleanField(read_only=True)
     is_company_admin = serializers.BooleanField(read_only=True)
     can_access_settings = serializers.BooleanField(read_only=True)
+    permissions = serializers.ListField(child=serializers.CharField(), read_only=True, source="permission_codes")
 
     class Meta:
         model = User
@@ -92,6 +95,7 @@ class UserSerializer(serializers.ModelSerializer):
             "is_platform_admin",
             "is_company_admin",
             "can_access_settings",
+            "permissions",
             "is_active",
             "created_at",
         ]
@@ -160,10 +164,14 @@ class AdminUserCreateSerializer(serializers.ModelSerializer):
 
         if any(target_company.id not in accessible_company_ids for target_company in companies):
             raise serializers.ValidationError({"company_ids": "You can only assign users to your own company."})
+        if companies and not request.user.has_app_permission("users.assign_companies"):
+            raise serializers.ValidationError({"company_ids": "You do not have permission to assign companies."})
 
         disallowed_roles = [role.name for role in roles if role.is_system or role.company_id not in accessible_company_ids]
         if disallowed_roles:
             raise serializers.ValidationError({"role_ids": "You can only assign custom roles from your own company."})
+        if roles and not request.user.has_app_permission("users.assign_roles"):
+            raise serializers.ValidationError({"role_ids": "You do not have permission to assign roles."})
 
         return attrs
 
@@ -243,6 +251,10 @@ class AdminUserUpdateSerializer(serializers.ModelSerializer):
 
         if any(target_company.id not in accessible_company_ids for target_company in companies):
             raise serializers.ValidationError({"company_ids": "You can only assign users to your own company."})
+        if roles and not request.user.has_app_permission("users.assign_roles"):
+            raise serializers.ValidationError({"role_ids": "You do not have permission to assign roles."})
+        if companies and not request.user.has_app_permission("users.assign_companies"):
+            raise serializers.ValidationError({"company_ids": "You do not have permission to assign companies."})
 
         disallowed_roles = [role.name for role in roles if role.is_system or role.company_id not in accessible_company_ids]
         if disallowed_roles:
@@ -271,10 +283,29 @@ class AdminUserUpdateSerializer(serializers.ModelSerializer):
 
 
 class AdminRoleCreateUpdateSerializer(serializers.ModelSerializer):
+    permissions = serializers.ListField(child=serializers.CharField(), required=False)
+
     class Meta:
         model = Role
-        fields = ["id", "name", "description"]
+        fields = ["id", "name", "description", "permissions"]
         read_only_fields = ["id"]
+
+    def validate_permissions(self, value):
+        request = self.context.get("request")
+        visible_codes = {
+            permission["code"]
+            for group in get_visible_permission_groups(request.user if request else None)
+            for permission in group["permissions"]
+        }
+        unknown_codes = sorted(set(value) - ALL_PERMISSION_CODES)
+        if unknown_codes:
+            raise serializers.ValidationError(f"Unknown permissions: {', '.join(unknown_codes)}")
+
+        disallowed_codes = sorted(set(value) - visible_codes)
+        if disallowed_codes:
+            raise serializers.ValidationError("You do not have access to assign one or more selected permissions.")
+
+        return sorted(set(value))
 
 
 class CRMTokenObtainPairSerializer(TokenObtainPairSerializer):

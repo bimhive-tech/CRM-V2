@@ -34,6 +34,7 @@ class CompanySerializer(serializers.ModelSerializer):
             "address_state",
             "address_line",
             "employee_count",
+            "is_platform_owner",
             "logo_url",
             "contacts",
             "is_active",

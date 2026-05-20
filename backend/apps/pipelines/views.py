@@ -1,6 +1,8 @@
 from django.db import transaction
 from rest_framework import generics, permissions, serializers
 from rest_framework.exceptions import ValidationError
+
+from apps.accounts.permissions import HasAppPermission
 from apps.crm.models import CRMContact, CRMContactCompanyLink
 
 from apps.companies.models import Company
@@ -121,7 +123,8 @@ def reorder_pipeline_status(status, next_position):
 
 class PipelineListCreateView(generics.ListCreateAPIView):
     serializer_class = PipelineSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, HasAppPermission]
+    permission_map = {"GET": "pipelines.view", "POST": "pipelines.create"}
 
     def get_queryset(self):
         queryset = pipelines_queryset_for_user(self.request.user)
@@ -140,7 +143,13 @@ class PipelineListCreateView(generics.ListCreateAPIView):
 
 class PipelineDetailView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = PipelineSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, HasAppPermission]
+    permission_map = {
+        "GET": "pipelines.view",
+        "PUT": "pipelines.update",
+        "PATCH": "pipelines.update",
+        "DELETE": "pipelines.delete",
+    }
 
     def get_queryset(self):
         return pipelines_queryset_for_user(self.request.user)
@@ -169,7 +178,8 @@ class PipelineDetailView(generics.RetrieveUpdateDestroyAPIView):
 
 
 class PipelineStatusListCreateView(generics.ListCreateAPIView):
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, HasAppPermission]
+    permission_map = {"GET": "pipelines.view", "POST": "pipeline_statuses.manage"}
 
     def get_queryset(self):
         return pipeline_statuses_queryset_for_user(self.request.user).filter(pipeline_id=self.kwargs["pipeline_pk"])
@@ -187,7 +197,13 @@ class PipelineStatusListCreateView(generics.ListCreateAPIView):
 
 
 class PipelineStatusDetailView(generics.RetrieveUpdateDestroyAPIView):
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, HasAppPermission]
+    permission_map = {
+        "GET": "pipelines.view",
+        "PUT": "pipeline_statuses.manage",
+        "PATCH": "pipeline_statuses.manage",
+        "DELETE": "pipeline_statuses.manage",
+    }
 
     def get_queryset(self):
         return pipeline_statuses_queryset_for_user(self.request.user)

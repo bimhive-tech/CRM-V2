@@ -1,6 +1,7 @@
 from django.db.models import Q
 from rest_framework import generics, permissions, serializers
 
+from apps.accounts.permissions import HasAppPermission
 from apps.crm.models import CRMCompany
 from apps.crm.serializers import CRMCompanySerializer
 from config.pagination import StandardResultsSetPagination
@@ -33,7 +34,8 @@ def crm_companies_queryset_for_user(user):
 
 class CRMCompanyListCreateView(generics.ListCreateAPIView):
     serializer_class = CRMCompanySerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, HasAppPermission]
+    permission_map = {"GET": "crm_companies.view", "POST": "crm_companies.create"}
     pagination_class = StandardResultsSetPagination
 
     def get_queryset(self):
@@ -66,7 +68,13 @@ class CRMCompanyListCreateView(generics.ListCreateAPIView):
 
 class CRMCompanyDetailView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = CRMCompanySerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, HasAppPermission]
+    permission_map = {
+        "GET": "crm_companies.view",
+        "PUT": "crm_companies.update",
+        "PATCH": "crm_companies.update",
+        "DELETE": "crm_companies.delete",
+    }
 
     def get_queryset(self):
         return crm_companies_queryset_for_user(self.request.user)

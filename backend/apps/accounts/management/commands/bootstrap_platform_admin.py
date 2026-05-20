@@ -3,6 +3,7 @@ import os
 from django.core.management.base import BaseCommand
 
 from apps.accounts.models import Role, User, UserRole
+from apps.accounts.permission_catalog import SYSTEM_ROLE_DEFAULTS
 from apps.companies.models import Company
 
 
@@ -13,20 +14,42 @@ class Command(BaseCommand):
         email = os.getenv("PLATFORM_ADMIN_EMAIL", "admin@bimhive.com")
         password = os.getenv("PLATFORM_ADMIN_PASSWORD", "Admin12345!")
         full_name = os.getenv("PLATFORM_ADMIN_NAME", "Platform Admin")
-        admin_company, _ = Company.objects.get_or_create(name="Administration", defaults={"is_active": True})
+        admin_company, _ = Company.objects.get_or_create(
+            name="Administration",
+            defaults={"is_active": True, "is_platform_owner": True},
+        )
+        if not admin_company.is_platform_owner:
+            admin_company.is_platform_owner = True
+            admin_company.save(update_fields=["is_platform_owner"])
 
         platform_role, _ = Role.objects.get_or_create(
             slug=UserRole.PLATFORM_ADMIN,
-            defaults={"name": "Platform Admin", "description": "Full platform access.", "is_system": True},
+            defaults={
+                "name": "Platform Admin",
+                "description": "Full platform access.",
+                "is_system": True,
+                "permissions": SYSTEM_ROLE_DEFAULTS[UserRole.PLATFORM_ADMIN],
+            },
         )
+        if platform_role.permissions != SYSTEM_ROLE_DEFAULTS[UserRole.PLATFORM_ADMIN]:
+            platform_role.permissions = SYSTEM_ROLE_DEFAULTS[UserRole.PLATFORM_ADMIN]
+            platform_role.save(update_fields=["permissions"])
         for slug, name in (
             (UserRole.COMPANY_ADMIN, "Company Admin"),
             (UserRole.USER, "User"),
         ):
-            Role.objects.get_or_create(
+            role, _ = Role.objects.get_or_create(
                 slug=slug,
-                defaults={"name": name, "description": f"System role: {name}.", "is_system": True},
+                defaults={
+                    "name": name,
+                    "description": f"System role: {name}.",
+                    "is_system": True,
+                    "permissions": SYSTEM_ROLE_DEFAULTS[slug],
+                },
             )
+            if role.permissions != SYSTEM_ROLE_DEFAULTS[slug]:
+                role.permissions = SYSTEM_ROLE_DEFAULTS[slug]
+                role.save(update_fields=["permissions"])
 
         user, created = User.objects.get_or_create(
             email=email,

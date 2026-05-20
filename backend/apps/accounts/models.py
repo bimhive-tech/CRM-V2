@@ -4,6 +4,8 @@ from django.db import models
 from django.utils import timezone
 from django.utils.text import slugify
 
+from apps.accounts.permission_catalog import ALL_PERMISSION_CODES, SYSTEM_ROLE_DEFAULTS
+
 
 class UserRole(models.TextChoices):
     PLATFORM_ADMIN = "platform_admin", "Platform Admin"
@@ -17,6 +19,7 @@ class Role(models.Model):
     company = models.ForeignKey("companies.Company", on_delete=models.CASCADE, null=True, blank=True, related_name="roles")
     description = models.TextField(blank=True)
     is_system = models.BooleanField(default=False)
+    permissions = models.JSONField(default=list, blank=True)
     created_at = models.DateTimeField(default=timezone.now, editable=False)
 
     class Meta:
@@ -27,6 +30,7 @@ class Role(models.Model):
 
     def save(self, *args, **kwargs):
         self.slug = slugify(self.name)
+        self.permissions = sorted({code for code in self.permissions if code in ALL_PERMISSION_CODES})
         super().save(*args, **kwargs)
 
 
@@ -109,4 +113,19 @@ class User(AbstractUser):
 
     @property
     def can_access_settings(self):
-        return self.is_platform_admin or self.is_company_admin
+        return self.has_app_permission("settings.access")
+
+    @property
+    def permission_codes(self):
+        if self.is_platform_admin:
+            return sorted(ALL_PERMISSION_CODES)
+
+        codes = set(SYSTEM_ROLE_DEFAULTS.get(self.role, []))
+        for role in self.roles.all():
+            codes.update(role.permissions)
+        return sorted(code for code in codes if code in ALL_PERMISSION_CODES)
+
+    def has_app_permission(self, code):
+        if self.is_platform_admin:
+            return True
+        return code in self.permission_codes
