@@ -94,7 +94,7 @@ function CompanyAvatar({ name }) {
         color: `oklch(0.42 0.08 ${hue})`,
       }}
     >
-      {getInitials(safeName, "NC")}
+      <span className={styles.companyAvatarLabel}>{getInitials(safeName, "NC")}</span>
     </span>
   );
 }
