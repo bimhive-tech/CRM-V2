@@ -350,6 +350,13 @@ export function listDeals(token, query = {}) {
   });
 }
 
+export function getDeal(token, dealId) {
+  return apiRequest(`/deals/${dealId}/`, {
+    method: "GET",
+    headers: authHeaders(token),
+  });
+}
+
 export function createDeal(token, payload) {
   return apiRequest("/deals/", {
     method: "POST",

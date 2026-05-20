@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 
 import { DashboardShell } from "@/components/dashboard/dashboard-shell/dashboard-shell";
 import { DealsIcon, EditIcon, PlusIcon, SearchIcon, TrashIcon } from "@/components/dashboard/dashboard-icons";
@@ -66,14 +67,36 @@ function stringToHue(value) {
   return value.split("").reduce((total, character) => total + character.charCodeAt(0), 0) % 360;
 }
 
-function OwnerAvatar({ name }) {
-  const safeName = name || "Owner";
-  const initials = safeName
+function getInitials(value, fallback = "NA") {
+  const initials = (value || "")
     .split(" ")
     .filter(Boolean)
     .slice(0, 2)
     .map((part) => part[0]?.toUpperCase())
     .join("");
+  return initials || fallback;
+}
+
+function CompanyAvatar({ name }) {
+  const safeName = name || "No company";
+  const hue = stringToHue(safeName);
+
+  return (
+    <span
+      className={styles.companyAvatar}
+      style={{
+        background: `linear-gradient(135deg, oklch(0.94 0.03 ${hue}), oklch(0.89 0.05 ${hue + 18}))`,
+        color: `oklch(0.42 0.08 ${hue})`,
+      }}
+    >
+      {getInitials(safeName, "NC")}
+    </span>
+  );
+}
+
+function OwnerAvatar({ name }) {
+  const safeName = name || "Owner";
+  const initials = getInitials(safeName, "U");
   const hue = stringToHue(safeName);
 
   return (
@@ -195,6 +218,7 @@ function DealModal({
 
 export function DealsScreen({ user }) {
   const token = getAccessToken();
+  const router = useRouter();
   const [pipelines, setPipelines] = useState([]);
   const [companies, setCompanies] = useState([]);
   const [contacts, setContacts] = useState([]);
@@ -499,7 +523,7 @@ export function DealsScreen({ user }) {
           <div>
             <h1>Deals</h1>
             <p className={styles.heroMeta}>
-              {visibleDeals.length} deals · {formatCurrency(currencySymbol, totalAmount)} total
+              {visibleDeals.length} deals - {formatCurrency(currencySymbol, totalAmount)} total
             </p>
           </div>
           <div className={styles.heroActions}>
@@ -549,6 +573,15 @@ export function DealsScreen({ user }) {
 
         {selectedPipeline && groupedDeals.length ? (
           <section className={styles.panel}>
+            <div className={styles.tableHeader}>
+              <span>Deal</span>
+              <span>Amount</span>
+              <span>Primary contact</span>
+              <span>Close date</span>
+              <span>In stage</span>
+              <span>Owner</span>
+              <span className={styles.actionHeader}>Actions</span>
+            </div>
             {groupedDeals.map((group) => (
               <article key={group.id} className={styles.stageSection}>
                 <div className={styles.stageHeader}>
@@ -562,9 +595,21 @@ export function DealsScreen({ user }) {
 
                 <div className={styles.rows}>
                   {group.deals.map((deal) => (
-                    <div key={deal.id} className={styles.dealRow}>
+                    <div
+                      key={deal.id}
+                      className={styles.dealRow}
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => router.push(`/deals/${deal.id}`)}
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter" || event.key === " ") {
+                          event.preventDefault();
+                          router.push(`/deals/${deal.id}`);
+                        }
+                      }}
+                    >
                       <div className={styles.dealIdentity}>
-                        <span className={styles.dealMark}>{(deal.company?.name || "D").slice(0, 2).toUpperCase()}</span>
+                        <CompanyAvatar name={deal.company?.name || "No company"} />
                         <div>
                           <strong>{deal.name}</strong>
                           <span>{deal.company?.name || "No company"}</span>
@@ -578,10 +623,26 @@ export function DealsScreen({ user }) {
                         <OwnerAvatar name={deal.owner?.full_name || "Unassigned"} />
                       </div>
                       <div className={styles.rowActions}>
-                        <button className={styles.inlineIconButton} type="button" aria-label={`Edit ${deal.name}`} onClick={() => openEditModal(deal)}>
+                        <button
+                          className={styles.inlineIconButton}
+                          type="button"
+                          aria-label={`Edit ${deal.name}`}
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            openEditModal(deal);
+                          }}
+                        >
                           <EditIcon />
                         </button>
-                        <button className={styles.deleteIconButton} type="button" aria-label={`Delete ${deal.name}`} onClick={() => handleDeleteDeal(deal)}>
+                        <button
+                          className={styles.deleteIconButton}
+                          type="button"
+                          aria-label={`Delete ${deal.name}`}
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            handleDeleteDeal(deal);
+                          }}
+                        >
                           <TrashIcon />
                         </button>
                       </div>

@@ -1,0 +1,442 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: minmax(250px, 0.95fr) minmax(0, 1.55fr) minmax(280px, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.sidebarPanel,
+.activityPanel,
+.contextPanel,
+.infoCard,
+.modal {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+}
+
+.panelHero,
+.ownerCell,
+.infoCardHeader,
+.modalHeader {
+  display: flex;
+  gap: 12px;
+}
+
+.panelHero,
+.ownerCell,
+.modalHeader {
+  align-items: center;
+}
+
+.panelHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--border);
+}
+
+.panelHeader h2,
+.modalHeader h2 {
+  margin: 0;
+  color: var(--ink);
+  letter-spacing: -0.02em;
+}
+
+.panelHeader h2 {
+  font-size: 22px;
+  font-weight: 600;
+}
+
+.panelTitle {
+  margin: 0;
+  color: var(--ink);
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.panelMeta,
+.copy,
+.noteText,
+.infoMeta span,
+.emptyState p,
+.emptyStateCompact p {
+  margin: 0;
+  color: var(--ink-2);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.panelMeta {
+  margin-top: 6px;
+  font-size: 14px;
+  color: var(--ink-3);
+}
+
+.eyebrow,
+.detailLabel,
+.field span {
+  margin: 0 0 4px;
+  color: var(--ink-3);
+  font-family: var(--font-mono), monospace;
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.panelBody {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 18px 20px 20px;
+}
+
+.detailRow {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.detailValue,
+.infoMeta strong {
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.detailValueMono {
+  color: var(--ink-2);
+  font-family: var(--font-mono), monospace;
+  font-size: 12px;
+}
+
+.companyAvatar,
+.ownerAvatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  font-weight: 700;
+}
+
+.companyAvatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 14px;
+  box-shadow: inset 0 0 0 1px color-mix(in oklch, var(--border) 70%, transparent);
+  font-size: 13px;
+  letter-spacing: 0.04em;
+}
+
+.ownerAvatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  font-size: 11px;
+}
+
+.stageBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  width: fit-content;
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.stageDot {
+  width: 5px;
+  height: 5px;
+  border-radius: 999px;
+}
+
+.tabBar {
+  display: flex;
+  gap: 18px;
+  padding: 0 20px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  border-bottom: 1px solid var(--border);
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.tabBar::-webkit-scrollbar {
+  display: none;
+}
+
+.tabButton {
+  position: relative;
+  flex: 0 0 auto;
+  padding: 12px 0 10px;
+  border: 0;
+  background: transparent;
+  color: var(--ink-2);
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.tabButton::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1px;
+  height: 2px;
+  background: var(--accent);
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform 0.14s ease;
+}
+
+.tabButton:hover::after,
+.tabButtonActive::after {
+  transform: scaleX(1);
+}
+
+.tabButtonActive {
+  color: var(--accent-deep);
+  font-weight: 600;
+}
+
+.activityBody {
+  min-height: 420px;
+  padding: 16px 20px 20px;
+}
+
+.emptyState,
+.emptyStateCompact {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.emptyState {
+  min-height: 360px;
+  gap: 10px;
+}
+
+.emptyStateCompact {
+  gap: 8px;
+  padding: 12px 0 0;
+}
+
+.emptyIcon {
+  color: var(--ink-3);
+}
+
+.emptyState strong,
+.emptyStateCompact strong {
+  color: var(--ink);
+  font-size: 14px;
+}
+
+.infoCard {
+  padding: 14px;
+}
+
+.infoCardHeader {
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.infoMeta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.secondaryButton,
+.primaryButton,
+.iconButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 32px;
+  padding: 7px 12px;
+  border-radius: 8px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.secondaryButton {
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--ink);
+}
+
+.primaryButton {
+  border: 1px solid transparent;
+  background: var(--accent);
+  color: var(--accent-ink);
+  box-shadow: var(--button-highlight);
+}
+
+.actionLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  width: fit-content;
+  color: inherit;
+  text-decoration: none;
+}
+
+.actionLink:hover {
+  color: var(--accent-deep);
+}
+
+.actionIcon {
+  display: inline-flex;
+  color: var(--ink-3);
+}
+
+.error,
+.success {
+  margin: 0;
+  padding: 2px 8px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  width: fit-content;
+}
+
+.error {
+  background: var(--status-warm-bg);
+  color: var(--danger);
+}
+
+.success {
+  background: oklch(0.95 0.06 150);
+  color: oklch(0.38 0.14 150);
+}
+
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  place-items: center;
+  padding: 1.5rem;
+  background: rgba(20, 18, 14, 0.42);
+}
+
+.modal {
+  width: min(760px, 100%);
+  overflow: hidden;
+}
+
+.modalHeader {
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--border);
+}
+
+.modalHeader h2 {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.iconButton {
+  width: 2.25rem;
+  height: 2.25rem;
+  border: 0;
+  background: transparent;
+  color: var(--ink-2);
+}
+
+.modalBody {
+  display: grid;
+  gap: 1rem;
+  padding: 18px 20px;
+}
+
+.formGrid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.field input,
+.field select,
+.field textarea {
+  width: 100%;
+  min-height: 36px;
+  padding: 7px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-input);
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 13px;
+  outline: none;
+}
+
+.field textarea {
+  min-height: 96px;
+  resize: vertical;
+}
+
+.field input:focus,
+.field select:focus,
+.field textarea:focus {
+  border-color: var(--accent);
+}
+
+.modalActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+@media (max-width: 1180px) {
+  .layout {
+    grid-template-columns: 1fr;
+  }
+
+  .activityBody {
+    min-height: 280px;
+  }
+}
+
+@media (max-width: 720px) {
+  .formGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .ownerCell,
+  .panelHero,
+  .modalHeader {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .tabBar {
+    gap: 14px;
+  }
+}

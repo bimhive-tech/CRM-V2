@@ -28,10 +28,11 @@ class DealCompanySerializer(serializers.ModelSerializer):
 class DealContactSerializer(serializers.ModelSerializer):
     full_name = serializers.CharField(source="contact.full_name", read_only=True)
     title = serializers.CharField(read_only=True)
+    email = serializers.EmailField(source="contact.email", read_only=True)
 
     class Meta:
         model = CRMContactCompanyLink
-        fields = ["id", "full_name", "title"]
+        fields = ["id", "full_name", "title", "email"]
 
 
 class DealOwnerSerializer(serializers.Serializer):
