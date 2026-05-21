@@ -340,6 +340,11 @@
   vertical-align: middle;
 }
 
+.table th:last-child,
+.table td:last-child {
+  text-align: right;
+}
+
 .clickableRow {
   cursor: pointer;
   transition: background 0.12s ease;
@@ -550,8 +555,7 @@
 }
 
 .actionsCell {
-  align-items: center;
-  justify-content: center;
+  width: 88px;
 }
 
 .rowActions {

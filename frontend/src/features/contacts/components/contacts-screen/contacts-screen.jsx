@@ -1359,30 +1359,32 @@ function DirectoryScreen({ user, mode = "contacts" }) {
                         <td><CompanyContactsPreview contacts={company.contacts} /></td>
                         <td>{company.website !== "No website" ? company.website : "No website"}</td>
                         <td className={styles.actionsCell}>
-                          <button
-                            className={styles.inlineIconButton}
-                            type="button"
-                            onClick={(event) => {
-                              event.stopPropagation();
-                              openEditCompanyModal(company);
-                            }}
-                            aria-label={`Edit ${company.name}`}
-                            title="Edit company"
-                          >
-                            <EditIcon />
-                          </button>
-                          <button
-                            className={`${styles.inlineIconButton} ${styles.inlineDangerIcon}`}
-                            type="button"
-                            onClick={(event) => {
-                              event.stopPropagation();
-                              handleDeleteCompany(company.id, company.name);
-                            }}
-                            aria-label={`Delete ${company.name}`}
-                            title="Delete company"
-                          >
-                            <TrashIcon />
-                          </button>
+                          <div className={styles.rowActions}>
+                            <button
+                              className={styles.inlineIconButton}
+                              type="button"
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                openEditCompanyModal(company);
+                              }}
+                              aria-label={`Edit ${company.name}`}
+                              title="Edit company"
+                            >
+                              <EditIcon />
+                            </button>
+                            <button
+                              className={`${styles.inlineIconButton} ${styles.inlineDangerIcon}`}
+                              type="button"
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                handleDeleteCompany(company.id, company.name);
+                              }}
+                              aria-label={`Delete ${company.name}`}
+                              title="Delete company"
+                            >
+                              <TrashIcon />
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))}
