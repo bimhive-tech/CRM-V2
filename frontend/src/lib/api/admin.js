@@ -91,6 +91,54 @@ export function deleteCompanyLogo(token, companyId) {
   });
 }
 
+export function listAttachments(token, query = {}) {
+  return apiRequest(buildApiPath("/attachments/", query), {
+    method: "GET",
+    headers: authHeaders(token),
+  });
+}
+
+export function uploadAttachment(token, file, query = {}) {
+  const body = new FormData();
+  body.append("file", file);
+
+  return apiRequest(buildApiPath("/attachments/", query), {
+    method: "POST",
+    headers: authHeaders(token),
+    body,
+  });
+}
+
+export function deleteAttachment(token, attachmentId) {
+  return apiRequest(`/attachments/${attachmentId}/`, {
+    method: "DELETE",
+    headers: authHeaders(token),
+  });
+}
+
+export async function downloadAttachment(token, attachmentId, filename = "attachment") {
+  const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL || "/api"}/attachments/${attachmentId}/download/`, {
+    method: "GET",
+    headers: authHeaders(token),
+    cache: "no-store",
+  });
+
+  if (!response.ok) {
+    const data = await response.json().catch(() => ({}));
+    throw new Error(data?.detail || "Unable to download attachment.");
+  }
+
+  const blob = await response.blob();
+  const objectUrl = window.URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = objectUrl;
+  anchor.download = filename;
+  document.body.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
+  window.URL.revokeObjectURL(objectUrl);
+}
+
 export function listUsers(token) {
   return apiRequest("/auth/users/", {
     method: "GET",

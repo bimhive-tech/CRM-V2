@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 
 import { DashboardShell } from "@/components/dashboard/dashboard-shell/dashboard-shell";
+import { AttachmentsPanel } from "@/components/attachments/attachments-panel";
 import { ClipboardIcon, GlobeIcon, LinkedInIcon, MailIcon, PhoneIcon } from "@/components/dashboard/dashboard-icons";
 import { Sidebar } from "@/components/dashboard/sidebar/sidebar";
 import { Topbar } from "@/components/dashboard/topbar/topbar";
@@ -21,6 +22,7 @@ const activityTabs = [
   { id: "calls", label: "Calls", emptyTitle: "No calls yet", emptyBody: "Logged call activity for this contact will appear here." },
   { id: "tasks", label: "Tasks", emptyTitle: "No tasks yet", emptyBody: "Assigned follow-up work and reminders will appear here." },
   { id: "meetings", label: "Meetings", emptyTitle: "No meetings yet", emptyBody: "Meeting history and upcoming sessions will appear here." },
+  { id: "attachments", label: "Attachments", emptyTitle: "", emptyBody: "" },
 ];
 
 const legacyStatusLabelMap = {
@@ -525,13 +527,17 @@ export default function ContactDetailPage() {
               </div>
 
               <div className={styles.activityBody}>
-                <div className={styles.emptyState}>
-                  <span className={styles.emptyIcon}>
-                    <ClipboardIcon />
-                  </span>
-                  <strong>{activePanel.emptyTitle}</strong>
-                  <p>{activePanel.emptyBody}</p>
-                </div>
+                {activeTab === "attachments" ? (
+                  <AttachmentsPanel targetType="contact" targetId={contact.id} active />
+                ) : (
+                  <div className={styles.emptyState}>
+                    <span className={styles.emptyIcon}>
+                      <ClipboardIcon />
+                    </span>
+                    <strong>{activePanel.emptyTitle}</strong>
+                    <p>{activePanel.emptyBody}</p>
+                  </div>
+                )}
               </div>
             </section>
 

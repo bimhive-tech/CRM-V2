@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 
 import { DashboardShell } from "@/components/dashboard/dashboard-shell/dashboard-shell";
+import { AttachmentsPanel } from "@/components/attachments/attachments-panel";
 import { ClipboardIcon, MailIcon } from "@/components/dashboard/dashboard-icons";
 import { Sidebar } from "@/components/dashboard/sidebar/sidebar";
 import { Topbar } from "@/components/dashboard/topbar/topbar";
@@ -18,6 +19,7 @@ const activityTabs = [
   { id: "notes", label: "Notes", emptyTitle: "No notes yet", emptyBody: "Commercial context, risks, and next-step notes will appear here." },
   { id: "tasks", label: "Tasks", emptyTitle: "No tasks yet", emptyBody: "Assigned follow-up work for this deal will appear here." },
   { id: "meetings", label: "Meetings", emptyTitle: "No meetings yet", emptyBody: "Meeting history and upcoming sessions for this deal will appear here." },
+  { id: "attachments", label: "Attachments", emptyTitle: "", emptyBody: "" },
 ];
 
 const emptyDealForm = {
@@ -516,13 +518,17 @@ export default function DealDetailPage() {
               </div>
 
               <div className={styles.activityBody}>
-                <div className={styles.emptyState}>
-                  <span className={styles.emptyIcon}>
-                    <ClipboardIcon />
-                  </span>
-                  <strong>{activePanel.emptyTitle}</strong>
-                  <p>{activePanel.emptyBody}</p>
-                </div>
+                {activeTab === "attachments" ? (
+                  <AttachmentsPanel targetType="deal" targetId={deal.id} active />
+                ) : (
+                  <div className={styles.emptyState}>
+                    <span className={styles.emptyIcon}>
+                      <ClipboardIcon />
+                    </span>
+                    <strong>{activePanel.emptyTitle}</strong>
+                    <p>{activePanel.emptyBody}</p>
+                  </div>
+                )}
               </div>
             </section>
 
