@@ -61,7 +61,6 @@ const emptyCompanyForm = {
   ownerName: "",
   email: "",
   website: "",
-  linkedinUrl: "",
   socialLinks: [],
   employeeCount: "",
   phoneNumbers: [""],
@@ -273,7 +272,6 @@ function mapCompanyToPayload(form) {
       url: item.url.startsWith("www.") ? `https://${item.url}` : item.url,
     }));
   const website = form.website.trim();
-  const linkedinUrl = form.linkedinUrl.trim();
 
   return {
     name: form.name.trim(),
@@ -281,7 +279,6 @@ function mapCompanyToPayload(form) {
     owner_name: form.ownerName.trim(),
     email: form.email.trim(),
     website: website.startsWith("www.") ? `https://${website}` : website,
-    linkedin_url: linkedinUrl.startsWith("www.") ? `https://${linkedinUrl}` : linkedinUrl,
     social_links: socialLinks,
     phone_numbers: phoneNumbers,
     phone_number: phoneNumbers[0] || "",
@@ -315,7 +312,6 @@ function toCompanyFormState(company) {
     ownerName: company.ownerName || "",
     email: company.email === "No email" ? "" : company.email,
     website: company.website === "No website" ? "" : company.website,
-    linkedinUrl: company.linkedinUrl || "",
     socialLinks: company.socialLinks?.length ? company.socialLinks : [],
     employeeCount: company.employeeCount ? String(company.employeeCount) : "",
     phoneNumbers: company.phoneNumbers.length ? company.phoneNumbers : [""],

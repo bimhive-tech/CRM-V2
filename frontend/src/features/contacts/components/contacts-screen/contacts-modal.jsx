@@ -204,10 +204,6 @@ export function CompanyModal({
               <input name="website" type="url" value={form.website} onChange={onChange} placeholder="https://nilecontracting.com.eg" />
             </label>
             <label className={styles.field}>
-              <span>LinkedIn</span>
-              <input name="linkedinUrl" type="url" value={form.linkedinUrl} onChange={onChange} placeholder="https://linkedin.com/company/nile-contracting" />
-            </label>
-            <label className={styles.field}>
               <span>Company size</span>
               <input name="employeeCount" type="number" min="1" value={form.employeeCount} onChange={onChange} placeholder="250" />
             </label>
@@ -268,7 +264,7 @@ export function CompanyModal({
                   </div>
                 ))
               ) : (
-                <p className={styles.helperCopy}>Optional links like YouTube, Facebook, Instagram, or any other company social.</p>
+                <p className={styles.helperCopy}>Optional links like LinkedIn, YouTube, Facebook, Instagram, or any other company social.</p>
               )}
             </div>
           </div>
