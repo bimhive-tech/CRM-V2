@@ -3,7 +3,12 @@ from rest_framework import generics, permissions, serializers
 
 from apps.crm.models import CRMCompany
 from apps.crm.serializers import CRMCompanySerializer
-from apps.pipelines.access import pipelines_with_company_visibility_queryset, user_can_manage_pipeline_companies
+from apps.pipelines.access import (
+    pipelines_with_company_visibility_queryset,
+    pipelines_with_contact_visibility_queryset,
+    pipelines_with_deal_visibility_queryset,
+    user_can_manage_pipeline_companies,
+)
 from config.pagination import StandardResultsSetPagination
 
 
@@ -32,11 +37,16 @@ def crm_companies_queryset_for_user(user):
     queryset = queryset.filter(tenant_company_id__in=tenant_company_ids_for_user(user))
     if getattr(user, "is_company_admin", False) or user.has_app_permission("crm_companies.view"):
         return queryset
-    visible_pipelines = pipelines_with_company_visibility_queryset(user)
+    company_visible_pipelines = pipelines_with_company_visibility_queryset(user)
+    contact_visible_pipelines = pipelines_with_contact_visibility_queryset(user)
+    deal_visible_pipelines = pipelines_with_deal_visibility_queryset(user)
     return queryset.filter(
-        Q(contact_links__pipeline__in=visible_pipelines)
-        | Q(contacts__pipeline__in=visible_pipelines)
-        | Q(deals__pipeline__in=visible_pipelines)
+        Q(contact_links__pipeline__in=company_visible_pipelines)
+        | Q(contacts__pipeline__in=company_visible_pipelines)
+        | Q(deals__pipeline__in=company_visible_pipelines)
+        | Q(contact_links__pipeline__in=contact_visible_pipelines)
+        | Q(contacts__pipeline__in=contact_visible_pipelines)
+        | Q(deals__pipeline__in=deal_visible_pipelines)
     ).distinct()
 
 

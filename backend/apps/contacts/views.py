@@ -15,6 +15,7 @@ from apps.contacts.serializers import ContactSerializer
 from apps.pipelines.access import (
     accessible_pipelines_queryset,
     pipelines_with_contact_visibility_queryset,
+    pipelines_with_deal_visibility_queryset,
     user_can_manage_pipeline_contacts,
     user_can_move_pipeline_contacts,
     user_can_view_pipeline_contacts,
@@ -48,7 +49,8 @@ class ContactListCreateView(generics.ListCreateAPIView):
         queryset = contacts_queryset_for_user(self.request.user)
         query_params = self.request.query_params
         has_global_view = self.request.user.has_app_permission("contacts.view")
-        visible_pipelines = pipelines_with_contact_visibility_queryset(self.request.user)
+        visible_contact_pipelines = pipelines_with_contact_visibility_queryset(self.request.user)
+        visible_deal_pipelines = pipelines_with_deal_visibility_queryset(self.request.user)
 
         search = query_params.get("search", "").strip()
         status = query_params.get("status", "").strip()
@@ -80,7 +82,10 @@ class ContactListCreateView(generics.ListCreateAPIView):
                 raise ValidationError({"detail": "You do not have permission to view contacts in this pipeline."})
             queryset = queryset.filter(pipeline_id=pipeline_id)
         elif not has_global_view and not (self.request.user.is_platform_admin or self.request.user.is_company_admin):
-            queryset = queryset.filter(pipeline__in=visible_pipelines).distinct()
+            queryset = queryset.filter(
+                Q(pipeline__in=visible_contact_pipelines)
+                | Q(deals__pipeline__in=visible_deal_pipelines)
+            ).distinct()
 
         return queryset
 
@@ -101,8 +106,12 @@ class ContactDetailView(generics.RetrieveUpdateDestroyAPIView):
         queryset = contacts_queryset_for_user(self.request.user)
         if self.request.user.is_platform_admin or self.request.user.is_company_admin or self.request.user.has_app_permission("contacts.view"):
             return queryset
-        visible_pipelines = pipelines_with_contact_visibility_queryset(self.request.user)
-        return queryset.filter(pipeline__in=visible_pipelines).distinct()
+        visible_contact_pipelines = pipelines_with_contact_visibility_queryset(self.request.user)
+        visible_deal_pipelines = pipelines_with_deal_visibility_queryset(self.request.user)
+        return queryset.filter(
+            Q(pipeline__in=visible_contact_pipelines)
+            | Q(deals__pipeline__in=visible_deal_pipelines)
+        ).distinct()
 
     def perform_update(self, serializer):
         instance = self.get_object()
