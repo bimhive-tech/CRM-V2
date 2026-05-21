@@ -533,17 +533,22 @@ function DirectoryScreen({ user, mode = "contacts" }) {
   const loading = initialLoading || directoryLoading;
 
   const fetchStaticData = useCallback(async () => {
-    const [companiesData, pipelinesData, industriesData] = await Promise.all([
+    const [companiesResult, pipelinesResult, industriesResult] = await Promise.allSettled([
       listCrmCompanies(token, { page: 1, page_size: COMPANY_OPTIONS_PAGE_SIZE }),
       listPipelines(token),
       listCompanyIndustries(token),
     ]);
 
-    const normalizedCompanies = normalizePaginatedResponse(companiesData);
+    if (pipelinesResult.status !== "fulfilled") {
+      throw pipelinesResult.reason;
+    }
+
+    const normalizedCompanies =
+      companiesResult.status === "fulfilled" ? normalizePaginatedResponse(companiesResult.value) : normalizePaginatedResponse([]);
     return {
       allCompaniesData: normalizedCompanies.results.map(mapCompanyFromApi),
-      pipelinesData,
-      industriesData,
+      pipelinesData: pipelinesResult.value || [],
+      industriesData: industriesResult.status === "fulfilled" ? industriesResult.value || [] : [],
     };
   }, [token]);
 
@@ -602,7 +607,6 @@ function DirectoryScreen({ user, mode = "contacts" }) {
       setAllCompanies(allCompaniesData);
       setPipelines(pipelinesData);
       setIndustryOptions(industriesData);
-      setStatusMessage({ error: "", success: "" });
     } catch (error) {
       setStatusMessage({ error: error.message || `Unable to load ${isContactsView ? "contacts" : "companies"}.`, success: "" });
     }
@@ -621,7 +625,6 @@ function DirectoryScreen({ user, mode = "contacts" }) {
           setAllCompanies(allCompaniesData);
           setPipelines(pipelinesData);
           setIndustryOptions(industriesData);
-          setStatusMessage({ error: "", success: "" });
         });
       } catch (error) {
         if (!active) {
@@ -656,7 +659,6 @@ function DirectoryScreen({ user, mode = "contacts" }) {
         if (!active) {
           return;
         }
-        setStatusMessage((current) => ({ ...current, error: "" }));
       } catch (error) {
         if (!active) {
           return;
