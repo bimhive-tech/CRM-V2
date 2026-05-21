@@ -1,12 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { BellIcon, PlusIcon } from "@/components/dashboard/dashboard-icons";
 import {
   assignPipelineMemberships,
   listPipelineInviteOptions,
+  listUsers,
 } from "@/lib/api/admin";
 import { getAccessToken } from "@/lib/session";
 import { NoticeModal, PipelineInviteModal } from "@/features/pipeline/components/pipeline-screen/pipeline-modal";
@@ -65,14 +66,18 @@ export function Topbar({
   onInvite = null,
   inviteDisabled = false,
   inviteLabel = "Invite",
-  memberUsers = [],
+  memberUsers = null,
   onManageTeam = null,
   manageTeamDisabled = false,
 }) {
   const token = getAccessToken();
-  const companyName = user?.company?.name || user?.companies?.[0]?.name || "No company assigned";
   const crumbItems = breadcrumbs?.length ? breadcrumbs : [{ label: "Workspace" }, { label: title }];
   const canManagePipelineMembers = hasPermission(user, "pipelines.manage_members");
+  const companyIds = useMemo(
+    () => new Set([user?.company?.id, ...(user?.companies || []).map((company) => company.id)].filter(Boolean)),
+    [user],
+  );
+  const [companyUsers, setCompanyUsers] = useState([]);
   const [inviteState, setInviteState] = useState({
     open: false,
     loading: false,
@@ -82,6 +87,42 @@ export function Topbar({
     form: inviteInitialState,
   });
   const [noticeState, setNoticeState] = useState({ open: false, title: "", description: "" });
+
+  useEffect(() => {
+    if (Array.isArray(memberUsers)) {
+      return;
+    }
+
+    let active = true;
+    if (!companyIds.size) {
+      return;
+    }
+
+    listUsers(token)
+      .then((users) => {
+        if (!active) {
+          return;
+        }
+        const nextUsers = (users || []).filter((candidate) => {
+          const candidateCompanyIds = new Set([
+            candidate.company?.id,
+            ...(candidate.companies || []).map((company) => company.id),
+          ].filter(Boolean));
+          return [...candidateCompanyIds].some((companyId) => companyIds.has(companyId));
+        });
+        setCompanyUsers(nextUsers);
+      })
+      .catch(() => {
+        if (!active) {
+          return;
+        }
+        setCompanyUsers([]);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [companyIds, memberUsers, token]);
 
   function closeInviteModal() {
     setInviteState({
@@ -227,6 +268,7 @@ export function Topbar({
 
   const resolvedInviteHandler = onInvite || openGlobalInviteModal;
   const resolvedInviteDisabled = onInvite ? inviteDisabled : !canManagePipelineMembers;
+  const visibleMemberUsers = Array.isArray(memberUsers) ? memberUsers : companyIds.size ? companyUsers : [];
 
   return (
     <>
@@ -252,12 +294,17 @@ export function Topbar({
         </div>
 
         <div className={styles.actions}>
+          {onManageTeam ? (
+            <button className={styles.teamButton} type="button" onClick={onManageTeam} disabled={manageTeamDisabled}>
+              Manage team
+            </button>
+          ) : null}
           <button className={styles.iconButton} type="button" aria-label="Notifications">
             <BellIcon />
           </button>
-          {memberUsers.length ? (
+          {visibleMemberUsers.length ? (
             <div className={styles.memberStack}>
-              {memberUsers.slice(0, 5).map((member) => {
+              {visibleMemberUsers.slice(0, 5).map((member) => {
                 const hue = hueForName(member.full_name);
                 return (
                   <span
@@ -275,14 +322,6 @@ export function Topbar({
               })}
             </div>
           ) : null}
-          {onManageTeam ? (
-            <button className={styles.teamButton} type="button" onClick={onManageTeam} disabled={manageTeamDisabled}>
-              Manage team
-            </button>
-          ) : null}
-          <div className={styles.identity}>
-            <span>{companyName}</span>
-          </div>
           <button className={styles.inviteButton} type="button" onClick={resolvedInviteHandler} disabled={resolvedInviteDisabled}>
             <PlusIcon />
             <span>{inviteLabel}</span>

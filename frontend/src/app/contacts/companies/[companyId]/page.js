@@ -9,7 +9,7 @@ import { ClipboardIcon, GlobeIcon, LinkedInIcon, MailIcon, PhoneIcon } from "@/c
 import { Sidebar } from "@/components/dashboard/sidebar/sidebar";
 import { Topbar } from "@/components/dashboard/topbar/topbar";
 import { CompanyModal } from "@/features/contacts/components/contacts-screen/contacts-modal";
-import { getCrmCompany, listCompanyIndustries, updateCrmCompany } from "@/lib/api/admin";
+import { getCrmCompany, listCompanyIndustries, listPipelines, updateCrmCompany } from "@/lib/api/admin";
 import { DEFAULT_COUNTRY } from "@/lib/countries";
 import { useAuthenticatedUser } from "@/lib/hooks/use-authenticated-user";
 import { getAccessToken } from "@/lib/session";
@@ -248,6 +248,21 @@ function normalizeContactPath(contactId) {
   return `/contacts/${contactId}`;
 }
 
+function uniqueTeamUsers(pipelines) {
+  const seen = new Set();
+  const users = [];
+  for (const pipeline of pipelines || []) {
+    for (const member of pipeline.team || []) {
+      if (seen.has(member.id)) {
+        continue;
+      }
+      seen.add(member.id);
+      users.push(member);
+    }
+  }
+  return users;
+}
+
 export default function CompanyDetailPage() {
   const params = useParams();
   const router = useRouter();
@@ -256,6 +271,7 @@ export default function CompanyDetailPage() {
   const [activeTab, setActiveTab] = useState("all");
   const [companyForm, setCompanyForm] = useState(emptyCompanyForm);
   const [industryOptions, setIndustryOptions] = useState([]);
+  const [pipelines, setPipelines] = useState([]);
   const [companyModalOpen, setCompanyModalOpen] = useState(false);
   const [saveMessage, setSaveMessage] = useState({ error: "", success: "" });
 
@@ -267,12 +283,13 @@ export default function CompanyDetailPage() {
     const token = getAccessToken();
     let active = true;
 
-    Promise.all([getCrmCompany(token, params.companyId), listCompanyIndustries(token)])
-      .then(([company, industries]) => {
+    Promise.all([getCrmCompany(token, params.companyId), listCompanyIndustries(token), listPipelines(token)])
+      .then(([company, industries, pipelinesData]) => {
         if (!active) {
           return;
         }
         setIndustryOptions(industries);
+        setPipelines(pipelinesData);
         setState({ loading: false, company, error: "" });
       })
       .catch((error) => {
@@ -291,6 +308,7 @@ export default function CompanyDetailPage() {
     () => activityTabs.find((tab) => tab.id === activeTab) || activityTabs[0],
     [activeTab],
   );
+  const companyTopbarUsers = useMemo(() => uniqueTeamUsers(pipelines), [pipelines]);
 
   function updateCompanyForm(event) {
     const { name, value } = event.target;
@@ -394,6 +412,7 @@ export default function CompanyDetailPage() {
       topbar={
         <Topbar
           user={authState.user}
+          memberUsers={companyTopbarUsers}
           breadcrumbs={[
             { label: "Workspace", href: "/dashboard" },
             { label: "Companies", href: "/companies" },

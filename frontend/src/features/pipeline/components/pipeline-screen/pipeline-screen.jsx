@@ -71,6 +71,21 @@ function StageBadge({ count }) {
   return <span className={styles.stageCount}>{count}</span>;
 }
 
+function uniqueTeamUsers(pipelines) {
+  const seen = new Set();
+  const users = [];
+  for (const pipeline of pipelines || []) {
+    for (const member of pipeline.team || []) {
+      if (seen.has(member.id)) {
+        continue;
+      }
+      seen.add(member.id);
+      users.push(member);
+    }
+  }
+  return users;
+}
+
 function reorderStatuses(statuses, draggingId, targetIndex) {
   const ordered = [...statuses];
   const draggingIndex = ordered.findIndex((item) => item.id === draggingId);
@@ -153,6 +168,7 @@ export function PipelineScreen({ user }) {
   );
   const selectedPipelineAccess = selectedPipeline?.access || null;
   const selectedPipelineTeam = selectedPipeline?.team || [];
+  const visibleTopbarTeam = selectedPipeline ? selectedPipelineTeam : uniqueTeamUsers(pipelines);
   const visibleStatuses = useMemo(
     () => dragState.previewStatuses || selectedPipeline?.statuses || [],
     [dragState.previewStatuses, selectedPipeline?.statuses],
@@ -640,7 +656,7 @@ export function PipelineScreen({ user }) {
       topbar={
         <Topbar
           user={user}
-          memberUsers={selectedPipelineTeam}
+          memberUsers={visibleTopbarTeam}
           onManageTeam={selectedPipeline ? openTeamModal : null}
           manageTeamDisabled={!selectedPipeline || !selectedPipelineAccess?.can_invite_members}
           breadcrumbs={[

@@ -82,6 +82,21 @@ function getInitials(value, fallback = "NA") {
   return initials || fallback;
 }
 
+function uniqueTeamUsers(pipelines) {
+  const seen = new Set();
+  const users = [];
+  for (const pipeline of pipelines || []) {
+    for (const member of pipeline.team || []) {
+      if (seen.has(member.id)) {
+        continue;
+      }
+      seen.add(member.id);
+      users.push(member);
+    }
+  }
+  return users;
+}
+
 function CompanyAvatar({ name }) {
   const safeName = name || "No company";
   const hue = stringToHue(safeName);
@@ -242,6 +257,10 @@ export function DealsScreen({ user }) {
   const selectedPipeline = useMemo(
     () => pipelines.find((pipeline) => String(pipeline.id) === selectedPipelineId) || null,
     [pipelines, selectedPipelineId],
+  );
+  const topbarTeamUsers = useMemo(
+    () => (selectedPipeline ? selectedPipeline.team || [] : uniqueTeamUsers(pipelines)),
+    [pipelines, selectedPipeline],
   );
   const pipelineOptions = useMemo(() => pipelines.map((pipeline) => ({ value: String(pipeline.id), label: pipeline.name })), [pipelines]);
   const companyOptions = useMemo(() => companies.map((company) => ({ value: String(company.id), label: company.name })), [companies]);
@@ -522,7 +541,7 @@ export function DealsScreen({ user }) {
   return (
     <DashboardShell
       sidebar={<Sidebar user={user} />}
-      topbar={<Topbar user={user} breadcrumbs={[{ label: "Workspace", href: "/dashboard" }, { label: "Deals" }]} />}
+      topbar={<Topbar user={user} memberUsers={topbarTeamUsers} breadcrumbs={[{ label: "Workspace", href: "/dashboard" }, { label: "Deals" }]} />}
     >
       <div className={styles.stack}>
         <section className={styles.hero}>

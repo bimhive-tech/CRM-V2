@@ -282,6 +282,21 @@ function PhoneNumberBlock({ numbers }) {
   );
 }
 
+function uniqueTeamUsers(pipelines) {
+  const seen = new Set();
+  const users = [];
+  for (const pipeline of pipelines || []) {
+    for (const member of pipeline.team || []) {
+      if (seen.has(member.id)) {
+        continue;
+      }
+      seen.add(member.id);
+      users.push(member);
+    }
+  }
+  return users;
+}
+
 export default function ContactDetailPage() {
   const params = useParams();
   const router = useRouter();
@@ -348,6 +363,10 @@ export default function ContactDetailPage() {
     () => pipelines.map((pipeline) => ({ value: String(pipeline.id), label: pipeline.name })),
     [pipelines],
   );
+  const contactTopbarUsers = useMemo(() => {
+    const detailPipeline = pipelines.find((pipeline) => String(pipeline.id) === String(state.contact?.pipelineId)) || null;
+    return detailPipeline ? detailPipeline.team || [] : uniqueTeamUsers(pipelines);
+  }, [pipelines, state.contact]);
 
   function updateContactForm(event) {
     const { name, value } = event.target;
@@ -433,6 +452,7 @@ export default function ContactDetailPage() {
       topbar={
         <Topbar
           user={authState.user}
+          memberUsers={contactTopbarUsers}
           breadcrumbs={[
             { label: "Workspace", href: "/dashboard" },
             { label: "Contacts", href: "/contacts" },

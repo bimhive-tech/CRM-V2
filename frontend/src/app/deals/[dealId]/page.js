@@ -88,6 +88,21 @@ function formatDateForInput(value) {
   return value.slice(0, 10);
 }
 
+function uniqueTeamUsers(pipelines) {
+  const seen = new Set();
+  const users = [];
+  for (const pipeline of pipelines || []) {
+    for (const member of pipeline.team || []) {
+      if (seen.has(member.id)) {
+        continue;
+      }
+      seen.add(member.id);
+      users.push(member);
+    }
+  }
+  return users;
+}
+
 function CompanyAvatar({ name }) {
   const safeName = name || "No company";
   const hue = stringToHue(safeName);
@@ -336,6 +351,10 @@ export default function DealDetailPage() {
     () => pipelines.find((pipeline) => String(pipeline.id) === dealForm.pipelineId) || null,
     [pipelines, dealForm.pipelineId],
   );
+  const dealTopbarUsers = useMemo(() => {
+    const detailPipeline = pipelines.find((pipeline) => String(pipeline.id) === String(state.deal?.pipeline_id)) || null;
+    return detailPipeline ? detailPipeline.team || [] : uniqueTeamUsers(pipelines);
+  }, [pipelines, state.deal]);
 
   const stageOptions = useMemo(
     () => (selectedFormPipeline?.statuses || []).map((statusItem) => ({ value: statusItem.name, label: statusItem.name })),
@@ -429,6 +448,7 @@ export default function DealDetailPage() {
       topbar={
         <Topbar
           user={authState.user}
+          memberUsers={dealTopbarUsers}
           breadcrumbs={[
             { label: "Workspace", href: "/dashboard" },
             { label: "Deals", href: "/deals" },

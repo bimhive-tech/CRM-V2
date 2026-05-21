@@ -429,6 +429,21 @@ function PhoneNumberStack({ numbers, emptyLabel = "No phone" }) {
   );
 }
 
+function uniqueTeamUsers(pipelines) {
+  const seen = new Set();
+  const users = [];
+  for (const pipeline of pipelines || []) {
+    for (const member of pipeline.team || []) {
+      if (seen.has(member.id)) {
+        continue;
+      }
+      seen.add(member.id);
+      users.push(member);
+    }
+  }
+  return users;
+}
+
 function DirectoryScreen({ user, mode = "contacts" }) {
   const token = getAccessToken();
   const router = useRouter();
@@ -468,6 +483,10 @@ function DirectoryScreen({ user, mode = "contacts" }) {
   const selectedPipeline = useMemo(
     () => pipelines.find((pipeline) => String(pipeline.id) === filters.pipelineId) || null,
     [filters.pipelineId, pipelines],
+  );
+  const topbarTeamUsers = useMemo(
+    () => (selectedPipeline ? selectedPipeline.team || [] : uniqueTeamUsers(pipelines)),
+    [pipelines, selectedPipeline],
   );
   const statusOptions = useMemo(() => {
     const sourceStatuses = selectedPipeline
@@ -1029,6 +1048,7 @@ function DirectoryScreen({ user, mode = "contacts" }) {
       topbar={
         <Topbar
           user={user}
+          memberUsers={topbarTeamUsers}
           breadcrumbs={[
             { label: "Workspace", href: "/dashboard" },
             { label: isContactsView ? "Contacts" : "Companies" },
