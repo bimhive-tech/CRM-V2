@@ -1,5 +1,6 @@
 import dynamic from "next/dynamic";
 
+import { SearchableSelect } from "@/components/forms/searchable-select";
 import { COUNTRY_OPTIONS } from "@/lib/countries";
 
 import styles from "./contacts-screen.module.css";
@@ -58,35 +59,28 @@ export function ContactsModal({
             </label>
             <label className={styles.field}>
               <span>Company</span>
-              <select name="companyId" value={form.companyId} onChange={onChange} required>
-                {companyOptions.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
+              <SearchableSelect ariaLabel="Company" name="companyId" value={form.companyId} onChange={onChange} options={companyOptions} required />
             </label>
             <label className={styles.field}>
               <span>Pipeline</span>
-              <select name="pipelineId" value={form.pipelineId} onChange={onChange}>
-                <option value="">No pipeline</option>
-                {pipelineOptions.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
+              <SearchableSelect
+                ariaLabel="Pipeline"
+                name="pipelineId"
+                value={form.pipelineId}
+                onChange={onChange}
+                options={[{ value: "", label: "No pipeline" }, ...pipelineOptions]}
+              />
             </label>
             {form.pipelineId ? (
               <label className={styles.field}>
                 <span>Status</span>
-                <select name="status" value={form.status} onChange={onChange}>
-                  {statusOptions.map((option) => (
-                    <option key={option} value={option}>
-                      {option}
-                    </option>
-                  ))}
-                </select>
+                <SearchableSelect
+                  ariaLabel="Status"
+                  name="status"
+                  value={form.status}
+                  onChange={onChange}
+                  options={statusOptions.map((option) => ({ value: option, label: option }))}
+                />
               </label>
             ) : null}
             <label className={styles.field}>
@@ -186,14 +180,13 @@ export function CompanyModal({
             </label>
             <label className={styles.field}>
               <span>Industry</span>
-              <select name="industry" value={form.industry} onChange={onChange}>
-                <option value="">Select industry</option>
-                {industryOptions.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
+              <SearchableSelect
+                ariaLabel="Industry"
+                name="industry"
+                value={form.industry}
+                onChange={onChange}
+                options={[{ value: "", label: "Select industry" }, ...industryOptions]}
+              />
             </label>
             <label className={styles.field}>
               <span>Email</span>
@@ -245,14 +238,12 @@ export function CompanyModal({
               {form.socialLinks.length ? (
                 form.socialLinks.map((social, index) => (
                   <div key={`social-${index}`} className={styles.socialRow}>
-                    <select value={social.platform} onChange={(event) => onSocialChange(index, "platform", event.target.value)}>
-                      <option value="">Select platform</option>
-                      {SOCIAL_PLATFORM_OPTIONS.map((option) => (
-                        <option key={option} value={option}>
-                          {option}
-                        </option>
-                      ))}
-                    </select>
+                    <SearchableSelect
+                      ariaLabel={`Social platform ${index + 1}`}
+                      value={social.platform}
+                      onValueChange={(value) => onSocialChange(index, "platform", value)}
+                      options={[{ value: "", label: "Select platform" }, ...SOCIAL_PLATFORM_OPTIONS.map((option) => ({ value: option, label: option }))]}
+                    />
                     <input
                       value={social.url}
                       onChange={(event) => onSocialChange(index, "url", event.target.value)}
@@ -272,13 +263,13 @@ export function CompanyModal({
           <div className={styles.formGrid}>
             <label className={styles.field}>
               <span>Country</span>
-              <select name="addressCountry" value={form.addressCountry} onChange={onChange}>
-                {COUNTRY_OPTIONS.map((country) => (
-                  <option key={country.code} value={country.name}>
-                    {country.name}
-                  </option>
-                ))}
-              </select>
+              <SearchableSelect
+                ariaLabel="Country"
+                name="addressCountry"
+                value={form.addressCountry}
+                onChange={onChange}
+                options={COUNTRY_OPTIONS.map((country) => ({ value: country.name, label: country.name }))}
+              />
             </label>
             <label className={styles.field}>
               <span>State</span>
@@ -373,14 +364,12 @@ export function ContactImportModal({
 
           <label className={styles.field}>
             <span>Pipeline for imported contacts</span>
-            <select value={selectedPipelineId} onChange={(event) => onPipelineChange(event.target.value)}>
-              <option value="">No pipeline</option>
-              {pipelineOptions.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
+            <SearchableSelect
+              ariaLabel="Pipeline for imported contacts"
+              value={selectedPipelineId}
+              onValueChange={onPipelineChange}
+              options={[{ value: "", label: "No pipeline" }, ...pipelineOptions]}
+            />
           </label>
 
           {fileName ? <p className={styles.helperCopy}>Selected file: {fileName}</p> : null}
@@ -427,13 +416,15 @@ export function ContactImportModal({
                           <div>
                             <strong>{column.header}</strong>
                           </div>
-                          <select value={mapping[column.source_key] ?? column.suggested_field ?? ""} onChange={(event) => onMappingChange(column.source_key, event.target.value)}>
-                            {preview.available_fields.map((option) => (
-                              <option key={`${column.source_key}-${option.value || "ignore"}`} value={option.value}>
-                                {option.label}
-                              </option>
-                            ))}
-                          </select>
+                          <SearchableSelect
+                            ariaLabel={`${column.header} mapping`}
+                            value={mapping[column.source_key] ?? column.suggested_field ?? ""}
+                            onValueChange={(value) => onMappingChange(column.source_key, value)}
+                            options={preview.available_fields.map((option) => ({
+                              value: option.value,
+                              label: option.label,
+                            }))}
+                          />
                         </div>
                       ))}
                     </div>

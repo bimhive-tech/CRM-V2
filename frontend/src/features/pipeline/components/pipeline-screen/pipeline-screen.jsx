@@ -6,6 +6,7 @@ import { DashboardShell } from "@/components/dashboard/dashboard-shell/dashboard
 import { CheckIcon, ClipboardIcon, DealsIcon, PeopleIcon, PipelineIcon, PlusIcon, TrashIcon } from "@/components/dashboard/dashboard-icons";
 import { Sidebar } from "@/components/dashboard/sidebar/sidebar";
 import { Topbar } from "@/components/dashboard/topbar/topbar";
+import { SearchableSelect } from "@/components/forms/searchable-select";
 import {
   createPipeline,
   createPipelineStatus,
@@ -774,17 +775,17 @@ export function PipelineScreen({ user }) {
             </div>
             <label className={styles.pipelineSelect}>
               <span className={styles.visuallyHidden}>Choose pipeline</span>
-              <select value={selectedPipelineId} onChange={(event) => setSelectedPipelineId(event.target.value)} disabled={!pipelines.length}>
-                {pipelines.length ? (
-                  pipelines.map((pipeline) => (
-                    <option key={pipeline.id} value={pipeline.id}>
-                      {pipeline.name}
-                    </option>
-                  ))
-                ) : (
-                  <option value="">No pipelines yet</option>
-                )}
-              </select>
+              <SearchableSelect
+                ariaLabel="Choose pipeline"
+                value={selectedPipelineId}
+                onValueChange={setSelectedPipelineId}
+                options={
+                  pipelines.length
+                    ? pipelines.map((pipeline) => ({ value: String(pipeline.id), label: pipeline.name }))
+                    : [{ value: "", label: "No pipelines yet" }]
+                }
+                disabled={!pipelines.length}
+              />
             </label>
             <button
               className={styles.secondaryButton}
@@ -1026,13 +1027,12 @@ export function PipelineScreen({ user }) {
                                   )}
                                   <label className={styles.contactStatusSelect}>
                                     <span className={styles.visuallyHidden}>Move {activeTab === "deals" ? "deal" : "contact"} status</span>
-                                    <select value={activeTab === "deals" ? item.stage : item.status} onChange={(event) => moveCardToStatus(item.id, event.target.value)}>
-                                      {visibleStatuses.map((option) => (
-                                        <option key={option.id} value={option.name}>
-                                          {option.name}
-                                        </option>
-                                      ))}
-                                    </select>
+                                    <SearchableSelect
+                                      ariaLabel={`Move ${activeTab === "deals" ? "deal" : "contact"} status`}
+                                      value={activeTab === "deals" ? item.stage : item.status}
+                                      onValueChange={(value) => moveCardToStatus(item.id, value)}
+                                      options={visibleStatuses.map((option) => ({ value: option.name, label: option.name }))}
+                                    />
                                   </label>
                                 </article>
                               ))}

@@ -8,6 +8,7 @@ import { AttachmentsPanel } from "@/components/attachments/attachments-panel";
 import { ClipboardIcon, MailIcon } from "@/components/dashboard/dashboard-icons";
 import { Sidebar } from "@/components/dashboard/sidebar/sidebar";
 import { Topbar } from "@/components/dashboard/topbar/topbar";
+import { SearchableSelect } from "@/components/forms/searchable-select";
 import { getDeal, listContacts, listCrmCompanies, listCurrencies, listPipelines, updateDeal } from "@/lib/api/admin";
 import { useAuthenticatedUser } from "@/lib/hooks/use-authenticated-user";
 import { getAccessToken } from "@/lib/session";
@@ -207,47 +208,46 @@ function DealEditorModal({
             </label>
             <label className={styles.field}>
               <span>Company</span>
-              <select name="companyId" value={form.companyId} onChange={onChange} required>
-                <option value="">Select company</option>
-                {companyOptions.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
+              <SearchableSelect
+                ariaLabel="Company"
+                name="companyId"
+                value={form.companyId}
+                onChange={onChange}
+                options={[{ value: "", label: "Select company" }, ...companyOptions]}
+                required
+              />
             </label>
             <label className={styles.field}>
               <span>Contact</span>
-              <select name="contactId" value={form.contactId} onChange={onChange}>
-                <option value="">No contact</option>
-                {contactOptions.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
+              <SearchableSelect
+                ariaLabel="Contact"
+                name="contactId"
+                value={form.contactId}
+                onChange={onChange}
+                options={[{ value: "", label: "No contact" }, ...contactOptions]}
+              />
             </label>
             <label className={styles.field}>
               <span>Pipeline</span>
-              <select name="pipelineId" value={form.pipelineId} onChange={onChange} required>
-                <option value="">Select pipeline</option>
-                {pipelineOptions.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
+              <SearchableSelect
+                ariaLabel="Pipeline"
+                name="pipelineId"
+                value={form.pipelineId}
+                onChange={onChange}
+                options={[{ value: "", label: "Select pipeline" }, ...pipelineOptions]}
+                required
+              />
             </label>
             <label className={styles.field}>
               <span>Stage</span>
-              <select name="stage" value={form.stage} onChange={onChange} required>
-                <option value="">Select stage</option>
-                {stageOptions.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
+              <SearchableSelect
+                ariaLabel="Stage"
+                name="stage"
+                value={form.stage}
+                onChange={onChange}
+                options={[{ value: "", label: "Select stage" }, ...stageOptions]}
+                required
+              />
             </label>
             <label className={styles.field}>
               <span>Amount</span>

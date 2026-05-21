@@ -7,6 +7,7 @@ import { DashboardShell } from "@/components/dashboard/dashboard-shell/dashboard
 import { ClipboardIcon, EditIcon, PlusIcon, SearchIcon, TrashIcon } from "@/components/dashboard/dashboard-icons";
 import { Sidebar } from "@/components/dashboard/sidebar/sidebar";
 import { Topbar } from "@/components/dashboard/topbar/topbar";
+import { SearchableSelect } from "@/components/forms/searchable-select";
 import {
   createContact,
   createCrmCompany,
@@ -1097,13 +1098,7 @@ function DirectoryScreen({ user, mode = "contacts" }) {
             <>
               <label className={styles.filterField}>
                 <span className={styles.visuallyHidden}>Pipeline</span>
-                <select name="pipelineId" value={filters.pipelineId} onChange={updateFilters}>
-                  {pipelineOptions.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
+                <SearchableSelect ariaLabel="Pipeline filter" name="pipelineId" value={filters.pipelineId} onChange={updateFilters} options={pipelineOptions} />
               </label>
 
               {filters.pipelineId !== "All pipelines" ? (

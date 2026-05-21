@@ -6,6 +6,7 @@ import { CalendarIcon, ClipboardIcon, DealsIcon, MailIcon, OfficeIcon, PeopleIco
 import { DashboardShell } from "@/components/dashboard/dashboard-shell/dashboard-shell";
 import { Sidebar } from "@/components/dashboard/sidebar/sidebar";
 import { Topbar } from "@/components/dashboard/topbar/topbar";
+import { SearchableSelect } from "@/components/forms/searchable-select";
 import { createAuditLogEntry, listAuditLog } from "@/lib/api/activity";
 import { getAccessToken } from "@/lib/session";
 
@@ -137,13 +138,7 @@ export function ActivityScreen({ user }) {
         <section className={styles.filterBar}>
           <label className={styles.filterField}>
             <span>Type</span>
-            <select value={eventType} onChange={(event) => handleFilterChange(event.target.value)}>
-              {filters.map((option) => (
-                <option key={option.value || "all"} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
+            <SearchableSelect ariaLabel="Type" value={eventType} onValueChange={handleFilterChange} options={filters} />
           </label>
         </section>
 
@@ -200,16 +195,12 @@ export function ActivityScreen({ user }) {
               <div className={styles.formGrid}>
                 <label className={styles.field}>
                   <span>Type</span>
-                  <select
+                  <SearchableSelect
+                    ariaLabel="Activity type"
                     value={form.event_type}
-                    onChange={(event) => setForm((current) => ({ ...current, event_type: event.target.value }))}
-                  >
-                    {composerTypes.map((option) => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
+                    onValueChange={(value) => setForm((current) => ({ ...current, event_type: value }))}
+                    options={composerTypes}
+                  />
                 </label>
                 <label className={styles.field}>
                   <span>Title</span>

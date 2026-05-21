@@ -1,6 +1,7 @@
 import { useState } from "react";
 
 import { EditIcon, TrashIcon } from "@/components/dashboard/dashboard-icons";
+import { SearchableMultiSelect, SearchableSelect } from "@/components/forms/searchable-select";
 
 import styles from "./pipeline-screen.module.css";
 
@@ -187,6 +188,8 @@ function MultiSelectDropdown({ label, placeholder, options, selectedValues, onTo
   );
 }
 
+void MultiSelectDropdown;
+
 export function PipelineModal({
   title,
   description,
@@ -320,28 +323,32 @@ export function PipelineInviteModal({
         <form className={styles.modalBody} onSubmit={onSubmit}>
           <label className={styles.field}>
             <span>User</span>
-            <select value={value.userId} onChange={(event) => onUserChange(event.target.value)} required>
-              <option value="">Choose a user</option>
-              {users.map((user) => (
-                <option key={user.id} value={String(user.id)}>
-                  {user.full_name} ({user.email})
-                </option>
-              ))}
-            </select>
+            <SearchableSelect
+              ariaLabel="User"
+              value={value.userId}
+              onValueChange={onUserChange}
+              options={[
+                { value: "", label: "Choose a user" },
+                ...users.map((user) => ({ value: String(user.id), label: `${user.full_name} (${user.email})` })),
+              ]}
+              required
+            />
           </label>
 
           <div className={styles.inviteSelectors}>
-            <MultiSelectDropdown
+            <SearchableMultiSelect
+              ariaLabel="Contacts pipelines"
               label="Contacts pipelines"
               placeholder="Choose contacts pipelines"
-              options={contactPipelines}
+              options={contactPipelines.map((option) => ({ value: String(option.id), label: option.name }))}
               selectedValues={value.contactPipelineIds}
               onToggle={(pipelineId) => onTogglePipeline("contacts", pipelineId)}
             />
-            <MultiSelectDropdown
+            <SearchableMultiSelect
+              ariaLabel="Deals pipelines"
               label="Deals pipelines"
               placeholder="Choose deals pipelines"
-              options={dealPipelines}
+              options={dealPipelines.map((option) => ({ value: String(option.id), label: option.name }))}
               selectedValues={value.dealPipelineIds}
               onToggle={(pipelineId) => onTogglePipeline("deals", pipelineId)}
             />

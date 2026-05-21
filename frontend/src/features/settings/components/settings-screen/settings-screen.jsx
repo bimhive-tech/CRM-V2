@@ -7,6 +7,7 @@ import { EditIcon, TrashIcon } from "@/components/dashboard/dashboard-icons";
 import { DashboardShell } from "@/components/dashboard/dashboard-shell/dashboard-shell";
 import { Sidebar } from "@/components/dashboard/sidebar/sidebar";
 import { Topbar } from "@/components/dashboard/topbar/topbar";
+import { SearchableSelect } from "@/components/forms/searchable-select";
 import {
   createCompanyIndustry,
   createCompany,
@@ -898,13 +899,7 @@ export function SettingsScreen({
               {user?.is_platform_admin && companyOptions.length ? (
                 <label className={styles.field}>
                   <span>Company context</span>
-                  <select value={selectedCompanyId} onChange={handleSelectedCompanyChange}>
-                    {companyOptions.map((option) => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
+                  <SearchableSelect ariaLabel="Company context" value={selectedCompanyId} onValueChange={(value) => handleSelectedCompanyChange({ target: { value } })} options={companyOptions} />
                 </label>
               ) : null}
 
@@ -1000,13 +995,7 @@ export function SettingsScreen({
               <div className={styles.contextBar}>
                 <label className={styles.field}>
                   <span>Company context</span>
-                  <select value={selectedCompanyId} onChange={handleSelectedCompanyChange}>
-                    {companyOptions.map((option) => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
+                  <SearchableSelect ariaLabel="Company context" value={selectedCompanyId} onValueChange={(value) => handleSelectedCompanyChange({ target: { value } })} options={companyOptions} />
                 </label>
               </div>
             ) : null}
@@ -1054,13 +1043,7 @@ export function SettingsScreen({
               {user?.is_platform_admin && companyOptions.length ? (
                 <label className={styles.field}>
                   <span>Company context</span>
-                  <select value={selectedCompanyId} onChange={handleSelectedCompanyChange}>
-                    {companyOptions.map((option) => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
+                  <SearchableSelect ariaLabel="Company context" value={selectedCompanyId} onValueChange={(value) => handleSelectedCompanyChange({ target: { value } })} options={companyOptions} />
                 </label>
               ) : null}
             </div>
@@ -1122,13 +1105,7 @@ export function SettingsScreen({
               {user?.is_platform_admin && companyOptions.length ? (
                 <label className={styles.field}>
                   <span>Company context</span>
-                  <select value={selectedCompanyId} onChange={handleSelectedCompanyChange}>
-                    {companyOptions.map((option) => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
+                  <SearchableSelect ariaLabel="Company context" value={selectedCompanyId} onValueChange={(value) => handleSelectedCompanyChange({ target: { value } })} options={companyOptions} />
                 </label>
               ) : null}
             </div>
@@ -1411,14 +1388,13 @@ export function SettingsScreen({
               {user?.is_platform_admin ? (
                 <label className={styles.field}>
                   <span>Primary company</span>
-                  <select name="primary_company_id" value={userForm.primary_company_id} onChange={updateUserForm}>
-                    <option value="">No primary company</option>
-                    {companyOptions.map((option) => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
+                  <SearchableSelect
+                    ariaLabel="Primary company"
+                    name="primary_company_id"
+                    value={userForm.primary_company_id}
+                    onChange={updateUserForm}
+                    options={[{ value: "", label: "No primary company" }, ...companyOptions]}
+                  />
                 </label>
               ) : null}
             </div>
