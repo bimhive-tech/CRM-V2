@@ -18,6 +18,7 @@ def normalize_optional_url(value):
 
 
 class CRMCompanySummarySerializer(serializers.ModelSerializer):
+    tenant_company_id = serializers.IntegerField(read_only=True)
     website = serializers.CharField(allow_blank=True, required=False)
     linkedin_url = serializers.CharField(allow_blank=True, required=False)
 
@@ -25,6 +26,7 @@ class CRMCompanySummarySerializer(serializers.ModelSerializer):
         model = CRMCompany
         fields = [
             "id",
+            "tenant_company_id",
             "name",
             "industry",
             "owner_name",
@@ -74,6 +76,7 @@ class CRMCompanyContactSummarySerializer(serializers.ModelSerializer):
 
 
 class CRMCompanySerializer(serializers.ModelSerializer):
+    tenant_company_id = serializers.IntegerField(read_only=True)
     website = serializers.CharField(allow_blank=True, required=False)
     linkedin_url = serializers.CharField(allow_blank=True, required=False)
     contacts = CRMCompanyContactSummarySerializer(source="contact_links", many=True, read_only=True)
@@ -82,6 +85,7 @@ class CRMCompanySerializer(serializers.ModelSerializer):
         model = CRMCompany
         fields = [
             "id",
+            "tenant_company_id",
             "name",
             "industry",
             "owner_name",

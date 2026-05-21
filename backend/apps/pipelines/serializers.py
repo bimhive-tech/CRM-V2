@@ -21,7 +21,6 @@ class PipelineSerializer(serializers.ModelSerializer):
     company_id = serializers.PrimaryKeyRelatedField(
         source="company",
         queryset=Company.objects.all(),
-        write_only=True,
         required=False,
         allow_null=True,
         default=None,

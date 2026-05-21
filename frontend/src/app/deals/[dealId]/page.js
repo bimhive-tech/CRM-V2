@@ -34,6 +34,13 @@ const emptyDealForm = {
   notes: "",
 };
 
+function pipelineMatchesCompany(pipeline, company) {
+  if (!pipeline || !company) {
+    return false;
+  }
+  return String(pipeline.company_id || "") === String(company.tenant_company_id || "");
+}
+
 function normalizePaginatedResponse(data) {
   if (Array.isArray(data)) {
     return {
@@ -284,7 +291,7 @@ export default function DealDetailPage() {
   const authState = useAuthenticatedUser();
   const [state, setState] = useState({ loading: true, deal: null, error: "" });
   const [dealForm, setDealForm] = useState(emptyDealForm);
-  const [companyOptions, setCompanyOptions] = useState([]);
+  const [companies, setCompanies] = useState([]);
   const [contacts, setContacts] = useState([]);
   const [pipelines, setPipelines] = useState([]);
   const [currencySymbol, setCurrencySymbol] = useState("EGP");
@@ -316,7 +323,7 @@ export default function DealDetailPage() {
         const normalizedContacts = normalizePaginatedResponse(contactsData).results;
         const defaultCurrency = currenciesData.find((currency) => currency.is_default) || currenciesData[0];
 
-        setCompanyOptions(companies.map((company) => ({ value: String(company.id), label: company.name })));
+        setCompanies(companies);
         setContacts(normalizedContacts);
         setPipelines(pipelinesData);
         setCurrencySymbol(defaultCurrency?.symbol || "EGP");
@@ -336,6 +343,20 @@ export default function DealDetailPage() {
 
   const activePanel = useMemo(() => activityTabs.find((tab) => tab.id === activeTab) || activityTabs[0], [activeTab]);
 
+  const selectedFormPipeline = useMemo(
+    () => pipelines.find((pipeline) => String(pipeline.id) === dealForm.pipelineId) || null,
+    [pipelines, dealForm.pipelineId],
+  );
+  const selectedFormCompany = useMemo(
+    () => companies.find((company) => String(company.id) === dealForm.companyId) || null,
+    [companies, dealForm.companyId],
+  );
+  const visibleCompanyOptions = useMemo(() => {
+    const compatibleCompanies = selectedFormPipeline
+      ? companies.filter((company) => pipelineMatchesCompany(selectedFormPipeline, company))
+      : companies;
+    return compatibleCompanies.map((company) => ({ value: String(company.id), label: company.name }));
+  }, [companies, selectedFormPipeline]);
   const visibleContactOptions = useMemo(() => {
     const source = dealForm.companyId ? contacts.filter((contact) => String(contact.company?.id || "") === dealForm.companyId) : contacts;
     return source.map((contact) => ({
@@ -344,15 +365,12 @@ export default function DealDetailPage() {
     }));
   }, [contacts, dealForm.companyId]);
 
-  const pipelineOptions = useMemo(
-    () => pipelines.map((pipeline) => ({ value: String(pipeline.id), label: pipeline.name })),
-    [pipelines],
-  );
-
-  const selectedFormPipeline = useMemo(
-    () => pipelines.find((pipeline) => String(pipeline.id) === dealForm.pipelineId) || null,
-    [pipelines, dealForm.pipelineId],
-  );
+  const visiblePipelineOptions = useMemo(() => {
+    const compatiblePipelines = selectedFormCompany
+      ? pipelines.filter((pipeline) => pipelineMatchesCompany(pipeline, selectedFormCompany))
+      : pipelines;
+    return compatiblePipelines.map((pipeline) => ({ value: String(pipeline.id), label: pipeline.name }));
+  }, [pipelines, selectedFormCompany]);
   const dealTopbarUsers = useMemo(() => {
     const detailPipeline = pipelines.find((pipeline) => String(pipeline.id) === String(state.deal?.pipeline_id)) || null;
     return detailPipeline ? detailPipeline.team || [] : uniqueTeamUsers(pipelines);
@@ -370,13 +388,24 @@ export default function DealDetailPage() {
       const nextState = { ...current, [name]: value };
       if (name === "pipelineId") {
         const nextPipeline = pipelines.find((pipeline) => String(pipeline.id) === value);
+        const compatibleCompanies = nextPipeline ? companies.filter((company) => pipelineMatchesCompany(nextPipeline, company)) : companies;
+        const nextCompany = compatibleCompanies.find((company) => String(company.id) === current.companyId) || compatibleCompanies[0] || null;
         nextState.stage = nextPipeline?.statuses?.[0]?.name || "";
+        nextState.companyId = nextCompany ? String(nextCompany.id) : "";
+        if (!nextCompany || !contacts.some((contact) => String(contact.id) === current.contactId && String(contact.company?.id || "") === String(nextCompany.id))) {
+          nextState.contactId = "";
+        }
       }
-      if (name === "companyId" && current.contactId) {
+      if (name === "companyId") {
+        const nextCompany = companies.find((company) => String(company.id) === value) || null;
+        const compatiblePipelines = nextCompany ? pipelines.filter((pipeline) => pipelineMatchesCompany(pipeline, nextCompany)) : pipelines;
+        const nextPipeline = compatiblePipelines.find((pipeline) => String(pipeline.id) === current.pipelineId) || compatiblePipelines[0] || null;
         const stillMatches = contacts.some((contact) => String(contact.id) === current.contactId && String(contact.company?.id) === value);
         if (!stillMatches) {
           nextState.contactId = "";
         }
+        nextState.pipelineId = nextPipeline ? String(nextPipeline.id) : "";
+        nextState.stage = nextPipeline?.statuses?.find((statusItem) => statusItem.name === current.stage)?.name || nextPipeline?.statuses?.[0]?.name || "";
       }
       return nextState;
     });
@@ -608,9 +637,9 @@ export default function DealDetailPage() {
       {modalOpen ? (
         <DealEditorModal
           form={dealForm}
-          companyOptions={companyOptions}
+          companyOptions={visibleCompanyOptions}
           contactOptions={visibleContactOptions}
-          pipelineOptions={pipelineOptions}
+          pipelineOptions={visiblePipelineOptions}
           stageOptions={stageOptions}
           onChange={updateDealForm}
           onClose={closeModal}

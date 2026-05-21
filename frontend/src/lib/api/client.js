@@ -73,8 +73,12 @@ export async function apiRequest(path, options = {}, retry = true) {
   const data = await response.json().catch(() => ({}));
 
   if (!response.ok) {
+    const fieldError =
+      Object.entries(data || {}).find(([key, value]) => key !== "detail" && Array.isArray(value) && value.length)?.[1]?.[0] ||
+      Object.entries(data || {}).find(([key, value]) => key !== "detail" && typeof value === "string")?.[1];
     const detail =
       data?.detail ||
+      fieldError ||
       data?.email?.[0] ||
       data?.password?.[0] ||
       data?.full_name?.[0] ||
