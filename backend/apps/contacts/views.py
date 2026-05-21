@@ -171,7 +171,7 @@ class ContactDetailView(generics.RetrieveUpdateDestroyAPIView):
 
 class ContactImportPreviewView(APIView):
     permission_classes = [permissions.IsAuthenticated, HasAppPermission]
-    permission_required = "contacts.import_preview"
+    permission_required = "contacts.import_execute"
     parser_classes = [MultiPartParser, FormParser]
 
     def post(self, request):
