@@ -331,7 +331,7 @@ export function DealsScreen({ user }) {
 
     async function hydrate() {
       try {
-        const [pipelinesData, companiesData, contactsData, currenciesData] = await Promise.all([
+        const [pipelinesResult, companiesResult, contactsResult, currenciesResult] = await Promise.allSettled([
           listPipelines(tokenValue, { kind: "deals" }),
           listCrmCompanies(tokenValue, { page: 1, page_size: 200 }),
           listContacts(tokenValue, { page: 1, page_size: 300 }),
@@ -342,8 +342,16 @@ export function DealsScreen({ user }) {
           return;
         }
 
-        const normalizedCompanies = normalizePaginatedResponse(companiesData).results;
-        const normalizedContacts = normalizePaginatedResponse(contactsData).results;
+        if (pipelinesResult.status !== "fulfilled") {
+          throw pipelinesResult.reason;
+        }
+
+        const pipelinesData = pipelinesResult.value || [];
+        const normalizedCompanies =
+          companiesResult.status === "fulfilled" ? normalizePaginatedResponse(companiesResult.value).results : [];
+        const normalizedContacts =
+          contactsResult.status === "fulfilled" ? normalizePaginatedResponse(contactsResult.value).results : [];
+        const currenciesData = currenciesResult.status === "fulfilled" ? currenciesResult.value || [] : [];
         const defaultCurrency = currenciesData.find((currency) => currency.is_default) || currenciesData[0];
 
         setPipelines(pipelinesData);
@@ -354,7 +362,13 @@ export function DealsScreen({ user }) {
         const storedPipeline = pipelinesData.find((pipeline) => String(pipeline.id) === initialStoredPipelineId);
         const nextPipelineId = storedPipeline ? String(storedPipeline.id) : pipelinesData[0] ? String(pipelinesData[0].id) : "";
         setSelectedPipelineId(nextPipelineId);
-        setStatus({ loading: false, error: "", success: "" });
+
+        const helperFailures = [companiesResult, contactsResult, currenciesResult].filter((result) => result.status === "rejected");
+        setStatus({
+          loading: false,
+          error: helperFailures.length ? "" : "",
+          success: "",
+        });
       } catch (error) {
         if (!active) {
           return;
