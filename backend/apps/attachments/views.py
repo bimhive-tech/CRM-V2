@@ -8,6 +8,8 @@ from rest_framework.response import Response
 
 from apps.attachments.models import Attachment
 from apps.attachments.serializers import AttachmentSerializer
+from apps.auditlog.models import AuditLogEntry
+from apps.auditlog.services import log_audit_event
 from apps.contacts.views import contacts_queryset_for_user
 from apps.crm.views import crm_companies_queryset_for_user
 from apps.deals.views import deals_queryset_for_user
@@ -131,6 +133,15 @@ class AttachmentListCreateView(generics.GenericAPIView):
         else:
             attachment.deal = target
         attachment.save()
+        log_audit_event(
+            request.user,
+            event_type=AuditLogEntry.TYPE_ATTACHMENT,
+            action=AuditLogEntry.ACTION_CREATE,
+            title="Uploaded attachment",
+            description=attachment.original_name,
+            target=target,
+            metadata={"target_type": target_type, "file_size": attachment.file_size},
+        )
         return Response(AttachmentSerializer(attachment).data, status=201)
 
 
@@ -146,8 +157,18 @@ class AttachmentDetailView(generics.GenericAPIView):
         attachment = self.get_object()
         target = resolve_target(request.user, attachment.target_type, attachment.target_id)
         ensure_can_manage_target(request.user, attachment.target_type, target)
+        file_name = attachment.original_name
         attachment.file.delete(save=False)
         attachment.delete()
+        log_audit_event(
+            request.user,
+            event_type=AuditLogEntry.TYPE_ATTACHMENT,
+            action=AuditLogEntry.ACTION_DELETE,
+            title="Deleted attachment",
+            description=file_name,
+            target=target,
+            metadata={"target_type": attachment.target_type},
+        )
         return Response(status=204)
 
 
@@ -158,4 +179,3 @@ class AttachmentDownloadView(generics.GenericAPIView):
         attachment = get_object_or_404(Attachment.objects.select_related("contact__pipeline", "company", "deal__pipeline"), pk=pk)
         resolve_target(request.user, attachment.target_type, attachment.target_id)
         return FileResponse(attachment.file.open("rb"), as_attachment=True, filename=attachment.original_name)
-

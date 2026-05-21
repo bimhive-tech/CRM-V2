@@ -8,6 +8,8 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from django.utils import timezone
 
+from apps.auditlog.models import AuditLogEntry
+from apps.auditlog.services import log_audit_event
 from apps.accounts.permissions import HasAppPermission
 from apps.crm.models import CRMCompany, CRMContact, CRMContactCompanyLink
 from apps.contacts.importer import import_contact_records, parse_workbook
@@ -95,7 +97,17 @@ class ContactListCreateView(generics.ListCreateAPIView):
             if pipeline is None or not user_can_manage_pipeline_contacts(self.request.user, pipeline):
                 raise ValidationError({"detail": "You do not have permission to create contacts here."})
         company = serializer.validated_data["company"]
-        serializer.save(tenant_company=company.tenant_company, owner=self.request.user, contact={"last_touch": timezone.localdate(), **serializer.validated_data.get("contact", {})})
+        contact_link = serializer.save(tenant_company=company.tenant_company, owner=self.request.user, contact={"last_touch": timezone.localdate(), **serializer.validated_data.get("contact", {})})
+        log_audit_event(
+            self.request.user,
+            event_type=AuditLogEntry.TYPE_CONTACT,
+            action=AuditLogEntry.ACTION_CREATE,
+            title="Created contact",
+            description=contact_link.contact.full_name,
+            target=contact_link.contact,
+            company=contact_link.tenant_company,
+            metadata={"company_name": contact_link.company.name},
+        )
 
 
 class ContactDetailView(generics.RetrieveUpdateDestroyAPIView):
@@ -124,16 +136,37 @@ class ContactDetailView(generics.RetrieveUpdateDestroyAPIView):
                     raise ValidationError({"detail": "You do not have permission to move contacts in this pipeline."})
             elif target_pipeline is None or not user_can_manage_pipeline_contacts(self.request.user, target_pipeline):
                 raise ValidationError({"detail": "You do not have permission to update this contact."})
-        serializer.save(contact={"last_touch": timezone.localdate(), **serializer.validated_data.get("contact", {})})
+        updated = serializer.save(contact={"last_touch": timezone.localdate(), **serializer.validated_data.get("contact", {})})
+        log_audit_event(
+            self.request.user,
+            event_type=AuditLogEntry.TYPE_CONTACT,
+            action=AuditLogEntry.ACTION_UPDATE,
+            title="Updated contact",
+            description=updated.contact.full_name,
+            target=updated.contact,
+            company=updated.tenant_company,
+            metadata={"company_name": updated.company.name},
+        )
 
     def perform_destroy(self, instance):
         if not self.request.user.has_app_permission("contacts.delete"):
             if instance.pipeline is None or not user_can_manage_pipeline_contacts(self.request.user, instance.pipeline):
                 raise ValidationError({"detail": "You do not have permission to delete this contact."})
         contact = instance.contact
+        company = instance.tenant_company
+        contact_name = contact.full_name
         instance.delete()
         if not contact.company_links.exists():
             contact.delete()
+        log_audit_event(
+            self.request.user,
+            event_type=AuditLogEntry.TYPE_CONTACT,
+            action=AuditLogEntry.ACTION_DELETE,
+            title="Deleted contact",
+            description=contact_name,
+            target=contact,
+            company=company,
+        )
 
 
 class ContactImportPreviewView(APIView):
@@ -187,6 +220,22 @@ class ContactImportExecuteView(APIView):
             if selected_pipeline is None or not user_can_manage_pipeline_contacts(request.user, selected_pipeline):
                 raise ValidationError({"detail": "You do not have permission to import contacts into this pipeline."})
         result = import_contact_records(parsed["records"], tenant_company, pipeline=selected_pipeline, imported_by=request.user)
+        log_audit_event(
+            request.user,
+            event_type=AuditLogEntry.TYPE_IMPORT,
+            action=AuditLogEntry.ACTION_IMPORT,
+            title="Imported contacts",
+            description=f"{result['created_contacts']} contacts, {result['created_companies']} companies.",
+            target=selected_pipeline,
+            company=tenant_company,
+            metadata={
+                "pipeline_name": selected_pipeline.name if selected_pipeline else "",
+                "created_contacts": result["created_contacts"],
+                "created_companies": result["created_companies"],
+                "created_links": result["created_links"],
+                "updated_links": result["updated_links"],
+            },
+        )
         return Response(
             {
                 "stats": parsed["stats"],

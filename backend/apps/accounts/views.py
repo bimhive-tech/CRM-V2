@@ -5,6 +5,8 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.views import TokenObtainPairView
 
+from apps.auditlog.models import AuditLogEntry
+from apps.auditlog.services import log_audit_event
 from apps.accounts.models import Role, User
 from apps.accounts.permission_catalog import get_visible_permission_groups
 from apps.accounts.permissions import CanAccessSettings, HasAppPermission
@@ -25,6 +27,20 @@ from apps.masterdata.defaults import initialize_company_master_data
 
 class LoginView(TokenObtainPairView):
     serializer_class = CRMTokenObtainPairSerializer
+
+    def post(self, request, *args, **kwargs):
+        response = super().post(request, *args, **kwargs)
+        if response.status_code < 400:
+            user = User.objects.filter(email__iexact=request.data.get("email", "")).first()
+            if user is not None:
+                log_audit_event(
+                    user,
+                    event_type=AuditLogEntry.TYPE_AUTH,
+                    action=AuditLogEntry.ACTION_LOGIN,
+                    title="Signed in",
+                    description="Started a new CRM session.",
+                )
+        return response
 
 
 def company_ids_for_user(user):
@@ -82,6 +98,15 @@ class CompanyListCreateView(generics.ListCreateAPIView):
             raise ValidationError({"detail": "Only platform admins can create companies."})
         company = serializer.save()
         initialize_company_master_data(company)
+        log_audit_event(
+            self.request.user,
+            event_type=AuditLogEntry.TYPE_COMPANY,
+            action=AuditLogEntry.ACTION_CREATE,
+            title="Created company",
+            description=company.name,
+            target=company,
+            company=company,
+        )
 
 
 class CompanyDetailView(generics.RetrieveUpdateDestroyAPIView):
@@ -110,13 +135,33 @@ class CompanyDetailView(generics.RetrieveUpdateDestroyAPIView):
             if not self.request.user.has_app_permission("company_profile.update"):
                 raise ValidationError({"detail": "You do not have permission to update company info."})
         serializer.save()
+        log_audit_event(
+            self.request.user,
+            event_type=AuditLogEntry.TYPE_COMPANY,
+            action=AuditLogEntry.ACTION_UPDATE,
+            title="Updated company",
+            description=company.name,
+            target=company,
+            company=company,
+        )
 
     def perform_destroy(self, instance):
         if not self.request.user.is_platform_admin:
             raise ValidationError({"detail": "Only platform admins can delete companies."})
         if not self.request.user.has_app_permission("companies.delete"):
             raise ValidationError({"detail": "You do not have permission to delete companies."})
+        company_name = instance.name
+        company_ref = instance
         instance.delete()
+        log_audit_event(
+            self.request.user,
+            event_type=AuditLogEntry.TYPE_COMPANY,
+            action=AuditLogEntry.ACTION_DELETE,
+            title="Deleted company",
+            description=company_name,
+            target=company_ref,
+            company=self.request.user.company or self.request.user.companies.order_by("name", "id").first(),
+        )
 
 
 class CompanyLogoUploadView(APIView):
@@ -138,6 +183,15 @@ class CompanyLogoUploadView(APIView):
         previous_key = company.logo_key
         company.logo_key = upload_company_logo(file_obj=logo_file, company_id=company.id)
         company.save(update_fields=["logo_key"])
+        log_audit_event(
+            request.user,
+            event_type=AuditLogEntry.TYPE_COMPANY,
+            action=AuditLogEntry.ACTION_UPDATE,
+            title="Updated company logo",
+            description=company.name,
+            target=company,
+            company=company,
+        )
 
         if previous_key and previous_key != company.logo_key:
             delete_object(previous_key)
@@ -158,6 +212,15 @@ class CompanyLogoUploadView(APIView):
         if previous_key:
             delete_object(previous_key)
 
+        log_audit_event(
+            request.user,
+            event_type=AuditLogEntry.TYPE_COMPANY,
+            action=AuditLogEntry.ACTION_UPDATE,
+            title="Removed company logo",
+            description=company.name,
+            target=company,
+            company=company,
+        )
         return Response(CompanySerializer(company).data)
 
 
@@ -177,6 +240,18 @@ class UserListCreateView(generics.ListCreateAPIView):
         context = super().get_serializer_context()
         context["request"] = self.request
         return context
+
+    def perform_create(self, serializer):
+        user = serializer.save()
+        log_audit_event(
+            self.request.user,
+            event_type=AuditLogEntry.TYPE_USER,
+            action=AuditLogEntry.ACTION_CREATE,
+            title="Created user",
+            description=user.full_name or user.email,
+            target=user,
+            company=user.company or self.request.user.company,
+        )
 
 
 class UserDetailView(generics.RetrieveUpdateDestroyAPIView):
@@ -201,6 +276,33 @@ class UserDetailView(generics.RetrieveUpdateDestroyAPIView):
         context["request"] = self.request
         return context
 
+    def perform_update(self, serializer):
+        user = serializer.save()
+        log_audit_event(
+            self.request.user,
+            event_type=AuditLogEntry.TYPE_USER,
+            action=AuditLogEntry.ACTION_UPDATE,
+            title="Updated user",
+            description=user.full_name or user.email,
+            target=user,
+            company=user.company or self.request.user.company,
+        )
+
+    def perform_destroy(self, instance):
+        user_name = instance.full_name or instance.email
+        company = instance.company or self.request.user.company
+        user_ref = instance
+        instance.delete()
+        log_audit_event(
+            self.request.user,
+            event_type=AuditLogEntry.TYPE_USER,
+            action=AuditLogEntry.ACTION_DELETE,
+            title="Deleted user",
+            description=user_name,
+            target=user_ref,
+            company=company,
+        )
+
 
 class RoleListCreateView(generics.ListCreateAPIView):
     permission_classes = [permissions.IsAuthenticated, CanAccessSettings, HasAppPermission]
@@ -221,10 +323,27 @@ class RoleListCreateView(generics.ListCreateAPIView):
 
     def perform_create(self, serializer):
         if self.request.user.is_platform_admin:
-            serializer.save()
+            role = serializer.save()
+            log_audit_event(
+                self.request.user,
+                event_type=AuditLogEntry.TYPE_ROLE,
+                action=AuditLogEntry.ACTION_CREATE,
+                title="Created role",
+                description=role.name,
+                target=role,
+            )
             return
 
-        serializer.save(company=resolve_default_company_for_user(self.request.user))
+        role = serializer.save(company=resolve_default_company_for_user(self.request.user))
+        log_audit_event(
+            self.request.user,
+            event_type=AuditLogEntry.TYPE_ROLE,
+            action=AuditLogEntry.ACTION_CREATE,
+            title="Created role",
+            description=role.name,
+            target=role,
+            company=role.company,
+        )
 
 
 class RoleDetailView(generics.RetrieveUpdateDestroyAPIView):
@@ -249,10 +368,34 @@ class RoleDetailView(generics.RetrieveUpdateDestroyAPIView):
         context["request"] = self.request
         return context
 
+    def perform_update(self, serializer):
+        role = serializer.save()
+        log_audit_event(
+            self.request.user,
+            event_type=AuditLogEntry.TYPE_ROLE,
+            action=AuditLogEntry.ACTION_UPDATE,
+            title="Updated role",
+            description=role.name,
+            target=role,
+            company=role.company or self.request.user.company,
+        )
+
     def perform_destroy(self, instance):
         if instance.is_system:
             raise ValidationError({"detail": "System roles cannot be deleted."})
+        role_name = instance.name
+        company = instance.company or self.request.user.company
+        role_ref = instance
         instance.delete()
+        log_audit_event(
+            self.request.user,
+            event_type=AuditLogEntry.TYPE_ROLE,
+            action=AuditLogEntry.ACTION_DELETE,
+            title="Deleted role",
+            description=role_name,
+            target=role_ref,
+            company=company,
+        )
 
 
 class PermissionCatalogView(APIView):

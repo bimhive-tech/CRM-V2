@@ -19,5 +19,6 @@ urlpatterns = [
     path("api/pipelines/", include("apps.pipelines.urls")),
     path("api/deals/", include("apps.deals.urls")),
     path("api/attachments/", include("apps.attachments.urls")),
+    path("api/activity/", include("apps.auditlog.urls")),
     path("api/master-data/", include("apps.masterdata.urls")),
 ]

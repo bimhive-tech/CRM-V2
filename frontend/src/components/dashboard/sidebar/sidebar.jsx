@@ -29,7 +29,7 @@ const navSections = [
       { id: "contacts", label: "Contacts", icon: <PeopleIcon />, href: "/contacts", match: ["/contacts"] },
       { id: "companies", label: "Companies", icon: <OfficeIcon />, href: "/companies", match: ["/companies"] },
       { id: "deals", label: "Deals", icon: <DealsIcon />, href: "/deals", match: ["/deals"] },
-      { id: "activity", label: "Activity", icon: <ActivityIcon />, href: "/dashboard" },
+      { id: "activity", label: "Activity", icon: <ActivityIcon />, href: "/activity", match: ["/activity"] },
     ],
   },
   {

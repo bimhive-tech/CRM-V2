@@ -79,6 +79,7 @@ INSTALLED_APPS = [
     "corsheaders",
     "rest_framework",
     "rest_framework_simplejwt.token_blacklist",
+    "apps.auditlog",
     "apps.attachments",
     "apps.companies",
     "apps.accounts",

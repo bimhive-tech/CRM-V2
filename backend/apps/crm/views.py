@@ -1,6 +1,8 @@
 from django.db.models import Q
 from rest_framework import generics, permissions, serializers
 
+from apps.auditlog.models import AuditLogEntry
+from apps.auditlog.services import log_audit_event
 from apps.crm.models import CRMCompany
 from apps.crm.serializers import CRMCompanySerializer
 from apps.pipelines.access import (
@@ -85,7 +87,16 @@ class CRMCompanyListCreateView(generics.ListCreateAPIView):
                 Q(created_by=self.request.user) | Q(memberships__user=self.request.user, memberships__has_full_access=True) | Q(memberships__user=self.request.user, memberships__can_manage_companies=True)
             ).exists():
                 raise serializers.ValidationError({"detail": "You do not have permission to create CRM companies."})
-        serializer.save(tenant_company=resolve_default_tenant_company(self.request.user))
+        company = serializer.save(tenant_company=resolve_default_tenant_company(self.request.user))
+        log_audit_event(
+            self.request.user,
+            event_type=AuditLogEntry.TYPE_COMPANY,
+            action=AuditLogEntry.ACTION_CREATE,
+            title="Created CRM company",
+            description=company.name,
+            target=company,
+            company=company.tenant_company,
+        )
 
 
 class CRMCompanyDetailView(generics.RetrieveUpdateDestroyAPIView):
@@ -111,9 +122,30 @@ class CRMCompanyDetailView(generics.RetrieveUpdateDestroyAPIView):
     def perform_update(self, serializer):
         if not self._can_manage_company(self.get_object()):
             raise serializers.ValidationError({"detail": "You do not have permission to update this company."})
-        serializer.save()
+        company = serializer.save()
+        log_audit_event(
+            self.request.user,
+            event_type=AuditLogEntry.TYPE_COMPANY,
+            action=AuditLogEntry.ACTION_UPDATE,
+            title="Updated CRM company",
+            description=company.name,
+            target=company,
+            company=company.tenant_company,
+        )
 
     def perform_destroy(self, instance):
         if not self._can_manage_company(instance):
             raise serializers.ValidationError({"detail": "You do not have permission to delete this company."})
+        company_name = instance.name
+        tenant_company = instance.tenant_company
+        company_ref = instance
         instance.delete()
+        log_audit_event(
+            self.request.user,
+            event_type=AuditLogEntry.TYPE_COMPANY,
+            action=AuditLogEntry.ACTION_DELETE,
+            title="Deleted CRM company",
+            description=company_name,
+            target=company_ref,
+            company=tenant_company,
+        )

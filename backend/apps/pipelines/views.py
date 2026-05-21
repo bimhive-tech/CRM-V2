@@ -4,6 +4,8 @@ from rest_framework import generics, permissions, serializers
 from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 
+from apps.auditlog.models import AuditLogEntry
+from apps.auditlog.services import log_audit_event
 from apps.accounts.permissions import HasAppPermission
 from apps.crm.models import CRMContact, CRMContactCompanyLink
 from apps.companies.models import Company
@@ -140,6 +142,16 @@ class PipelineListCreateView(generics.ListCreateAPIView):
         company = resolve_requested_company_for_user(self.request.user, requested_company)
         pipeline = serializer.save(company=company, created_by=self.request.user)
         create_default_statuses(pipeline)
+        log_audit_event(
+            self.request.user,
+            event_type=AuditLogEntry.TYPE_PIPELINE,
+            action=AuditLogEntry.ACTION_CREATE,
+            title="Created pipeline",
+            description=pipeline.name,
+            target=pipeline,
+            company=company,
+            metadata={"kind": pipeline.kind},
+        )
 
 
 class PipelineDetailView(generics.RetrieveUpdateDestroyAPIView):
@@ -162,17 +174,51 @@ class PipelineDetailView(generics.RetrieveUpdateDestroyAPIView):
         requested_company = serializer.validated_data.get("company")
         if requested_company is None:
             serializer.save()
+            log_audit_event(
+                self.request.user,
+                event_type=AuditLogEntry.TYPE_PIPELINE,
+                action=AuditLogEntry.ACTION_UPDATE,
+                title="Updated pipeline",
+                description=pipeline.name,
+                target=pipeline,
+                company=pipeline.company,
+                metadata={"kind": pipeline.kind},
+            )
             return
 
         serializer.save(company=resolve_requested_company_for_user(self.request.user, requested_company))
+        log_audit_event(
+            self.request.user,
+            event_type=AuditLogEntry.TYPE_PIPELINE,
+            action=AuditLogEntry.ACTION_UPDATE,
+            title="Updated pipeline",
+            description=pipeline.name,
+            target=pipeline,
+            company=pipeline.company,
+            metadata={"kind": pipeline.kind},
+        )
 
     @transaction.atomic
     def perform_destroy(self, instance):
         if not user_can_delete_pipeline(self.request.user, instance):
             raise ValidationError({"detail": "You do not have permission to delete this pipeline."})
+        pipeline_name = instance.name
+        company = instance.company
+        kind = instance.kind
+        pipeline_ref = instance
         if instance.kind == Pipeline.KIND_CONTACTS:
             CRMContactCompanyLink.objects.filter(pipeline=instance).update(pipeline=None, status="")
             instance.delete()
+            log_audit_event(
+                self.request.user,
+                event_type=AuditLogEntry.TYPE_PIPELINE,
+                action=AuditLogEntry.ACTION_DELETE,
+                title="Deleted pipeline",
+                description=pipeline_name,
+                target=pipeline_ref,
+                company=company,
+                metadata={"kind": kind},
+            )
             return
 
         from apps.deals.models import Deal
@@ -180,6 +226,16 @@ class PipelineDetailView(generics.RetrieveUpdateDestroyAPIView):
         if Deal.objects.filter(pipeline=instance).exists():
             raise ValidationError({"detail": "Move or delete the deals in this pipeline before removing it."})
         instance.delete()
+        log_audit_event(
+            self.request.user,
+            event_type=AuditLogEntry.TYPE_PIPELINE,
+            action=AuditLogEntry.ACTION_DELETE,
+            title="Deleted pipeline",
+            description=pipeline_name,
+            target=pipeline_ref,
+            company=company,
+            metadata={"kind": kind},
+        )
 
 
 class PipelineStatusListCreateView(generics.ListCreateAPIView):
@@ -199,7 +255,16 @@ class PipelineStatusListCreateView(generics.ListCreateAPIView):
         if not user_can_manage_pipeline_statuses(self.request.user, pipeline):
             raise ValidationError({"detail": "You do not have permission to manage statuses on this pipeline."})
         next_position = pipeline.statuses.count()
-        serializer.save(pipeline=pipeline, position=next_position)
+        status = serializer.save(pipeline=pipeline, position=next_position)
+        log_audit_event(
+            self.request.user,
+            event_type=AuditLogEntry.TYPE_STATUS,
+            action=AuditLogEntry.ACTION_CREATE,
+            title="Created pipeline status",
+            description=f"{status.name} in {pipeline.name}",
+            target=status,
+            company=pipeline.company,
+        )
 
 
 class PipelineStatusDetailView(generics.RetrieveUpdateDestroyAPIView):
@@ -223,17 +288,37 @@ class PipelineStatusDetailView(generics.RetrieveUpdateDestroyAPIView):
 
         if next_position is not None:
             reorder_pipeline_status(status, next_position)
+        log_audit_event(
+            self.request.user,
+            event_type=AuditLogEntry.TYPE_STATUS,
+            action=AuditLogEntry.ACTION_UPDATE,
+            title="Updated pipeline status",
+            description=f"{status.name} in {status.pipeline.name}",
+            target=status,
+            company=status.pipeline.company,
+        )
 
     @transaction.atomic
     def perform_destroy(self, instance):
         if not user_can_manage_pipeline_statuses(self.request.user, instance.pipeline):
             raise ValidationError({"detail": "You do not have permission to manage statuses on this pipeline."})
         pipeline = instance.pipeline
+        status_name = instance.name
+        status_ref = instance
         instance.delete()
         for index, item in enumerate(pipeline.statuses.order_by("position", "id")):
             if item.position != index:
                 item.position = index
                 item.save(update_fields=["position"])
+        log_audit_event(
+            self.request.user,
+            event_type=AuditLogEntry.TYPE_STATUS,
+            action=AuditLogEntry.ACTION_DELETE,
+            title="Deleted pipeline status",
+            description=f"{status_name} from {pipeline.name}",
+            target=status_ref,
+            company=pipeline.company,
+        )
 
 
 class PipelineInviteOptionsView(generics.GenericAPIView):
@@ -312,6 +397,17 @@ class PipelineMembershipBulkAssignView(generics.GenericAPIView):
                 continue
             updated.append(update_pipeline_membership(pipeline, target_user, permissions_payload))
 
+        if updated:
+            log_audit_event(
+                request.user,
+                event_type=AuditLogEntry.TYPE_TEAM,
+                action=AuditLogEntry.ACTION_UPDATE,
+                title="Invited pipeline member",
+                description=f"Added {target_user.full_name or target_user.email} to {len(updated)} pipeline(s).",
+                company=resolve_default_company_for_user(request.user),
+                metadata={"pipeline_ids": [membership.pipeline_id for membership in updated], "user_id": target_user.id},
+            )
+
         return Response(
             {
                 "updated_count": len(updated),
@@ -371,8 +467,29 @@ class PipelineMembershipDetailView(generics.RetrieveUpdateDestroyAPIView):
             "can_manage_deals": serializer.validated_data.get("can_manage_deals", membership.can_manage_deals),
         }
         serializer.save(**normalize_pipeline_member_permissions(merged_permissions))
+        log_audit_event(
+            self.request.user,
+            event_type=AuditLogEntry.TYPE_TEAM,
+            action=AuditLogEntry.ACTION_UPDATE,
+            title="Updated team member access",
+            description=f"{membership.user.full_name or membership.user.email} in {membership.pipeline.name}",
+            target=membership.pipeline,
+            company=membership.pipeline.company,
+            metadata={"user_id": membership.user_id},
+        )
 
     def perform_destroy(self, instance):
         if not user_can_invite_to_pipeline(self.request.user, instance.pipeline):
             raise ValidationError({"detail": "You do not have permission to manage members on this pipeline."})
+        member_name = instance.user.full_name or instance.user.email
+        pipeline = instance.pipeline
         instance.delete()
+        log_audit_event(
+            self.request.user,
+            event_type=AuditLogEntry.TYPE_TEAM,
+            action=AuditLogEntry.ACTION_REMOVE,
+            title="Removed team member",
+            description=f"{member_name} from {pipeline.name}",
+            target=pipeline,
+            company=pipeline.company,
+        )

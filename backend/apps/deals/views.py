@@ -1,6 +1,8 @@
 from django.db.models import Q
 from rest_framework import generics, permissions, serializers
 
+from apps.auditlog.models import AuditLogEntry
+from apps.auditlog.services import log_audit_event
 from apps.deals.models import Deal
 from apps.pipelines.access import (
     accessible_pipelines_queryset,
@@ -67,7 +69,17 @@ class DealListCreateView(generics.ListCreateAPIView):
         if not self.request.user.has_app_permission("deals.create"):
             if pipeline is None or not user_can_manage_pipeline_deals(self.request.user, pipeline):
                 raise serializers.ValidationError({"detail": "You do not have permission to create deals here."})
-        serializer.save()
+        deal = serializer.save()
+        log_audit_event(
+            self.request.user,
+            event_type=AuditLogEntry.TYPE_DEAL,
+            action=AuditLogEntry.ACTION_CREATE,
+            title="Created deal",
+            description=deal.name,
+            target=deal,
+            company=deal.tenant_company,
+            metadata={"pipeline_name": deal.pipeline.name, "stage": deal.stage},
+        )
 
 
 class DealDetailView(generics.RetrieveUpdateDestroyAPIView):
@@ -92,10 +104,32 @@ class DealDetailView(generics.RetrieveUpdateDestroyAPIView):
                     raise serializers.ValidationError({"detail": "You do not have permission to move deals in this pipeline."})
             elif target_pipeline is None or not user_can_manage_pipeline_deals(self.request.user, target_pipeline):
                 raise serializers.ValidationError({"detail": "You do not have permission to update this deal."})
-        serializer.save()
+        deal = serializer.save()
+        log_audit_event(
+            self.request.user,
+            event_type=AuditLogEntry.TYPE_DEAL,
+            action=AuditLogEntry.ACTION_UPDATE,
+            title="Updated deal",
+            description=deal.name,
+            target=deal,
+            company=deal.tenant_company,
+            metadata={"pipeline_name": deal.pipeline.name, "stage": deal.stage},
+        )
 
     def perform_destroy(self, instance):
         if not self.request.user.has_app_permission("deals.delete"):
             if instance.pipeline is None or not user_can_manage_pipeline_deals(self.request.user, instance.pipeline):
                 raise serializers.ValidationError({"detail": "You do not have permission to delete this deal."})
+        deal_name = instance.name
+        company = instance.tenant_company
+        deal_ref = instance
         instance.delete()
+        log_audit_event(
+            self.request.user,
+            event_type=AuditLogEntry.TYPE_DEAL,
+            action=AuditLogEntry.ACTION_DELETE,
+            title="Deleted deal",
+            description=deal_name,
+            target=deal_ref,
+            company=company,
+        )
