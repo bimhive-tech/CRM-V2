@@ -343,6 +343,8 @@
 .table th:last-child,
 .table td:last-child {
   text-align: right;
+  width: 116px;
+  min-width: 116px;
 }
 
 .clickableRow {
@@ -555,7 +557,7 @@
 }
 
 .actionsCell {
-  width: 88px;
+  padding-right: 18px;
 }
 
 .rowActions {
