@@ -16,7 +16,8 @@ import styles from "./topbar.module.css";
 
 const inviteInitialState = {
   userId: "",
-  pipelineIds: [],
+  contactPipelineIds: [],
+  dealPipelineIds: [],
   has_full_access: false,
   can_invite_members: false,
   can_edit_pipeline: false,
@@ -31,6 +32,30 @@ const inviteInitialState = {
   can_move_deals: false,
   can_manage_deals: false,
 };
+
+const CONTACT_INVITE_FIELDS = [
+  "can_view_contacts",
+  "can_move_contacts",
+  "can_manage_contacts",
+];
+
+const DEAL_INVITE_FIELDS = [
+  "can_view_deals",
+  "can_move_deals",
+  "can_manage_deals",
+];
+
+const COMPANY_INVITE_FIELDS = [
+  "can_view_companies",
+  "can_manage_companies",
+];
+
+const SHARED_INVITE_FIELDS = [
+  "can_invite_members",
+  "can_edit_pipeline",
+  "can_delete_pipeline",
+  "can_manage_statuses",
+];
 
 function hasPermission(user, permissionCode) {
   if (!user) {
@@ -183,46 +208,74 @@ export function Topbar({
     }));
   }
 
-  function toggleInvitePipeline(pipelineId) {
+  function getRelevantInviteFields(form) {
+    const hasContacts = form.contactPipelineIds.length > 0;
+    const hasDeals = form.dealPipelineIds.length > 0;
+    const nextFields = [...SHARED_INVITE_FIELDS];
+
+    if (hasContacts) {
+      nextFields.push(...CONTACT_INVITE_FIELDS);
+    }
+    if (hasContacts || hasDeals) {
+      nextFields.push(...COMPANY_INVITE_FIELDS);
+    }
+    if (hasDeals) {
+      nextFields.push(...DEAL_INVITE_FIELDS);
+    }
+
+    return nextFields;
+  }
+
+  function toggleInvitePipeline(kind, pipelineId) {
     setInviteState((current) => {
-      const nextPipelineIds = current.form.pipelineIds.includes(pipelineId)
-        ? current.form.pipelineIds.filter((value) => value !== pipelineId)
-        : [...current.form.pipelineIds, pipelineId];
+      const fieldName = kind === "deals" ? "dealPipelineIds" : "contactPipelineIds";
+      const selectedValues = current.form[fieldName];
+      const nextPipelineIds = selectedValues.includes(pipelineId)
+        ? selectedValues.filter((value) => value !== pipelineId)
+        : [...selectedValues, pipelineId];
+      const nextForm = { ...current.form, [fieldName]: nextPipelineIds };
+      const relevantFields = new Set(getRelevantInviteFields(nextForm));
+
+      for (const field of [...CONTACT_INVITE_FIELDS, ...DEAL_INVITE_FIELDS, ...COMPANY_INVITE_FIELDS]) {
+        if (!relevantFields.has(field)) {
+          nextForm[field] = false;
+        }
+      }
+
       return {
         ...current,
-        form: { ...current.form, pipelineIds: nextPipelineIds },
+        form: nextForm,
       };
     });
   }
 
   function updateInvitePermission(field, checked) {
-    if (field === "has_full_access") {
-      setInviteState((current) => ({
-        ...current,
-        form: {
-          ...current.form,
-          has_full_access: checked,
-          can_invite_members: checked ? true : current.form.can_invite_members,
-          can_edit_pipeline: checked ? true : current.form.can_edit_pipeline,
-          can_delete_pipeline: checked ? true : current.form.can_delete_pipeline,
-          can_manage_statuses: checked ? true : current.form.can_manage_statuses,
-          can_view_contacts: checked ? true : current.form.can_view_contacts,
-          can_move_contacts: checked ? true : current.form.can_move_contacts,
-          can_manage_contacts: checked ? true : current.form.can_manage_contacts,
-          can_view_companies: checked ? true : current.form.can_view_companies,
-          can_manage_companies: checked ? true : current.form.can_manage_companies,
-          can_view_deals: checked ? true : current.form.can_view_deals,
-          can_move_deals: checked ? true : current.form.can_move_deals,
-          can_manage_deals: checked ? true : current.form.can_manage_deals,
-        },
-      }));
-      return;
-    }
+    setInviteState((current) => {
+      const relevantFields = new Set(getRelevantInviteFields(current.form));
+      if (field === "has_full_access") {
+        const nextValues = {};
+        for (const permissionField of [...SHARED_INVITE_FIELDS, ...CONTACT_INVITE_FIELDS, ...DEAL_INVITE_FIELDS, ...COMPANY_INVITE_FIELDS]) {
+          nextValues[permissionField] = relevantFields.has(permissionField) ? checked : false;
+        }
+        return {
+          ...current,
+          form: {
+            ...current.form,
+            has_full_access: checked,
+            ...nextValues,
+          },
+        };
+      }
 
-    setInviteState((current) => ({
-      ...current,
-      form: { ...current.form, [field]: checked },
-    }));
+      if (!relevantFields.has(field) && !SHARED_INVITE_FIELDS.includes(field)) {
+        return current;
+      }
+
+      return {
+        ...current,
+        form: { ...current.form, [field]: checked },
+      };
+    });
   }
 
   async function handleInviteSubmit(event) {
@@ -230,22 +283,24 @@ export function Topbar({
     setInviteState((current) => ({ ...current, loading: true }));
 
     try {
+      const pipelineIds = [...inviteState.form.contactPipelineIds, ...inviteState.form.dealPipelineIds];
+      const relevantFields = new Set(getRelevantInviteFields(inviteState.form));
       await assignPipelineMemberships(token, {
         user_id: Number(inviteState.form.userId),
-        pipeline_ids: inviteState.form.pipelineIds.map((id) => Number(id)),
+        pipeline_ids: pipelineIds.map((id) => Number(id)),
         has_full_access: inviteState.form.has_full_access,
         can_invite_members: inviteState.form.can_invite_members,
         can_edit_pipeline: inviteState.form.can_edit_pipeline,
         can_delete_pipeline: inviteState.form.can_delete_pipeline,
         can_manage_statuses: inviteState.form.can_manage_statuses,
-        can_view_contacts: inviteState.form.can_view_contacts,
-        can_move_contacts: inviteState.form.can_move_contacts,
-        can_manage_contacts: inviteState.form.can_manage_contacts,
-        can_view_companies: inviteState.form.can_view_companies,
-        can_manage_companies: inviteState.form.can_manage_companies,
-        can_view_deals: inviteState.form.can_view_deals,
-        can_move_deals: inviteState.form.can_move_deals,
-        can_manage_deals: inviteState.form.can_manage_deals,
+        can_view_contacts: relevantFields.has("can_view_contacts") ? inviteState.form.can_view_contacts : false,
+        can_move_contacts: relevantFields.has("can_move_contacts") ? inviteState.form.can_move_contacts : false,
+        can_manage_contacts: relevantFields.has("can_manage_contacts") ? inviteState.form.can_manage_contacts : false,
+        can_view_companies: relevantFields.has("can_view_companies") ? inviteState.form.can_view_companies : false,
+        can_manage_companies: relevantFields.has("can_manage_companies") ? inviteState.form.can_manage_companies : false,
+        can_view_deals: relevantFields.has("can_view_deals") ? inviteState.form.can_view_deals : false,
+        can_move_deals: relevantFields.has("can_move_deals") ? inviteState.form.can_move_deals : false,
+        can_manage_deals: relevantFields.has("can_manage_deals") ? inviteState.form.can_manage_deals : false,
       });
       setInviteState((current) => ({
         ...current,
@@ -332,7 +387,8 @@ export function Topbar({
       {inviteState.open ? (
         <PipelineInviteModal
           users={inviteState.users}
-          pipelines={inviteState.pipelines}
+          contactPipelines={inviteState.pipelines.filter((pipeline) => pipeline.kind === "contacts")}
+          dealPipelines={inviteState.pipelines.filter((pipeline) => pipeline.kind === "deals")}
           value={inviteState.form}
           loading={inviteState.loading}
           onUserChange={updateInviteUser}

@@ -1,3 +1,5 @@
+import { useState } from "react";
+
 import { EditIcon, TrashIcon } from "@/components/dashboard/dashboard-icons";
 
 import styles from "./pipeline-screen.module.css";
@@ -43,6 +45,52 @@ const PIPELINE_PERMISSION_GROUPS = [
   },
 ];
 
+const INVITE_PERMISSION_GROUPS = [
+  {
+    id: "overview",
+    title: "Overview",
+    permissions: [
+      ["has_full_access", "Full pipeline access", "Turns on every pipeline permission below for the selected pipeline types."],
+    ],
+  },
+  {
+    id: "workspace",
+    title: "Workspace Control",
+    permissions: [
+      ["can_invite_members", "Invite members", "Invite teammates to these selected pipelines and manage access."],
+      ["can_edit_pipeline", "Edit pipeline", "Rename the selected pipelines and update their core configuration."],
+      ["can_delete_pipeline", "Delete pipeline", "Delete the selected pipelines when the workspace is ready."],
+      ["can_manage_statuses", "Manage statuses", "Create, edit, reorder, and delete statuses on the selected pipelines."],
+    ],
+  },
+  {
+    id: "contacts",
+    title: "Contacts",
+    permissions: [
+      ["can_view_contacts", "View contacts", "Open and see contacts inside the selected contacts pipelines."],
+      ["can_move_contacts", "Move contact cards", "Move contacts between statuses in the selected contacts pipelines."],
+      ["can_manage_contacts", "Create and edit contacts", "Add contacts and update contact details there."],
+    ],
+  },
+  {
+    id: "companies",
+    title: "CRM Companies",
+    permissions: [
+      ["can_view_companies", "View companies", "See companies connected to the selected pipelines."],
+      ["can_manage_companies", "Create and edit companies", "Add companies and update company details there."],
+    ],
+  },
+  {
+    id: "deals",
+    title: "Deals",
+    permissions: [
+      ["can_view_deals", "View deals", "Open and see deals inside the selected deals pipelines."],
+      ["can_move_deals", "Move deal cards", "Move deals between statuses in the selected deals pipelines."],
+      ["can_manage_deals", "Create and edit deals", "Add deals and update deal details there."],
+    ],
+  },
+];
+
 function initialsForName(name) {
   return (
     (name || "")
@@ -58,7 +106,7 @@ function hueForName(name) {
   return (name || "user").split("").reduce((sum, character) => sum + character.charCodeAt(0), 0) % 360;
 }
 
-function PermissionMatrix({ value, onPermissionChange, disabled = false }) {
+function PermissionMatrix({ value, onPermissionChange, disabled = false, groups = PIPELINE_PERMISSION_GROUPS }) {
   return (
     <div className={styles.memberPermissionsWrap}>
       <table className={styles.memberPermissionsTable}>
@@ -69,7 +117,7 @@ function PermissionMatrix({ value, onPermissionChange, disabled = false }) {
           </tr>
         </thead>
         <tbody>
-          {PIPELINE_PERMISSION_GROUPS.flatMap((group) =>
+          {groups.flatMap((group) =>
             group.permissions.map(([field, label, description], index) => (
               <tr key={field}>
                 <td className={styles.memberPermissionLabelCell}>
@@ -92,6 +140,49 @@ function PermissionMatrix({ value, onPermissionChange, disabled = false }) {
           )}
         </tbody>
       </table>
+    </div>
+  );
+}
+
+function MultiSelectDropdown({ label, placeholder, options, selectedValues, onToggle }) {
+  const [open, setOpen] = useState(false);
+  const selectedCount = selectedValues.length;
+  const summary = selectedCount
+    ? `${selectedCount} selected`
+    : placeholder;
+
+  return (
+    <div className={styles.multiSelectField}>
+      <span>{label}</span>
+      <div className={styles.multiSelectWrap}>
+        <button
+          className={styles.multiSelectButton}
+          type="button"
+          onClick={() => setOpen((current) => !current)}
+          aria-expanded={open}
+        >
+          <span>{summary}</span>
+          <span className={styles.multiSelectChevron}>{open ? "−" : "+"}</span>
+        </button>
+        {open ? (
+          <div className={styles.multiSelectPanel}>
+            {options.length ? (
+              options.map((option) => (
+                <label key={option.id} className={styles.multiSelectOption}>
+                  <input
+                    type="checkbox"
+                    checked={selectedValues.includes(String(option.id))}
+                    onChange={() => onToggle(String(option.id))}
+                  />
+                  <span>{option.name}</span>
+                </label>
+              ))
+            ) : (
+              <p className={styles.multiSelectEmpty}>No pipelines available here yet.</p>
+            )}
+          </div>
+        ) : null}
+      </div>
     </div>
   );
 }
@@ -188,7 +279,8 @@ export function ConfirmDeleteModal({ title, description, value, onChange, onClos
 
 export function PipelineInviteModal({
   users,
-  pipelines,
+  contactPipelines,
+  dealPipelines,
   value,
   onUserChange,
   onTogglePipeline,
@@ -197,6 +289,22 @@ export function PipelineInviteModal({
   onSubmit,
   loading = false,
 }) {
+  const hasContactSelection = value.contactPipelineIds.length > 0;
+  const hasDealSelection = value.dealPipelineIds.length > 0;
+  const hasAnyPipelineSelection = hasContactSelection || hasDealSelection;
+  const visibleGroups = INVITE_PERMISSION_GROUPS.filter((group) => {
+    if (group.id === "contacts") {
+      return hasContactSelection;
+    }
+    if (group.id === "deals") {
+      return hasDealSelection;
+    }
+    if (group.id === "companies") {
+      return hasAnyPipelineSelection;
+    }
+    return true;
+  });
+
   return (
     <div className={styles.modalOverlay} role="presentation">
       <div className={`${styles.modal} ${styles.inviteModal}`} role="dialog" aria-modal="true" aria-labelledby="pipeline-invite-modal-title">
@@ -222,173 +330,44 @@ export function PipelineInviteModal({
             </select>
           </label>
 
-          <div className={styles.assignmentSection}>
-            <p className={styles.assignmentTitle}>Pipelines</p>
-            <div className={styles.optionGrid}>
-              {pipelines.map((pipeline) => (
-                <label key={pipeline.id} className={styles.optionCard}>
-                  <input
-                    type="checkbox"
-                    checked={value.pipelineIds.includes(String(pipeline.id))}
-                    onChange={() => onTogglePipeline(String(pipeline.id))}
-                  />
-                  <span>{pipeline.name}</span>
-                </label>
-              ))}
-            </div>
+          <div className={styles.inviteSelectors}>
+            <MultiSelectDropdown
+              label="Contacts pipelines"
+              placeholder="Choose contacts pipelines"
+              options={contactPipelines}
+              selectedValues={value.contactPipelineIds}
+              onToggle={(pipelineId) => onTogglePipeline("contacts", pipelineId)}
+            />
+            <MultiSelectDropdown
+              label="Deals pipelines"
+              placeholder="Choose deals pipelines"
+              options={dealPipelines}
+              selectedValues={value.dealPipelineIds}
+              onToggle={(pipelineId) => onTogglePipeline("deals", pipelineId)}
+            />
           </div>
 
-          <div className={styles.assignmentSection}>
-            <p className={styles.assignmentTitle}>Pipeline permissions</p>
-            <div className={styles.optionGrid}>
-              <label className={`${styles.optionCard} ${styles.optionCardWide}`}>
-                <input
-                  type="checkbox"
-                  checked={value.has_full_access}
-                  onChange={(event) => onPermissionChange("has_full_access", event.target.checked)}
-                />
-                <span>Full pipeline access</span>
-              </label>
+          {hasAnyPipelineSelection ? (
+            <div className={styles.assignmentSection}>
+              <p className={styles.assignmentTitle}>Permissions</p>
+              <PermissionMatrix value={value} onPermissionChange={onPermissionChange} groups={visibleGroups} />
             </div>
-          </div>
-
-          <div className={styles.assignmentSection}>
-            <p className={styles.assignmentTitle}>Workspace control</p>
-            <div className={styles.optionGrid}>
-              <label className={styles.optionCard}>
-                <input
-                  type="checkbox"
-                  checked={value.can_invite_members}
-                  onChange={(event) => onPermissionChange("can_invite_members", event.target.checked)}
-                  disabled={value.has_full_access}
-                />
-                <span>Can invite members</span>
-              </label>
-              <label className={styles.optionCard}>
-                <input
-                  type="checkbox"
-                  checked={value.can_edit_pipeline}
-                  onChange={(event) => onPermissionChange("can_edit_pipeline", event.target.checked)}
-                  disabled={value.has_full_access}
-                />
-                <span>Can edit pipeline</span>
-              </label>
-              <label className={styles.optionCard}>
-                <input
-                  type="checkbox"
-                  checked={value.can_delete_pipeline}
-                  onChange={(event) => onPermissionChange("can_delete_pipeline", event.target.checked)}
-                  disabled={value.has_full_access}
-                />
-                <span>Can delete pipeline</span>
-              </label>
-              <label className={styles.optionCard}>
-                <input
-                  type="checkbox"
-                  checked={value.can_manage_statuses}
-                  onChange={(event) => onPermissionChange("can_manage_statuses", event.target.checked)}
-                  disabled={value.has_full_access}
-                />
-                <span>Can manage statuses</span>
-              </label>
+          ) : (
+            <div className={styles.membersEmptyState}>
+              <strong>Select pipelines first</strong>
+              <p>Choose one or more contacts or deals pipelines to reveal the relevant permission matrix.</p>
             </div>
-          </div>
-
-          <div className={styles.assignmentSection}>
-            <p className={styles.assignmentTitle}>Contacts</p>
-            <div className={styles.optionGrid}>
-              <label className={styles.optionCard}>
-                <input
-                  type="checkbox"
-                  checked={value.can_view_contacts}
-                  onChange={(event) => onPermissionChange("can_view_contacts", event.target.checked)}
-                  disabled={value.has_full_access}
-                />
-                <span>View contacts</span>
-              </label>
-              <label className={styles.optionCard}>
-                <input
-                  type="checkbox"
-                  checked={value.can_move_contacts}
-                  onChange={(event) => onPermissionChange("can_move_contacts", event.target.checked)}
-                  disabled={value.has_full_access}
-                />
-                <span>Move contact cards</span>
-              </label>
-              <label className={styles.optionCard}>
-                <input
-                  type="checkbox"
-                  checked={value.can_manage_contacts}
-                  onChange={(event) => onPermissionChange("can_manage_contacts", event.target.checked)}
-                  disabled={value.has_full_access}
-                />
-                <span>Create and edit contacts</span>
-              </label>
-            </div>
-          </div>
-
-          <div className={styles.assignmentSection}>
-            <p className={styles.assignmentTitle}>CRM companies</p>
-            <div className={styles.optionGrid}>
-              <label className={styles.optionCard}>
-                <input
-                  type="checkbox"
-                  checked={value.can_view_companies}
-                  onChange={(event) => onPermissionChange("can_view_companies", event.target.checked)}
-                  disabled={value.has_full_access}
-                />
-                <span>View companies</span>
-              </label>
-              <label className={styles.optionCard}>
-                <input
-                  type="checkbox"
-                  checked={value.can_manage_companies}
-                  onChange={(event) => onPermissionChange("can_manage_companies", event.target.checked)}
-                  disabled={value.has_full_access}
-                />
-                <span>Create and edit companies</span>
-              </label>
-            </div>
-          </div>
-
-          <div className={styles.assignmentSection}>
-            <p className={styles.assignmentTitle}>Deals</p>
-            <div className={styles.optionGrid}>
-              <label className={styles.optionCard}>
-                <input
-                  type="checkbox"
-                  checked={value.can_view_deals}
-                  onChange={(event) => onPermissionChange("can_view_deals", event.target.checked)}
-                  disabled={value.has_full_access}
-                />
-                <span>View deals</span>
-              </label>
-              <label className={styles.optionCard}>
-                <input
-                  type="checkbox"
-                  checked={value.can_move_deals}
-                  onChange={(event) => onPermissionChange("can_move_deals", event.target.checked)}
-                  disabled={value.has_full_access}
-                />
-                <span>Move deal cards</span>
-              </label>
-              <label className={styles.optionCard}>
-                <input
-                  type="checkbox"
-                  checked={value.can_manage_deals}
-                  onChange={(event) => onPermissionChange("can_manage_deals", event.target.checked)}
-                  disabled={value.has_full_access}
-                />
-                <span>Create and edit deals</span>
-              </label>
-            </div>
-          </div>
+          )}
 
           <div className={styles.modalActions}>
             <button className={styles.secondaryButton} type="button" onClick={onClose}>
               Cancel
             </button>
-            <button className={styles.primaryButton} type="submit" disabled={loading || !value.userId || !value.pipelineIds.length}>
+            <button
+              className={styles.primaryButton}
+              type="submit"
+              disabled={loading || !value.userId || (!value.contactPipelineIds.length && !value.dealPipelineIds.length)}
+            >
               {loading ? "Sending..." : "Send access"}
             </button>
           </div>

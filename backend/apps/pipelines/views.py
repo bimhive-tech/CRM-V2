@@ -240,11 +240,17 @@ class PipelineInviteOptionsView(generics.GenericAPIView):
     permission_required = "pipelines.manage_members"
 
     def get(self, request):
-        inviteable_pipelines = list(inviteable_pipelines_queryset(request.user).order_by("kind", "name", "id"))
-        accessible_pipeline_count = accessible_pipelines_queryset(request.user).count()
-        allowed_company_ids = {pipeline.company_id for pipeline in inviteable_pipelines}
+        current_company = resolve_default_company_for_user(request.user)
+        inviteable_pipelines = list(
+            inviteable_pipelines_queryset(request.user)
+            .filter(company=current_company)
+            .order_by("kind", "name", "id")
+        )
+        accessible_pipeline_count = accessible_pipelines_queryset(request.user).filter(company=current_company).count()
         users_queryset = (
-            request.user.__class__.objects.filter(companies__id__in=allowed_company_ids)
+            request.user.__class__.objects.filter(
+                Q(company=current_company) | Q(companies=current_company)
+            )
             .exclude(id=request.user.id)
             .distinct()
             .prefetch_related("roles")
@@ -294,16 +300,21 @@ class PipelineMembershipBulkAssignView(generics.GenericAPIView):
             target_company_ids.add(target_user.company_id)
 
         updated = []
+        skipped_pipeline_ids = []
         for pipeline in pipelines:
             if pipeline.company_id not in target_company_ids:
                 raise ValidationError({"user_id": "The selected user does not belong to one or more selected pipeline companies."})
             if not user_can_invite_to_pipeline(request.user, pipeline):
                 raise ValidationError({"pipeline_ids": f"You do not have permission to invite members to {pipeline.name}."})
+            if pipeline.memberships.filter(user=target_user).exists():
+                skipped_pipeline_ids.append(pipeline.id)
+                continue
             updated.append(update_pipeline_membership(pipeline, target_user, permissions_payload))
 
         return Response(
             {
                 "updated_count": len(updated),
+                "skipped_pipeline_ids": skipped_pipeline_ids,
                 "pipelines": PipelineSerializer(pipelines, many=True, context={"request": request}).data,
                 "user": PipelineInviteUserSerializer(target_user).data,
             }
