@@ -64,3 +64,25 @@ class CompanyIndustry(models.Model):
 
     def __str__(self):
         return f"{self.company.name} - {self.name}"
+
+
+class ScopeOfWorkTemplate(models.Model):
+    company = models.ForeignKey("companies.Company", on_delete=models.CASCADE, related_name="scope_of_work_templates")
+    name = models.CharField(max_length=255)
+    content = models.TextField(blank=True)
+    position = models.PositiveIntegerField(default=0)
+    created_at = models.DateTimeField(default=timezone.now, editable=False)
+
+    class Meta:
+        ordering = ["position", "id"]
+        constraints = [
+            models.UniqueConstraint(fields=["company", "name"], name="unique_scope_of_work_template_per_company"),
+        ]
+
+    def save(self, *args, **kwargs):
+        self.name = self.name.strip()
+        self.content = self.content.strip()
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"{self.company.name} - {self.name}"

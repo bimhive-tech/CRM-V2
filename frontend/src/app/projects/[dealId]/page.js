@@ -9,7 +9,7 @@ import { ClipboardIcon, MailIcon } from "@/components/dashboard/dashboard-icons"
 import { Sidebar } from "@/components/dashboard/sidebar/sidebar";
 import { Topbar } from "@/components/dashboard/topbar/topbar";
 import { SearchableSelect } from "@/components/forms/searchable-select";
-import { getDeal, listContacts, listCrmCompanies, listCurrencies, listPipelines, updateDeal } from "@/lib/api/admin";
+import { getDeal, listContacts, listCrmCompanies, listCurrencies, listPipelines, listScopeOfWorkTemplates, updateDeal } from "@/lib/api/admin";
 import { useAuthenticatedUser } from "@/lib/hooks/use-authenticated-user";
 import { getAccessToken } from "@/lib/session";
 
@@ -31,6 +31,8 @@ const emptyDealForm = {
   stage: "",
   amount: "",
   expectedCloseDate: "",
+  scopeTemplateId: "",
+  scopeOfWork: "",
   notes: "",
 };
 
@@ -192,6 +194,7 @@ function DealEditorModal({
   contactOptions,
   pipelineOptions,
   stageOptions,
+  scopeOfWorkTemplateOptions,
   onChange,
   onClose,
   onSubmit,
@@ -274,6 +277,22 @@ function DealEditorModal({
             <textarea name="notes" value={form.notes} onChange={onChange} rows={4} />
           </label>
 
+          <label className={styles.field}>
+            <span>Scope template</span>
+            <SearchableSelect
+              ariaLabel="Scope template"
+              name="scopeTemplateId"
+              value={form.scopeTemplateId}
+              onChange={onChange}
+              options={[{ value: "", label: scopeOfWorkTemplateOptions.length ? "No template" : "No templates available" }, ...scopeOfWorkTemplateOptions]}
+            />
+          </label>
+
+          <label className={styles.field}>
+            <span>Scope of work</span>
+            <textarea name="scopeOfWork" value={form.scopeOfWork} onChange={onChange} rows={6} />
+          </label>
+
           <div className={styles.modalActions}>
             <button className={styles.secondaryButton} type="button" onClick={onClose}>
               Cancel
@@ -297,6 +316,7 @@ export default function DealDetailPage() {
   const [companies, setCompanies] = useState([]);
   const [contacts, setContacts] = useState([]);
   const [pipelines, setPipelines] = useState([]);
+  const [scopeOfWorkTemplates, setScopeOfWorkTemplates] = useState([]);
   const [currencySymbol, setCurrencySymbol] = useState("EGP");
   const [saveMessage, setSaveMessage] = useState({ error: "", success: "" });
   const [activeTab, setActiveTab] = useState("all");
@@ -316,8 +336,9 @@ export default function DealDetailPage() {
       listContacts(token, { page: 1, page_size: 300 }),
       listPipelines(token, { kind: "deals" }),
       listCurrencies(token, { company_id: authState.user.company?.id || authState.user.companies?.[0]?.id || "" }),
+      listScopeOfWorkTemplates(token, { company_id: authState.user.company?.id || authState.user.companies?.[0]?.id || "" }),
     ])
-      .then(([dealData, companiesData, contactsData, pipelinesData, currenciesData]) => {
+      .then(([dealData, companiesData, contactsData, pipelinesData, currenciesData, scopeOfWorkTemplatesData]) => {
         if (!active) {
           return;
         }
@@ -329,6 +350,7 @@ export default function DealDetailPage() {
         setCompanies(companies);
         setContacts(normalizedContacts);
         setPipelines(pipelinesData);
+        setScopeOfWorkTemplates(scopeOfWorkTemplatesData || []);
         setCurrencySymbol(defaultCurrency?.symbol || "EGP");
         setState({ loading: false, deal: dealData, error: "" });
       })
@@ -376,6 +398,10 @@ export default function DealDetailPage() {
     const source = compatiblePipelines.length ? compatiblePipelines : pipelines;
     return source.map((pipeline) => ({ value: String(pipeline.id), label: pipeline.name }));
   }, [pipelines, selectedFormCompany]);
+  const scopeOfWorkTemplateOptions = useMemo(
+    () => scopeOfWorkTemplates.map((template) => ({ value: String(template.id), label: template.name })),
+    [scopeOfWorkTemplates],
+  );
   const dealTopbarUsers = useMemo(() => {
     const detailPipeline = pipelines.find((pipeline) => String(pipeline.id) === String(state.deal?.pipeline_id)) || null;
     return detailPipeline ? detailPipeline.team || [] : uniqueTeamUsers(pipelines);
@@ -391,6 +417,13 @@ export default function DealDetailPage() {
 
     setDealForm((current) => {
       const nextState = { ...current, [name]: value };
+      if (name === "scopeTemplateId") {
+        const nextTemplate = scopeOfWorkTemplates.find((template) => String(template.id) === value) || null;
+        nextState.scopeTemplateId = value;
+        if (nextTemplate) {
+          nextState.scopeOfWork = nextTemplate.content || "";
+        }
+      }
       if (name === "pipelineId") {
         const nextPipeline = pipelines.find((pipeline) => String(pipeline.id) === value);
         const compatibleCompanies = nextPipeline ? companies.filter((company) => pipelineMatchesCompany(nextPipeline, company)) : companies;
@@ -431,6 +464,8 @@ export default function DealDetailPage() {
       stage: state.deal.stage || "",
       amount: String(state.deal.amount || ""),
       expectedCloseDate: formatDateForInput(state.deal.expected_close_date),
+      scopeTemplateId: "",
+      scopeOfWork: state.deal.scope_of_work || "",
       notes: state.deal.notes || "",
     });
     setModalOpen(true);
@@ -457,6 +492,7 @@ export default function DealDetailPage() {
       stage: dealForm.stage,
       amount: dealForm.amount ? Number(dealForm.amount) : 0,
       expected_close_date: dealForm.expectedCloseDate || null,
+      scope_of_work: dealForm.scopeOfWork.trim(),
       notes: dealForm.notes.trim(),
     };
 
@@ -627,6 +663,18 @@ export default function DealDetailPage() {
                 <article className={styles.infoCard}>
                   <div className={styles.infoCardHeader}>
                     <div>
+                      <p className={styles.eyebrow}>Scope of work</p>
+                      <div className={styles.infoMeta}>
+                        <strong>Project scope</strong>
+                      </div>
+                    </div>
+                  </div>
+                  <p className={styles.noteText}>{deal.scope_of_work || "No scope of work yet."}</p>
+                </article>
+
+                <article className={styles.infoCard}>
+                  <div className={styles.infoCardHeader}>
+                    <div>
                       <p className={styles.eyebrow}>Notes</p>
                       <div className={styles.infoMeta}>
                         <strong>Project notes</strong>
@@ -648,6 +696,7 @@ export default function DealDetailPage() {
           contactOptions={visibleContactOptions}
           pipelineOptions={visiblePipelineOptions}
           stageOptions={stageOptions}
+          scopeOfWorkTemplateOptions={scopeOfWorkTemplateOptions}
           onChange={updateDealForm}
           onClose={closeModal}
           onSubmit={handleSubmit}

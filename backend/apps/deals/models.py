@@ -22,6 +22,7 @@ class Deal(models.Model):
     amount = models.DecimalField(max_digits=14, decimal_places=2, default=Decimal("0.00"))
     probability = models.PositiveSmallIntegerField(default=0, validators=[MinValueValidator(0), MaxValueValidator(100)])
     expected_close_date = models.DateField(null=True, blank=True)
+    scope_of_work = models.TextField(blank=True)
     notes = models.TextField(blank=True)
     stage_entered_at = models.DateTimeField(default=timezone.now)
     created_at = models.DateTimeField(default=timezone.now, editable=False)
@@ -32,4 +33,3 @@ class Deal(models.Model):
 
     def __str__(self):
         return self.name
-

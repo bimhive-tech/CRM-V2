@@ -13,6 +13,7 @@ import {
   createCompany,
   createCurrency,
   createPipelineStatusTemplate,
+  createScopeOfWorkTemplate,
   createRole,
   createUser,
   deleteCompany,
@@ -20,12 +21,14 @@ import {
   deleteRole,
   deleteCurrency,
   deletePipelineStatusTemplate,
+  deleteScopeOfWorkTemplate,
   deleteUser,
   listCompanyIndustries,
   listCompanies,
   listCurrencies,
   listPermissionCatalog,
   listPipelineStatusTemplates,
+  listScopeOfWorkTemplates,
   listRoles,
   listUsers,
   restoreDefaultCompanyIndustries,
@@ -37,6 +40,7 @@ import {
   updateCompanyIndustry,
   updateCurrency,
   updatePipelineStatusTemplate,
+  updateScopeOfWorkTemplate,
   updateRole,
   updateUser,
 } from "@/lib/api/admin";
@@ -50,6 +54,7 @@ const roleInitialState = { name: "", description: "" };
 const currencyInitialState = { name: "", symbol: "", is_default: false, is_active: true };
 const industryInitialState = { name: "", position: 0 };
 const statusTemplateInitialState = { name: "", color: "#7C5F35", position: 0 };
+const scopeOfWorkTemplateInitialState = { name: "", content: "", position: 0 };
 const userInitialState = {
   email: "",
   full_name: "",
@@ -137,6 +142,14 @@ function toStatusTemplateForm(template) {
   return {
     name: template.name || "",
     color: template.color || "#7C5F35",
+    position: Number(template.position || 0),
+  };
+}
+
+function toScopeOfWorkTemplateForm(template) {
+  return {
+    name: template.name || "",
+    content: template.content || "",
     position: Number(template.position || 0),
   };
 }
@@ -257,6 +270,7 @@ export function SettingsScreen({
   const [currencies, setCurrencies] = useState([]);
   const [industries, setIndustries] = useState([]);
   const [statusTemplates, setStatusTemplates] = useState([]);
+  const [scopeOfWorkTemplates, setScopeOfWorkTemplates] = useState([]);
   const [status, setStatus] = useState({ error: "", success: "" });
   const [modalState, setModalState] = useState({ type: null, mode: "create", itemId: null });
   const [companyForm, setCompanyForm] = useState(companyInitialState);
@@ -271,6 +285,7 @@ export function SettingsScreen({
   const [currencyForm, setCurrencyForm] = useState(currencyInitialState);
   const [industryForm, setIndustryForm] = useState(industryInitialState);
   const [statusTemplateForm, setStatusTemplateForm] = useState(statusTemplateInitialState);
+  const [scopeOfWorkTemplateForm, setScopeOfWorkTemplateForm] = useState(scopeOfWorkTemplateInitialState);
   const currentTab = tabs.some((tab) => tab.id === activeTab) ? activeTab : tabs[0]?.id || "company-info";
 
   const selectedCompany = companies.find((company) => String(company.id) === selectedCompanyId) || null;
@@ -331,14 +346,16 @@ export function SettingsScreen({
       listCompanyIndustries(token, { company_id: selectedCompanyId }),
       listCurrencies(token, { company_id: selectedCompanyId }),
       listPipelineStatusTemplates(token, { company_id: selectedCompanyId }),
+      listScopeOfWorkTemplates(token, { company_id: selectedCompanyId }),
     ])
-      .then(([nextIndustries, nextCurrencies, nextTemplates]) => {
+      .then(([nextIndustries, nextCurrencies, nextTemplates, nextScopeOfWorkTemplates]) => {
         if (!active) {
           return;
         }
         setIndustries(nextIndustries);
         setCurrencies(nextCurrencies);
         setStatusTemplates(nextTemplates);
+        setScopeOfWorkTemplates(nextScopeOfWorkTemplates);
       })
       .catch((error) => {
         if (!active) {
@@ -394,6 +411,7 @@ export function SettingsScreen({
     setCurrencyForm(currencyInitialState);
     setIndustryForm(industryInitialState);
     setStatusTemplateForm(statusTemplateInitialState);
+    setScopeOfWorkTemplateForm(scopeOfWorkTemplateInitialState);
   }
 
   function openCompanyModal(mode, company = null) {
@@ -440,6 +458,14 @@ export function SettingsScreen({
     setMessage();
   }
 
+  function openScopeOfWorkTemplateModal(mode, template = null) {
+    setModalState({ type: "scope-of-work-template", mode, itemId: template?.id || null });
+    setScopeOfWorkTemplateForm(
+      template ? toScopeOfWorkTemplateForm(template) : { ...scopeOfWorkTemplateInitialState, position: scopeOfWorkTemplates.length },
+    );
+    setMessage();
+  }
+
   function updateCompanyForm(event) {
     const { name, value, type, checked } = event.target;
     setCompanyForm((current) => ({ ...current, [name]: type === "checkbox" ? checked : value }));
@@ -468,6 +494,11 @@ export function SettingsScreen({
   function updateStatusTemplateForm(event) {
     const { name, value } = event.target;
     setStatusTemplateForm((current) => ({ ...current, [name]: name === "position" ? Number(value) : value }));
+  }
+
+  function updateScopeOfWorkTemplateForm(event) {
+    const { name, value } = event.target;
+    setScopeOfWorkTemplateForm((current) => ({ ...current, [name]: name === "position" ? Number(value) : value }));
   }
 
   function updateUserForm(event) {
@@ -607,15 +638,17 @@ export function SettingsScreen({
       return;
     }
 
-    const [nextIndustries, nextCurrencies, nextTemplates] = await Promise.all([
+    const [nextIndustries, nextCurrencies, nextTemplates, nextScopeOfWorkTemplates] = await Promise.all([
       listCompanyIndustries(token, { company_id: selectedCompanyId }),
       listCurrencies(token, { company_id: selectedCompanyId }),
       listPipelineStatusTemplates(token, { company_id: selectedCompanyId }),
+      listScopeOfWorkTemplates(token, { company_id: selectedCompanyId }),
     ]);
 
     setIndustries(nextIndustries);
     setCurrencies(nextCurrencies);
     setStatusTemplates(nextTemplates);
+    setScopeOfWorkTemplates(nextScopeOfWorkTemplates);
   }
 
   async function handleIndustrySubmit(event) {
@@ -736,6 +769,32 @@ export function SettingsScreen({
     }
   }
 
+  async function handleScopeOfWorkTemplateSubmit(event) {
+    event.preventDefault();
+    setMessage();
+
+    try {
+      const payload = {
+        name: scopeOfWorkTemplateForm.name.trim(),
+        content: scopeOfWorkTemplateForm.content.trim(),
+        position: scopeOfWorkTemplateForm.position,
+      };
+
+      if (modalState.mode === "edit" && modalState.itemId) {
+        await updateScopeOfWorkTemplate(token, modalState.itemId, payload);
+        setMessage("", "Scope of work template updated.");
+      } else {
+        await createScopeOfWorkTemplate(token, payload, { company_id: selectedCompanyId });
+        setMessage("", "Scope of work template created.");
+      }
+
+      await refreshMasterData();
+      closeModal();
+    } catch (error) {
+      setMessage(error.message || "Unable to save scope of work template.");
+    }
+  }
+
   async function handleRestoreCurrencyDefaults() {
     setMessage();
 
@@ -791,11 +850,13 @@ export function SettingsScreen({
         await deleteCompanyIndustry(token, itemId);
       } else if (kind === "status-template") {
         await deletePipelineStatusTemplate(token, itemId);
+      } else if (kind === "scope-of-work-template") {
+        await deleteScopeOfWorkTemplate(token, itemId);
       } else {
         await deleteUser(token, itemId);
       }
 
-      if (kind === "currency" || kind === "industry" || kind === "status-template") {
+      if (kind === "currency" || kind === "industry" || kind === "status-template" || kind === "scope-of-work-template") {
         await refreshMasterData();
       } else {
         await refreshAll();
@@ -1099,8 +1160,8 @@ export function SettingsScreen({
             <div className={styles.panelHeader}>
               <div>
                 <p className={styles.panelEyebrow}>Master Data</p>
-                <h2>Industries, currencies, and default pipeline stages</h2>
-                <p className={styles.bodyCopy}>Each company manages its own copy of this data. We seed default values and you can restore them later if they get removed.</p>
+                <h2>Industries, currencies, scope templates, and default pipeline stages</h2>
+                <p className={styles.bodyCopy}>Each company manages its own copy of this data. We seed default values where helpful, and scope templates can be reused in project create and edit flows.</p>
               </div>
               {user?.is_platform_admin && companyOptions.length ? (
                 <label className={styles.field}>
@@ -1199,6 +1260,55 @@ export function SettingsScreen({
                               <EditIcon />
                             </button>
                             <button className={`${styles.inlineIconButton} ${styles.inlineDangerIcon}`} type="button" onClick={() => handleDelete("currency", currency.id, currency.name)} aria-label={`Delete ${currency.name}`}>
+                              <TrashIcon />
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </section>
+
+              <section className={styles.panel}>
+                <div className={styles.panelHeader}>
+                  <div>
+                    <p className={styles.panelEyebrow}>Scope Of Work</p>
+                    <h2>Reusable project scope templates</h2>
+                  </div>
+                  <div className={styles.actionsCell}>
+                    <button className={styles.primaryButton} type="button" onClick={() => openScopeOfWorkTemplateModal("create")} disabled={!selectedCompanyId}>
+                      Add scope template
+                    </button>
+                  </div>
+                </div>
+
+                <div className={styles.tableWrap}>
+                  <table className={styles.table}>
+                    <thead>
+                      <tr>
+                        <th>Position</th>
+                        <th>Name</th>
+                        <th>Scope Preview</th>
+                        <th>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {scopeOfWorkTemplates.map((template) => (
+                        <tr key={template.id}>
+                          <td className={styles.monoCell}>{template.position + 1}</td>
+                          <td>{template.name}</td>
+                          <td>{template.content || "No scope text"}</td>
+                          <td className={styles.actionsCell}>
+                            <button className={styles.inlineIconButton} type="button" onClick={() => openScopeOfWorkTemplateModal("edit", template)} aria-label={`Edit ${template.name}`}>
+                              <EditIcon />
+                            </button>
+                            <button
+                              className={`${styles.inlineIconButton} ${styles.inlineDangerIcon}`}
+                              type="button"
+                              onClick={() => handleDelete("scope-of-work-template", template.id, template.name)}
+                              aria-label={`Delete ${template.name}`}
+                            >
                               <TrashIcon />
                             </button>
                           </td>
@@ -1525,6 +1635,37 @@ export function SettingsScreen({
                 />
               </label>
             </div>
+          </SettingsModal>
+        ) : null}
+
+        {modalState.type === "scope-of-work-template" ? (
+          <SettingsModal
+            title={modalState.mode === "edit" ? "Edit scope of work template" : "Create scope of work template"}
+            description="These templates can be selected in the project create and edit modals, then adjusted per project."
+            onClose={closeModal}
+            onSubmit={handleScopeOfWorkTemplateSubmit}
+            submitLabel={modalState.mode === "edit" ? "Save template" : "Create template"}
+          >
+            <div className={styles.formGrid}>
+              <label className={styles.field}>
+                <span>Template name</span>
+                <input name="name" value={scopeOfWorkTemplateForm.name} onChange={updateScopeOfWorkTemplateForm} placeholder="Interior Fit-Out" required />
+              </label>
+              <label className={styles.field}>
+                <span>Position</span>
+                <input name="position" type="number" min="0" value={scopeOfWorkTemplateForm.position} onChange={updateScopeOfWorkTemplateForm} />
+              </label>
+            </div>
+            <label className={styles.field}>
+              <span>Scope of work</span>
+              <textarea
+                name="content"
+                value={scopeOfWorkTemplateForm.content}
+                onChange={updateScopeOfWorkTemplateForm}
+                placeholder="Partition works, gypsum board ceilings, floor finishes, MEP coordination, and final handover requirements."
+                rows={6}
+              />
+            </label>
           </SettingsModal>
         ) : null}
       </div>

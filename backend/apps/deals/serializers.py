@@ -75,6 +75,7 @@ class DealSerializer(serializers.ModelSerializer):
             "amount",
             "probability",
             "expected_close_date",
+            "scope_of_work",
             "days_in_stage",
             "notes",
             "created_at",

@@ -10,8 +10,8 @@ from apps.masterdata.defaults import (
     create_missing_default_pipeline_status_templates,
     set_default_currency,
 )
-from apps.masterdata.models import CompanyIndustry, Currency, PipelineStatusTemplate
-from apps.masterdata.serializers import CompanyIndustrySerializer, CurrencySerializer, PipelineStatusTemplateSerializer
+from apps.masterdata.models import CompanyIndustry, Currency, PipelineStatusTemplate, ScopeOfWorkTemplate
+from apps.masterdata.serializers import CompanyIndustrySerializer, CurrencySerializer, PipelineStatusTemplateSerializer, ScopeOfWorkTemplateSerializer
 
 
 def company_ids_for_user(user):
@@ -74,6 +74,25 @@ def reorder_company_industry(industry, next_position):
     siblings = [item for item in siblings if item.id != industry.id]
     bounded_position = max(0, min(next_position, len(siblings)))
     siblings.insert(bounded_position, industry)
+
+    for index, item in enumerate(siblings):
+        if item.position != index:
+            item.position = index
+            item.save(update_fields=["position"])
+
+
+def normalize_scope_of_work_template_positions(company):
+    for index, template in enumerate(company.scope_of_work_templates.order_by("position", "id")):
+        if template.position != index:
+            template.position = index
+            template.save(update_fields=["position"])
+
+
+def reorder_scope_of_work_template(template, next_position):
+    siblings = list(template.company.scope_of_work_templates.order_by("position", "id"))
+    siblings = [item for item in siblings if item.id != template.id]
+    bounded_position = max(0, min(next_position, len(siblings)))
+    siblings.insert(bounded_position, template)
 
     for index, item in enumerate(siblings):
         if item.position != index:
@@ -221,6 +240,52 @@ class CompanyIndustryDetailView(generics.RetrieveUpdateDestroyAPIView):
         company = instance.company
         instance.delete()
         normalize_company_industry_positions(company)
+
+
+class ScopeOfWorkTemplateListCreateView(generics.ListCreateAPIView):
+    serializer_class = ScopeOfWorkTemplateSerializer
+    permission_classes = [permissions.IsAuthenticated, CanAccessSettings, HasAppPermission]
+    permission_map = {"GET": "master_data.view", "POST": "master_data.manage_industries"}
+
+    def get_queryset(self):
+        company = resolve_company_for_settings(self.request.user, self.request.query_params.get("company_id"))
+        return ScopeOfWorkTemplate.objects.filter(company=company).order_by("position", "id")
+
+    @transaction.atomic
+    def perform_create(self, serializer):
+        company = resolve_company_for_settings(self.request.user, self.request.query_params.get("company_id"))
+        serializer.save(company=company, position=company.scope_of_work_templates.count())
+
+
+class ScopeOfWorkTemplateDetailView(generics.RetrieveUpdateDestroyAPIView):
+    serializer_class = ScopeOfWorkTemplateSerializer
+    permission_classes = [permissions.IsAuthenticated, CanAccessSettings, HasAppPermission]
+    permission_map = {
+        "GET": "master_data.view",
+        "PUT": "master_data.manage_industries",
+        "PATCH": "master_data.manage_industries",
+        "DELETE": "master_data.manage_industries",
+    }
+
+    def get_queryset(self):
+        queryset = ScopeOfWorkTemplate.objects.select_related("company")
+        if self.request.user.is_platform_admin:
+            return queryset
+        return queryset.filter(company_id__in=company_ids_for_user(self.request.user))
+
+    @transaction.atomic
+    def perform_update(self, serializer):
+        template = self.get_object()
+        next_position = serializer.validated_data.pop("position", None)
+        serializer.save()
+        if next_position is not None:
+            reorder_scope_of_work_template(template, next_position)
+
+    @transaction.atomic
+    def perform_destroy(self, instance):
+        company = instance.company
+        instance.delete()
+        normalize_scope_of_work_template_positions(company)
 
 
 class CurrencyRestoreDefaultsView(generics.GenericAPIView):

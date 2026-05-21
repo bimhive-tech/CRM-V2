@@ -10,6 +10,8 @@ from apps.masterdata.views import (
     PipelineStatusTemplateDetailView,
     PipelineStatusTemplateListCreateView,
     PipelineStatusTemplateRestoreDefaultsView,
+    ScopeOfWorkTemplateDetailView,
+    ScopeOfWorkTemplateListCreateView,
 )
 
 
@@ -23,4 +25,6 @@ urlpatterns = [
     path("pipeline-status-templates/", PipelineStatusTemplateListCreateView.as_view(), name="pipeline-status-templates"),
     path("pipeline-status-templates/restore-defaults/", PipelineStatusTemplateRestoreDefaultsView.as_view(), name="pipeline-status-template-restore-defaults"),
     path("pipeline-status-templates/<int:pk>/", PipelineStatusTemplateDetailView.as_view(), name="pipeline-status-template-detail"),
+    path("scope-of-work-templates/", ScopeOfWorkTemplateListCreateView.as_view(), name="scope-of-work-templates"),
+    path("scope-of-work-templates/<int:pk>/", ScopeOfWorkTemplateDetailView.as_view(), name="scope-of-work-template-detail"),
 ]

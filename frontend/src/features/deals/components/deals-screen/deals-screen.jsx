@@ -8,7 +8,7 @@ import { DealsIcon, EditIcon, PlusIcon, SearchIcon, TrashIcon } from "@/componen
 import { Sidebar } from "@/components/dashboard/sidebar/sidebar";
 import { Topbar } from "@/components/dashboard/topbar/topbar";
 import { SearchableSelect } from "@/components/forms/searchable-select";
-import { createDeal, deleteDeal, listContacts, listCrmCompanies, listCurrencies, listDeals, listPipelines, updateDeal } from "@/lib/api/admin";
+import { createDeal, deleteDeal, listContacts, listCrmCompanies, listCurrencies, listDeals, listPipelines, listScopeOfWorkTemplates, updateDeal } from "@/lib/api/admin";
 import { getAccessToken } from "@/lib/session";
 
 import styles from "./deals-screen.module.css";
@@ -21,6 +21,8 @@ const emptyDealForm = {
   stage: "",
   amount: "",
   expectedCloseDate: "",
+  scopeTemplateId: "",
+  scopeOfWork: "",
   notes: "",
 };
 
@@ -175,6 +177,7 @@ function DealModal({
   contactOptions,
   pipelineOptions,
   stageOptions,
+  scopeOfWorkTemplateOptions,
   onChange,
   onClose,
   onSubmit,
@@ -257,6 +260,28 @@ function DealModal({
             <textarea name="notes" value={form.notes} onChange={onChange} rows={4} placeholder="Waiting for final pricing approval and consultant sign-off." />
           </label>
 
+          <label className={styles.field}>
+            <span>Scope template</span>
+            <SearchableSelect
+              ariaLabel="Scope template"
+              name="scopeTemplateId"
+              value={form.scopeTemplateId}
+              onChange={onChange}
+              options={[{ value: "", label: scopeOfWorkTemplateOptions.length ? "No template" : "No templates available" }, ...scopeOfWorkTemplateOptions]}
+            />
+          </label>
+
+          <label className={styles.field}>
+            <span>Scope of work</span>
+            <textarea
+              name="scopeOfWork"
+              value={form.scopeOfWork}
+              onChange={onChange}
+              rows={6}
+              placeholder="Describe the project scope of work here."
+            />
+          </label>
+
           <div className={styles.modalActions}>
             <button className={styles.secondaryButton} type="button" onClick={onClose}>
               Cancel
@@ -278,6 +303,7 @@ export function DealsScreen({ user }) {
   const [companies, setCompanies] = useState([]);
   const [contacts, setContacts] = useState([]);
   const [deals, setDeals] = useState([]);
+  const [scopeOfWorkTemplates, setScopeOfWorkTemplates] = useState([]);
   const [currencySymbol, setCurrencySymbol] = useState("EGP");
   const [selectedPipelineId, setSelectedPipelineId] = useState("");
   const [search, setSearch] = useState("");
@@ -318,6 +344,10 @@ export function DealsScreen({ user }) {
   const allCompanyOptions = useMemo(
     () => companies.map((company) => ({ value: String(company.id), label: company.name })),
     [companies],
+  );
+  const scopeOfWorkTemplateOptions = useMemo(
+    () => scopeOfWorkTemplates.map((template) => ({ value: String(template.id), label: template.name })),
+    [scopeOfWorkTemplates],
   );
   const visibleContactOptions = useMemo(() => {
     const companyContacts = dealForm.companyId
@@ -399,11 +429,12 @@ export function DealsScreen({ user }) {
 
     async function hydrate() {
       try {
-        const [pipelinesResult, companiesResult, contactsResult, currenciesResult] = await Promise.allSettled([
+        const [pipelinesResult, companiesResult, contactsResult, currenciesResult, scopeOfWorkTemplatesResult] = await Promise.allSettled([
           listPipelines(tokenValue, { kind: "deals" }),
           listCrmCompanies(tokenValue, { page: 1, page_size: 200 }),
           listContacts(tokenValue, { page: 1, page_size: 300 }),
           listCurrencies(tokenValue, { company_id: selectedCompanyId }),
+          listScopeOfWorkTemplates(tokenValue, { company_id: selectedCompanyId }),
         ]);
 
         if (!active) {
@@ -420,18 +451,20 @@ export function DealsScreen({ user }) {
         const normalizedContacts =
           contactsResult.status === "fulfilled" ? normalizePaginatedResponse(contactsResult.value).results : [];
         const currenciesData = currenciesResult.status === "fulfilled" ? currenciesResult.value || [] : [];
+        const nextScopeOfWorkTemplates = scopeOfWorkTemplatesResult.status === "fulfilled" ? scopeOfWorkTemplatesResult.value || [] : [];
         const defaultCurrency = currenciesData.find((currency) => currency.is_default) || currenciesData[0];
 
         setPipelines(pipelinesData);
         setCompanies(normalizedCompanies);
         setContacts(normalizedContacts);
+        setScopeOfWorkTemplates(nextScopeOfWorkTemplates);
         setCurrencySymbol(defaultCurrency?.symbol || "EGP");
 
         const storedPipeline = pipelinesData.find((pipeline) => String(pipeline.id) === initialStoredPipelineId);
         const nextPipelineId = storedPipeline ? String(storedPipeline.id) : pipelinesData[0] ? String(pipelinesData[0].id) : "";
         setSelectedPipelineId(nextPipelineId);
 
-        const helperFailures = [companiesResult, contactsResult, currenciesResult].filter((result) => result.status === "rejected");
+        const helperFailures = [companiesResult, contactsResult, currenciesResult, scopeOfWorkTemplatesResult].filter((result) => result.status === "rejected");
         setStatus({
           loading: false,
           error: helperFailures.length ? "" : "",
@@ -518,20 +551,23 @@ export function DealsScreen({ user }) {
   }
 
   async function loadDealOptions() {
-    const [nextPipelines, nextCompanies, nextContacts] = await Promise.all([
+    const [nextPipelines, nextCompanies, nextContacts, nextScopeOfWorkTemplates] = await Promise.all([
       pipelines.length ? Promise.resolve(pipelines) : listPipelines(token, { kind: "deals" }),
       companies.length ? Promise.resolve(companies) : listCrmCompanies(token, { page: 1, page_size: 200 }).then((data) => normalizePaginatedResponse(data).results),
       contacts.length ? Promise.resolve(contacts) : listContacts(token, { page: 1, page_size: 300 }).then((data) => normalizePaginatedResponse(data).results),
+      scopeOfWorkTemplates.length ? Promise.resolve(scopeOfWorkTemplates) : listScopeOfWorkTemplates(token, { company_id: selectedCompanyId }),
     ]);
 
     setPipelines(nextPipelines || []);
     setCompanies(nextCompanies || []);
     setContacts(nextContacts || []);
+    setScopeOfWorkTemplates(nextScopeOfWorkTemplates || []);
 
     return {
       pipelines: nextPipelines || [],
       companies: nextCompanies || [],
       contacts: nextContacts || [],
+      scopeOfWorkTemplates: nextScopeOfWorkTemplates || [],
     };
   }
 
@@ -540,6 +576,13 @@ export function DealsScreen({ user }) {
 
     setDealForm((current) => {
       const nextState = { ...current, [name]: value };
+      if (name === "scopeTemplateId") {
+        const nextTemplate = scopeOfWorkTemplates.find((template) => String(template.id) === value) || null;
+        nextState.scopeTemplateId = value;
+        if (nextTemplate) {
+          nextState.scopeOfWork = nextTemplate.content || "";
+        }
+      }
       if (name === "pipelineId") {
         const nextPipeline = pipelines.find((pipeline) => String(pipeline.id) === value);
         const compatibleCompanies = nextPipeline ? companies.filter((company) => pipelineMatchesCompany(nextPipeline, company)) : companies;
@@ -602,6 +645,8 @@ export function DealsScreen({ user }) {
         companyId: defaultCompany ? String(defaultCompany.id) : "",
         pipelineId: firstPipeline ? String(firstPipeline.id) : "",
         stage: firstPipeline?.statuses?.[0]?.name || "",
+        scopeTemplateId: "",
+        scopeOfWork: "",
       });
       setModalState({ open: true, mode: "create", dealId: null });
     } catch (error) {
@@ -625,6 +670,8 @@ export function DealsScreen({ user }) {
       stage: deal.stage || "",
       amount: String(deal.amount || ""),
       expectedCloseDate: deal.expected_close_date || "",
+      scopeTemplateId: "",
+      scopeOfWork: deal.scope_of_work || "",
       notes: deal.notes || "",
     });
     setModalState({ open: true, mode: "edit", dealId: deal.id });
@@ -672,6 +719,7 @@ export function DealsScreen({ user }) {
       stage: dealForm.stage,
       amount: dealForm.amount ? Number(dealForm.amount) : 0,
       expected_close_date: dealForm.expectedCloseDate || null,
+      scope_of_work: dealForm.scopeOfWork.trim(),
       notes: dealForm.notes.trim(),
     };
 
@@ -942,6 +990,7 @@ export function DealsScreen({ user }) {
             contactOptions={visibleContactOptions}
             pipelineOptions={visiblePipelineOptions}
             stageOptions={stageOptions}
+            scopeOfWorkTemplateOptions={scopeOfWorkTemplateOptions}
             onChange={updateDealForm}
             onClose={closeModal}
             onSubmit={handleDealSubmit}

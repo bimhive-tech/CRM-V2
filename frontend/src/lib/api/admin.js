@@ -271,6 +271,36 @@ export function restoreDefaultPipelineStatusTemplates(token, query = {}) {
   });
 }
 
+export function listScopeOfWorkTemplates(token, query = {}) {
+  return apiRequest(buildApiPath("/master-data/scope-of-work-templates/", query), {
+    method: "GET",
+    headers: authHeaders(token),
+  });
+}
+
+export function createScopeOfWorkTemplate(token, payload, query = {}) {
+  return apiRequest(buildApiPath("/master-data/scope-of-work-templates/", query), {
+    method: "POST",
+    headers: authHeaders(token),
+    body: JSON.stringify(payload),
+  });
+}
+
+export function updateScopeOfWorkTemplate(token, templateId, payload) {
+  return apiRequest(`/master-data/scope-of-work-templates/${templateId}/`, {
+    method: "PATCH",
+    headers: authHeaders(token),
+    body: JSON.stringify(payload),
+  });
+}
+
+export function deleteScopeOfWorkTemplate(token, templateId) {
+  return apiRequest(`/master-data/scope-of-work-templates/${templateId}/`, {
+    method: "DELETE",
+    headers: authHeaders(token),
+  });
+}
+
 export function createRole(token, payload) {
   return apiRequest("/auth/roles/", {
     method: "POST",
