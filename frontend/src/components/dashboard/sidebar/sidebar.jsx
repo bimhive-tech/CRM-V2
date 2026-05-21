@@ -29,7 +29,7 @@ const navSections = [
       { id: "contacts", label: "Contacts", icon: <PeopleIcon />, href: "/contacts", match: ["/contacts"] },
       { id: "companies", label: "Companies", icon: <OfficeIcon />, href: "/companies", match: ["/companies"] },
       { id: "deals", label: "Deals", icon: <DealsIcon />, href: "/deals", match: ["/deals"] },
-      { id: "activity", label: "Activity", icon: <ActivityIcon />, href: "/activity", match: ["/activity"] },
+      { id: "activity", label: "Activity", icon: <ActivityIcon />, href: "/activity", match: ["/activity"], adminOnlyActivity: true },
     ],
   },
   {
@@ -133,7 +133,7 @@ export function Sidebar({ user, onNavigate }) {
             <p className={styles.sectionTitle}>{section.title}</p>
             <div className={styles.sectionItems}>
               {section.items.map((item) => (
-                item.requiresSettingsAccess && !user?.can_access_settings ? null : (
+                item.requiresSettingsAccess && !user?.can_access_settings ? null : item.adminOnlyActivity && !user?.is_platform_admin && !user?.is_company_admin ? null : (
                 <button
                   key={item.id}
                   className={`${styles.navItem} ${isItemActive(item) ? styles.navItemActive : ""}`}

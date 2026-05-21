@@ -203,9 +203,9 @@
 .row {
   display: grid;
   grid-template-columns: 40px minmax(0, 1fr) auto;
-  align-items: flex-start;
+  align-items: start;
   gap: 14px;
-  padding: 14px 20px;
+  padding: 18px 20px;
   border-top: 1px solid var(--border);
 }
 
@@ -213,9 +213,10 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
+  width: 30px;
+  height: 30px;
   border-radius: 10px;
+  margin-top: 2px;
 }
 
 .iconWrap :global(svg) {
@@ -260,35 +261,28 @@
 .rowHeadline {
   margin: 0;
   color: var(--ink);
-  font-size: 13px;
-  line-height: 1.45;
+  font-size: 16px;
+  line-height: 1.35;
 }
 
 .muted {
-  color: var(--ink-2);
-}
-
-.rowMeta {
-  margin: 4px 0 0;
   color: var(--ink-3);
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
+  font-weight: 400;
 }
 
 .description {
-  margin: 6px 0 0;
+  margin: 4px 0 0;
   color: var(--ink-2);
-  font-size: 13px;
-  line-height: 1.55;
+  font-size: 15px;
+  line-height: 1.5;
 }
 
 .time {
   color: var(--ink-3);
-  font-size: 12px;
+  font-size: 13px;
   white-space: nowrap;
   text-align: right;
+  padding-top: 2px;
 }
 
 .modalOverlay {
@@ -344,6 +338,7 @@
 
   .time {
     grid-column: 2;
+    margin-top: 6px;
     text-align: left;
   }
 

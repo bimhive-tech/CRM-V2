@@ -166,18 +166,15 @@ export function ActivityScreen({ user }) {
                     <article key={entry.id} className={styles.row}>
                       <div className={`${styles.iconWrap} ${styles[`tone${visual.tone[0].toUpperCase()}${visual.tone.slice(1)}`]}`}>{visual.icon}</div>
                       <div className={styles.rowBody}>
-                        <div className={styles.rowHeadline}>
-                          <p>
-                            <strong>{entry.actor_name}</strong>
-                            <span className={styles.muted}> - {entry.title}</span>
-                          </p>
-                          <time className={styles.time} dateTime={entry.created_at}>
-                            {formatRelativeTime(entry.created_at)}
-                          </time>
-                        </div>
-                        <p className={styles.rowMeta}>{entry.event_type_label}</p>
+                        <p className={styles.rowHeadline}>
+                          <strong>{entry.actor_name}</strong>
+                          <span className={styles.muted}> · {entry.title}</span>
+                        </p>
                         <p className={styles.description}>{entry.description || entry.target_label || entry.event_type_label}</p>
                       </div>
+                      <time className={styles.time} dateTime={entry.created_at}>
+                        {formatRelativeTime(entry.created_at)}
+                      </time>
                     </article>
                   );
                 })
