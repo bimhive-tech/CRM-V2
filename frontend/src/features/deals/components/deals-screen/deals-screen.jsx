@@ -265,12 +265,16 @@ export function DealsScreen({ user }) {
   const pipelineOptions = useMemo(() => pipelines.map((pipeline) => ({ value: String(pipeline.id), label: pipeline.name })), [pipelines]);
   const companyOptions = useMemo(() => companies.map((company) => ({ value: String(company.id), label: company.name })), [companies]);
   const visibleContactOptions = useMemo(() => {
-    const source = dealForm.companyId ? contacts.filter((contact) => String(contact.company?.id || "") === dealForm.companyId) : contacts;
+    const companyContacts = dealForm.companyId
+      ? companies.find((company) => String(company.id) === dealForm.companyId)?.contacts || []
+      : companies.flatMap((company) => company.contacts || []);
+    const fallbackContacts = dealForm.companyId ? contacts.filter((contact) => String(contact.company?.id || "") === dealForm.companyId) : contacts;
+    const source = companyContacts.length ? companyContacts : fallbackContacts;
     return source.map((contact) => ({
       value: String(contact.id),
       label: `${contact.full_name} - ${contact.title || "Contact"}`,
     }));
-  }, [contacts, dealForm.companyId]);
+  }, [companies, contacts, dealForm.companyId]);
   const selectedFormPipeline = useMemo(
     () => pipelines.find((pipeline) => String(pipeline.id) === dealForm.pipelineId) || null,
     [pipelines, dealForm.pipelineId],
@@ -492,9 +496,12 @@ export function DealsScreen({ user }) {
         return;
       }
 
+      const firstCompanyWithContacts = nextCompanies.find((company) => (company.contacts || []).length > 0) || null;
+      const defaultCompany = firstCompanyWithContacts || nextCompanies[0] || null;
+
       setDealForm({
         ...emptyDealForm,
-        companyId: nextCompanies[0] ? String(nextCompanies[0].id) : "",
+        companyId: defaultCompany ? String(defaultCompany.id) : "",
         pipelineId: firstPipeline ? String(firstPipeline.id) : "",
         stage: firstPipeline?.statuses?.[0]?.name || "",
       });
