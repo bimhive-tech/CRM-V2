@@ -81,9 +81,21 @@ class PipelineStatusUpdateSerializer(serializers.ModelSerializer):
 
 
 class PipelineInviteUserSerializer(serializers.ModelSerializer):
+    role_labels = serializers.SerializerMethodField()
+
+    def get_role_labels(self, obj):
+        company = self.context.get("company")
+        roles = obj.roles.all()
+        if company is not None:
+            roles = roles.filter(company=company)
+        labels = list(roles.order_by("name").values_list("name", flat=True))
+        if labels:
+            return labels
+        return [obj.get_role_display()] if obj.role else []
+
     class Meta:
         model = User
-        fields = ["id", "full_name", "email"]
+        fields = ["id", "full_name", "email", "role_labels"]
 
 
 class PipelineUserSummarySerializer(serializers.ModelSerializer):
@@ -93,8 +105,14 @@ class PipelineUserSummarySerializer(serializers.ModelSerializer):
 
 
 class PipelineMembershipSerializer(serializers.ModelSerializer):
-    user = PipelineInviteUserSerializer(read_only=True)
+    user = serializers.SerializerMethodField()
     pipeline = serializers.SerializerMethodField()
+
+    def get_user(self, obj):
+        return PipelineInviteUserSerializer(
+            obj.user,
+            context={**self.context, "company": obj.pipeline.company},
+        ).data
 
     def get_pipeline(self, obj):
         return {

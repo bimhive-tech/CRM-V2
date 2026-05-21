@@ -247,6 +247,7 @@ class PipelineInviteOptionsView(generics.GenericAPIView):
             request.user.__class__.objects.filter(companies__id__in=allowed_company_ids)
             .exclude(id=request.user.id)
             .distinct()
+            .prefetch_related("roles")
             .order_by("full_name", "email")
         )
         serializer = PipelineInviteOptionsSerializer(
@@ -317,6 +318,7 @@ class PipelineMembershipListView(generics.ListAPIView):
     def get_queryset(self):
         queryset = (
             PipelineMembershipSerializer.Meta.model.objects.select_related("pipeline", "user", "pipeline__company")
+            .prefetch_related("user__roles")
             .filter(pipeline__in=inviteable_pipelines_queryset(self.request.user))
             .order_by("pipeline__kind", "pipeline__name", "user__full_name", "user__email")
         )

@@ -24,7 +24,7 @@ import {
 } from "@/lib/api/admin";
 import { getAccessToken } from "@/lib/session";
 
-import { ConfirmDeleteModal, PipelineModal, PipelineTeamModal } from "./pipeline-modal";
+import { ConfirmDeleteModal, PipelineMemberPermissionsModal, PipelineModal, PipelineTeamModal } from "./pipeline-modal";
 import styles from "./pipeline-screen.module.css";
 
 const DEFAULT_STATUS_COLOR = "#7C5F35";
@@ -159,6 +159,8 @@ export function PipelineScreen({ user }) {
     memberships: [],
     membershipSavingId: null,
     membershipRemovingId: null,
+    editingMembershipId: null,
+    editForm: null,
   });
 
   const copy = getTabCopy(activeTab);
@@ -169,6 +171,10 @@ export function PipelineScreen({ user }) {
   const selectedPipelineAccess = selectedPipeline?.access || null;
   const selectedPipelineTeam = selectedPipeline?.team || [];
   const visibleTopbarTeam = selectedPipeline ? selectedPipelineTeam : uniqueTeamUsers(pipelines);
+  const editingMembership = useMemo(
+    () => teamState.memberships.find((membership) => membership.id === teamState.editingMembershipId) || null,
+    [teamState.editingMembershipId, teamState.memberships],
+  );
   const visibleStatuses = useMemo(
     () => dragState.previewStatuses || selectedPipeline?.statuses || [],
     [dragState.previewStatuses, selectedPipeline?.statuses],
@@ -405,6 +411,8 @@ export function PipelineScreen({ user }) {
         memberships: memberships || [],
         membershipSavingId: null,
         membershipRemovingId: null,
+        editingMembershipId: null,
+        editForm: null,
       });
     } catch (error) {
       setTeamState((current) => ({ ...current, open: false, loading: false }));
@@ -419,38 +427,106 @@ export function PipelineScreen({ user }) {
       memberships: [],
       membershipSavingId: null,
       membershipRemovingId: null,
+      editingMembershipId: null,
+      editForm: null,
     });
   }
 
-  async function handleTeamPermissionChange(membershipId, field, checked) {
+  function openTeamMemberEditor(membershipId) {
     const membership = teamState.memberships.find((item) => item.id === membershipId);
     if (!membership) {
       return;
     }
 
-    setTeamState((current) => ({ ...current, membershipSavingId: membershipId }));
+    setTeamState((current) => ({
+      ...current,
+      open: false,
+      editingMembershipId: membershipId,
+      editForm: {
+        has_full_access: membership.has_full_access,
+        can_invite_members: membership.can_invite_members,
+        can_edit_pipeline: membership.can_edit_pipeline,
+        can_delete_pipeline: membership.can_delete_pipeline,
+        can_manage_statuses: membership.can_manage_statuses,
+        can_view_contacts: membership.can_view_contacts,
+        can_move_contacts: membership.can_move_contacts,
+        can_manage_contacts: membership.can_manage_contacts,
+        can_view_companies: membership.can_view_companies,
+        can_manage_companies: membership.can_manage_companies,
+        can_view_deals: membership.can_view_deals,
+        can_move_deals: membership.can_move_deals,
+        can_manage_deals: membership.can_manage_deals,
+      },
+    }));
+  }
+
+  function closeTeamMemberEditor(reopenTeamModal = true) {
+    setTeamState((current) => ({
+      ...current,
+      open: reopenTeamModal,
+      editingMembershipId: null,
+      editForm: null,
+      membershipSavingId: null,
+    }));
+  }
+
+  function handleTeamPermissionFormChange(field, checked) {
+    setTeamState((current) => {
+      if (!current.editForm) {
+        return current;
+      }
+
+      if (field === "has_full_access") {
+        return {
+          ...current,
+          editForm: {
+            ...current.editForm,
+            has_full_access: checked,
+            can_invite_members: checked ? true : current.editForm.can_invite_members,
+            can_edit_pipeline: checked ? true : current.editForm.can_edit_pipeline,
+            can_delete_pipeline: checked ? true : current.editForm.can_delete_pipeline,
+            can_manage_statuses: checked ? true : current.editForm.can_manage_statuses,
+            can_view_contacts: checked ? true : current.editForm.can_view_contacts,
+            can_move_contacts: checked ? true : current.editForm.can_move_contacts,
+            can_manage_contacts: checked ? true : current.editForm.can_manage_contacts,
+            can_view_companies: checked ? true : current.editForm.can_view_companies,
+            can_manage_companies: checked ? true : current.editForm.can_manage_companies,
+            can_view_deals: checked ? true : current.editForm.can_view_deals,
+            can_move_deals: checked ? true : current.editForm.can_move_deals,
+            can_manage_deals: checked ? true : current.editForm.can_manage_deals,
+          },
+        };
+      }
+
+      return {
+        ...current,
+        editForm: {
+          ...current.editForm,
+          [field]: checked,
+        },
+      };
+    });
+  }
+
+  async function handleTeamPermissionSave(event) {
+    event.preventDefault();
+
+    if (!editingMembership || !teamState.editForm) {
+      return;
+    }
+
+    setTeamState((current) => ({ ...current, membershipSavingId: editingMembership.id }));
     setStatus((current) => ({ ...current, error: "", success: "" }));
 
     try {
-      const updated = await updatePipelineMembership(token, membershipId, {
-        has_full_access: field === "has_full_access" ? checked : membership.has_full_access,
-        can_invite_members: field === "can_invite_members" ? checked : membership.can_invite_members,
-        can_edit_pipeline: field === "can_edit_pipeline" ? checked : membership.can_edit_pipeline,
-        can_delete_pipeline: field === "can_delete_pipeline" ? checked : membership.can_delete_pipeline,
-        can_manage_statuses: field === "can_manage_statuses" ? checked : membership.can_manage_statuses,
-        can_view_contacts: field === "can_view_contacts" ? checked : membership.can_view_contacts,
-        can_move_contacts: field === "can_move_contacts" ? checked : membership.can_move_contacts,
-        can_manage_contacts: field === "can_manage_contacts" ? checked : membership.can_manage_contacts,
-        can_view_companies: field === "can_view_companies" ? checked : membership.can_view_companies,
-        can_manage_companies: field === "can_manage_companies" ? checked : membership.can_manage_companies,
-        can_view_deals: field === "can_view_deals" ? checked : membership.can_view_deals,
-        can_move_deals: field === "can_move_deals" ? checked : membership.can_move_deals,
-        can_manage_deals: field === "can_manage_deals" ? checked : membership.can_manage_deals,
-      });
+      const updated = await updatePipelineMembership(token, editingMembership.id, teamState.editForm);
       setTeamState((current) => ({
         ...current,
+        open: true,
+        editingMembershipId: null,
+        editForm: null,
         membershipSavingId: null,
-        memberships: current.memberships.map((item) => (item.id === membershipId ? { ...item, ...updated } : item)),
+        memberships: current.memberships.map((item) => (item.id === editingMembership.id ? { ...item, ...updated } : item)),
       }));
       await loadPipelines(activeTab, selectedPipelineId);
       setStatus({ loading: false, error: "", success: "Pipeline team updated." });
@@ -1098,11 +1174,22 @@ export function PipelineScreen({ user }) {
           pipelineName={selectedPipeline?.name}
           memberships={teamState.memberships}
           loading={teamState.loading}
-          membershipSavingId={teamState.membershipSavingId}
           membershipRemovingId={teamState.membershipRemovingId}
-          onPermissionChange={handleTeamPermissionChange}
+          onMembershipEdit={openTeamMemberEditor}
           onMembershipRemove={handleTeamMembershipRemove}
           onClose={closeTeamModal}
+        />
+      ) : null}
+
+      {editingMembership && teamState.editForm ? (
+        <PipelineMemberPermissionsModal
+          pipelineName={selectedPipeline?.name}
+          membership={editingMembership}
+          value={teamState.editForm}
+          saving={teamState.membershipSavingId === editingMembership.id}
+          onPermissionChange={handleTeamPermissionFormChange}
+          onClose={() => closeTeamMemberEditor(true)}
+          onSubmit={handleTeamPermissionSave}
         />
       ) : null}
 

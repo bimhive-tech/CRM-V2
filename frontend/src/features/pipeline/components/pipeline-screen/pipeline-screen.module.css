@@ -626,61 +626,168 @@
   display: flex;
   flex-direction: column;
   gap: 12px;
-  max-height: 280px;
+  max-height: 320px;
   overflow-y: auto;
   padding-right: 4px;
 }
 
-.memberCard,
 .membersEmptyState {
   border: 1px solid var(--border);
   border-radius: 12px;
   background: var(--surface-2);
 }
 
-.memberCard {
+.memberListRow {
   display: flex;
-  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
   gap: 12px;
   padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface-2);
 }
 
 .memberIdentity {
   display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
+  align-items: center;
+  min-width: 0;
+  flex: 1;
   gap: 12px;
+}
+
+.memberAvatarBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  flex-shrink: 0;
+  box-shadow:
+    0 0 0 1px color-mix(in oklch, currentColor 16%, transparent),
+    0 10px 22px color-mix(in oklch, currentColor 10%, transparent);
+}
+
+.memberCopy {
+  min-width: 0;
 }
 
 .memberIdentity strong,
 .membersEmptyState strong {
+  display: block;
   color: var(--ink);
   font-size: 13px;
   font-weight: 600;
 }
 
-.memberPermissionGrid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
+.memberCopy p {
+  margin: 2px 0 0;
+  color: var(--ink-2);
+  font-size: 12px;
+  line-height: 1.45;
 }
 
-.memberRemoveButton {
-  min-height: 32px;
-  padding: 7px 12px;
-  border: 1px solid color-mix(in oklch, var(--danger) 24%, var(--border));
-  border-radius: var(--radius-button);
-  background: color-mix(in oklch, var(--danger) 6%, var(--surface));
-  color: var(--danger);
+.memberRoleLine {
+  color: var(--accent-deep);
+  font-weight: 600;
+}
+
+.memberActions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.memberActionButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--ink);
   cursor: pointer;
-  font: inherit;
-  font-size: 13px;
-  font-weight: 500;
 }
 
-.memberRemoveButton:disabled {
+.memberActionButtonDanger {
+  color: var(--danger);
+}
+
+.memberActionButton:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+}
+
+.memberEditorIdentity {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface-2);
+}
+
+.memberPermissionsWrap {
+  min-width: 0;
+  overflow: auto;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface);
+}
+
+.memberPermissionsTable {
+  width: 100%;
+  min-width: 640px;
+  border-collapse: collapse;
+}
+
+.memberPermissionsTable th,
+.memberPermissionsTable td {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+
+.memberPermissionsTable th {
+  color: var(--ink-3);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  background: var(--surface-2);
+}
+
+.memberPermissionLabelCell {
+  min-width: 280px;
+}
+
+.memberPermissionLabelCell strong {
+  display: block;
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.memberPermissionLabelCell p {
+  margin: 4px 0 0;
+  color: var(--ink-2);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.memberPermissionCell {
+  width: 120px;
+  text-align: center;
+  vertical-align: middle;
 }
 
 .membersEmptyState {
@@ -790,8 +897,18 @@
     grid-template-columns: 1fr;
   }
 
-  .memberPermissionGrid {
-    grid-template-columns: 1fr;
+  .memberListRow,
+  .memberEditorIdentity {
+    align-items: flex-start;
+  }
+
+  .memberListRow {
+    flex-direction: column;
+  }
+
+  .memberActions {
+    width: 100%;
+    justify-content: flex-end;
   }
 
   .boardScroller {

@@ -1,4 +1,100 @@
+import { EditIcon, TrashIcon } from "@/components/dashboard/dashboard-icons";
+
 import styles from "./pipeline-screen.module.css";
+
+const PIPELINE_PERMISSION_GROUPS = [
+  {
+    title: "Overview",
+    permissions: [
+      ["has_full_access", "Full pipeline access", "Turns on every pipeline permission below for this teammate."],
+    ],
+  },
+  {
+    title: "Workspace Control",
+    permissions: [
+      ["can_invite_members", "Invite members", "Invite teammates to this pipeline and manage their access."],
+      ["can_edit_pipeline", "Edit pipeline", "Rename this pipeline and update its core configuration."],
+      ["can_delete_pipeline", "Delete pipeline", "Delete this pipeline when the workspace is ready to remove it."],
+      ["can_manage_statuses", "Manage statuses", "Create, edit, reorder, and delete pipeline statuses."],
+    ],
+  },
+  {
+    title: "Contacts",
+    permissions: [
+      ["can_view_contacts", "View contacts", "Open and see contacts that belong to this pipeline."],
+      ["can_move_contacts", "Move contact cards", "Move contacts between statuses on the board."],
+      ["can_manage_contacts", "Create and edit contacts", "Add new contacts and update existing contact details."],
+    ],
+  },
+  {
+    title: "CRM Companies",
+    permissions: [
+      ["can_view_companies", "View companies", "See companies connected to this pipeline."],
+      ["can_manage_companies", "Create and edit companies", "Add companies and update company details in this pipeline."],
+    ],
+  },
+  {
+    title: "Deals",
+    permissions: [
+      ["can_view_deals", "View deals", "Open and see deals that belong to this pipeline."],
+      ["can_move_deals", "Move deal cards", "Move deals between statuses on the board."],
+      ["can_manage_deals", "Create and edit deals", "Add deals and update existing deal details."],
+    ],
+  },
+];
+
+function initialsForName(name) {
+  return (
+    (name || "")
+      .split(" ")
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((part) => part[0]?.toUpperCase())
+      .join("") || "U"
+  );
+}
+
+function hueForName(name) {
+  return (name || "user").split("").reduce((sum, character) => sum + character.charCodeAt(0), 0) % 360;
+}
+
+function PermissionMatrix({ value, onPermissionChange, disabled = false }) {
+  return (
+    <div className={styles.memberPermissionsWrap}>
+      <table className={styles.memberPermissionsTable}>
+        <thead>
+          <tr>
+            <th>Permission</th>
+            <th>Access</th>
+          </tr>
+        </thead>
+        <tbody>
+          {PIPELINE_PERMISSION_GROUPS.flatMap((group) =>
+            group.permissions.map(([field, label, description], index) => (
+              <tr key={field}>
+                <td className={styles.memberPermissionLabelCell}>
+                  {index === 0 ? <span className={styles.permissionGroupLabel}>{group.title}</span> : null}
+                  <strong>{label}</strong>
+                  <p>{description}</p>
+                </td>
+                <td className={styles.memberPermissionCell}>
+                  <label className={styles.permissionToggle}>
+                    <input
+                      type="checkbox"
+                      checked={field === "has_full_access" ? value.has_full_access : value.has_full_access || value[field]}
+                      onChange={(event) => onPermissionChange(field, event.target.checked)}
+                      disabled={disabled || (value.has_full_access && field !== "has_full_access")}
+                    />
+                  </label>
+                </td>
+              </tr>
+            )),
+          )}
+        </tbody>
+      </table>
+    </div>
+  );
+}
 
 export function PipelineModal({
   title,
@@ -306,9 +402,8 @@ export function PipelineTeamModal({
   pipelineName,
   memberships,
   loading = false,
-  membershipSavingId = null,
   membershipRemovingId = null,
-  onPermissionChange,
+  onMembershipEdit,
   onMembershipRemove,
   onClose,
 }) {
@@ -318,7 +413,7 @@ export function PipelineTeamModal({
         <div className={styles.modalHeader}>
           <div>
             <h2 id="pipeline-team-modal-title">Manage Team</h2>
-            <p>Review who can access {pipelineName || "this pipeline"} and fine-tune what they can do inside it.</p>
+            <p>Review who can access {pipelineName || "this pipeline"}, then open any teammate to edit their pipeline permissions.</p>
           </div>
           <button className={styles.iconButton} type="button" onClick={onClose} aria-label="Close modal">
             x
@@ -333,47 +428,46 @@ export function PipelineTeamModal({
           ) : memberships.length ? (
             <div className={styles.membersList}>
               {memberships.map((membership) => (
-                <article key={membership.id} className={styles.memberCard}>
+                <article key={membership.id} className={styles.memberListRow}>
                   <div className={styles.memberIdentity}>
-                    <div>
+                    <span
+                      className={styles.memberAvatarBadge}
+                      style={{
+                        backgroundColor: `hsl(${hueForName(membership.user.full_name)} 82% 92%)`,
+                        color: `hsl(${hueForName(membership.user.full_name)} 42% 32%)`,
+                      }}
+                    >
+                      {initialsForName(membership.user.full_name)}
+                    </span>
+                    <div className={styles.memberCopy}>
                       <strong>{membership.user.full_name}</strong>
+                      <p className={styles.memberRoleLine}>
+                        {membership.user.role_labels?.length ? membership.user.role_labels.join(", ") : "User"}
+                      </p>
                       <p>{membership.user.email}</p>
                     </div>
+                  </div>
+                  <div className={styles.memberActions}>
                     <button
-                      className={styles.memberRemoveButton}
+                      className={styles.memberActionButton}
+                      type="button"
+                      onClick={() => onMembershipEdit(membership.id)}
+                      disabled={membershipRemovingId === membership.id}
+                      aria-label={`Edit ${membership.user.full_name}`}
+                      title="Edit permissions"
+                    >
+                      <EditIcon />
+                    </button>
+                    <button
+                      className={`${styles.memberActionButton} ${styles.memberActionButtonDanger}`}
                       type="button"
                       onClick={() => onMembershipRemove(membership.id)}
-                      disabled={membershipRemovingId === membership.id || membershipSavingId === membership.id}
+                      disabled={membershipRemovingId === membership.id}
+                      aria-label={`Remove ${membership.user.full_name}`}
+                      title="Remove from pipeline"
                     >
-                      {membershipRemovingId === membership.id ? "Removing..." : "Remove"}
+                      <TrashIcon />
                     </button>
-                  </div>
-                  <div className={styles.memberPermissionGrid}>
-                    {[
-                      ["has_full_access", "Full pipeline access"],
-                      ["can_invite_members", "Can invite members"],
-                      ["can_edit_pipeline", "Can edit pipeline"],
-                      ["can_delete_pipeline", "Can delete pipeline"],
-                      ["can_manage_statuses", "Can manage statuses"],
-                      ["can_view_contacts", "View contacts"],
-                      ["can_move_contacts", "Move contact cards"],
-                      ["can_manage_contacts", "Create and edit contacts"],
-                      ["can_view_companies", "View companies"],
-                      ["can_manage_companies", "Create and edit companies"],
-                      ["can_view_deals", "View deals"],
-                      ["can_move_deals", "Move deal cards"],
-                      ["can_manage_deals", "Create and edit deals"],
-                    ].map(([field, label]) => (
-                      <label key={field} className={styles.optionCard}>
-                        <input
-                          type="checkbox"
-                          checked={membership[field]}
-                          onChange={(event) => onPermissionChange(membership.id, field, event.target.checked)}
-                          disabled={membershipSavingId === membership.id || membershipRemovingId === membership.id || (membership.has_full_access && field !== "has_full_access")}
-                        />
-                        <span>{label}</span>
-                      </label>
-                    ))}
                   </div>
                 </article>
               ))}
@@ -391,6 +485,69 @@ export function PipelineTeamModal({
             </button>
           </div>
         </div>
+      </div>
+    </div>
+  );
+}
+
+export function PipelineMemberPermissionsModal({
+  pipelineName,
+  membership,
+  value,
+  saving = false,
+  onPermissionChange,
+  onClose,
+  onSubmit,
+}) {
+  if (!membership) {
+    return null;
+  }
+
+  const memberHue = hueForName(membership.user.full_name);
+
+  return (
+    <div className={styles.modalOverlay} role="presentation">
+      <div className={`${styles.modal} ${styles.inviteModal}`} role="dialog" aria-modal="true" aria-labelledby="pipeline-member-permissions-modal-title">
+        <div className={styles.modalHeader}>
+          <div>
+            <h2 id="pipeline-member-permissions-modal-title">Edit Team Permissions</h2>
+            <p>Update what {membership.user.full_name} can do inside {pipelineName || "this pipeline"}.</p>
+          </div>
+          <button className={styles.iconButton} type="button" onClick={onClose} aria-label="Close modal">
+            x
+          </button>
+        </div>
+        <form className={styles.modalBody} onSubmit={onSubmit}>
+          <div className={styles.memberEditorIdentity}>
+            <span
+              className={styles.memberAvatarBadge}
+              style={{
+                backgroundColor: `hsl(${memberHue} 82% 92%)`,
+                color: `hsl(${memberHue} 42% 32%)`,
+              }}
+            >
+              {initialsForName(membership.user.full_name)}
+            </span>
+            <div className={styles.memberCopy}>
+              <strong>{membership.user.full_name}</strong>
+              <p className={styles.memberRoleLine}>
+                {membership.user.role_labels?.length ? membership.user.role_labels.join(", ") : "User"}
+              </p>
+              <p>{membership.user.email}</p>
+            </div>
+          </div>
+
+          <PermissionMatrix value={value} onPermissionChange={onPermissionChange} disabled={saving} />
+
+          <div className={styles.modalActions}>
+            <button className={styles.secondaryButton} type="button" onClick={onClose}>
+              Cancel
+            </button>
+            <button className={styles.primaryButton} type="submit" disabled={saving}>
+              {saving ? "Saving..." : "Save permissions"}
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   );

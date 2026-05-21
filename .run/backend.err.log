@@ -821,3 +821,7 @@ D:\Youssef\Work\BIM Hive\CRM V2\backend\apps\crm\views.py changed, reloading.
 Watching for file changes with StatReloader
 [20/May/2026 18:15:53] "POST /api/auth/login/ HTTP/1.1" 200 4096
 [20/May/2026 18:15:55] "GET /api/pipelines/invite-options/ HTTP/1.1" 200 6614
+D:\Youssef\Work\BIM Hive\CRM V2\backend\apps\pipelines\serializers.py changed, reloading.
+Watching for file changes with StatReloader
+D:\Youssef\Work\BIM Hive\CRM V2\backend\apps\pipelines\views.py changed, reloading.
+Watching for file changes with StatReloader
