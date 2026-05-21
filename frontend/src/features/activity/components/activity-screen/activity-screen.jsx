@@ -6,7 +6,7 @@ import { CalendarIcon, ClipboardIcon, DealsIcon, MailIcon, OfficeIcon, PeopleIco
 import { DashboardShell } from "@/components/dashboard/dashboard-shell/dashboard-shell";
 import { Sidebar } from "@/components/dashboard/sidebar/sidebar";
 import { Topbar } from "@/components/dashboard/topbar/topbar";
-import { listAuditLog, createAuditLogEntry } from "@/lib/api/activity";
+import { createAuditLogEntry, listAuditLog } from "@/lib/api/activity";
 import { getAccessToken } from "@/lib/session";
 
 import styles from "./activity-screen.module.css";
@@ -63,16 +63,22 @@ export function ActivityScreen({ user }) {
 
     listAuditLog(token, { event_type: eventType, page_size: 50 })
       .then((response) => {
-        if (!active) return;
+        if (!active) {
+          return;
+        }
         setEntries(response?.results?.results || []);
         setFilters(response?.results?.filters || [{ value: "", label: "All types" }]);
       })
       .catch((requestError) => {
-        if (!active) return;
+        if (!active) {
+          return;
+        }
         setError(requestError.message || "Unable to load activity.");
       })
       .finally(() => {
-        if (!active) return;
+        if (!active) {
+          return;
+        }
         setLoading(false);
       });
 
@@ -113,19 +119,12 @@ export function ActivityScreen({ user }) {
       <div className={styles.stack}>
         <section className={styles.hero}>
           <div>
-            <h1 className={styles.title}>Activity</h1>
+            <p className={styles.eyebrow}>Workspace</p>
+            <h1>Activity</h1>
+            <p className={styles.heroMeta}>{entries.length} workspace events</p>
             <p className={styles.copy}>Everything happening across your workspace, team, and records.</p>
           </div>
-          <div className={styles.actions}>
-            <label className={styles.filterWrap}>
-              <select value={eventType} onChange={(event) => handleFilterChange(event.target.value)} className={styles.select}>
-                {filters.map((option) => (
-                  <option key={option.value || "all"} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-            </label>
+          <div className={styles.heroActions}>
             <button type="button" className={styles.primaryButton} onClick={() => setModalOpen(true)}>
               <PlusIcon />
               <span>Log activity</span>
@@ -133,79 +132,101 @@ export function ActivityScreen({ user }) {
           </div>
         </section>
 
-        {error ? <div className={styles.error}>{error}</div> : null}
+        {error ? <p className={styles.error}>{error}</p> : null}
 
-        <section className={styles.feed}>
-          {loading ? <div className={styles.placeholder}>Loading activity…</div> : null}
-          {emptyState ? (
-            <div className={styles.placeholder}>No activity yet. Team changes, imports, notes, and record updates will appear here.</div>
-          ) : null}
-          {!loading
-            ? entries.map((entry) => {
-                const visual = iconMap[entry.event_type] || iconMap.note;
-                return (
-                  <article key={entry.id} className={styles.row}>
-                    <div className={`${styles.iconWrap} ${styles[`tone${visual.tone[0].toUpperCase()}${visual.tone.slice(1)}`]}`}>{visual.icon}</div>
-                    <div className={styles.rowBody}>
-                      <div className={styles.rowHeadline}>
-                        <p>
-                          <strong>{entry.actor_name}</strong>
-                          <span className={styles.muted}> · {entry.title}</span>
-                        </p>
-                        <time className={styles.time} dateTime={entry.created_at}>
-                          {formatRelativeTime(entry.created_at)}
-                        </time>
+        <section className={styles.filterBar}>
+          <label className={styles.filterField}>
+            <span>Type</span>
+            <select value={eventType} onChange={(event) => handleFilterChange(event.target.value)}>
+              {filters.map((option) => (
+                <option key={option.value || "all"} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </label>
+        </section>
+
+        <section className={styles.panel}>
+          <div className={styles.panelHeader}>
+            <div>
+              <p className={styles.eyebrow}>Audit Log</p>
+              <h2>Recent activity</h2>
+            </div>
+          </div>
+          <div className={styles.feed}>
+            {loading ? <div className={styles.placeholder}>Loading activity...</div> : null}
+            {emptyState ? (
+              <div className={styles.placeholder}>No activity yet. Team changes, imports, notes, and record updates will appear here.</div>
+            ) : null}
+            {!loading
+              ? entries.map((entry) => {
+                  const visual = iconMap[entry.event_type] || iconMap.note;
+                  return (
+                    <article key={entry.id} className={styles.row}>
+                      <div className={`${styles.iconWrap} ${styles[`tone${visual.tone[0].toUpperCase()}${visual.tone.slice(1)}`]}`}>{visual.icon}</div>
+                      <div className={styles.rowBody}>
+                        <div className={styles.rowHeadline}>
+                          <p>
+                            <strong>{entry.actor_name}</strong>
+                            <span className={styles.muted}> - {entry.title}</span>
+                          </p>
+                          <time className={styles.time} dateTime={entry.created_at}>
+                            {formatRelativeTime(entry.created_at)}
+                          </time>
+                        </div>
+                        <p className={styles.rowMeta}>{entry.event_type_label}</p>
+                        <p className={styles.description}>{entry.description || entry.target_label || entry.event_type_label}</p>
                       </div>
-                      <p className={styles.description}>{entry.description || entry.target_label || entry.event_type_label}</p>
-                    </div>
-                  </article>
-                );
-              })
-            : null}
+                    </article>
+                  );
+                })
+              : null}
+          </div>
         </section>
       </div>
 
       {modalOpen ? (
-        <div className={styles.modalBackdrop} role="presentation" onClick={() => setModalOpen(false)}>
-          <div className={styles.modal} role="dialog" aria-modal="true" aria-label="Log activity" onClick={(event) => event.stopPropagation()}>
+        <div className={styles.modalOverlay} role="presentation">
+          <div className={styles.modal} role="dialog" aria-modal="true" aria-label="Log activity">
             <div className={styles.modalHeader}>
               <div>
-                <p className={styles.modalEyebrow}>Activity</p>
+                <p className={styles.eyebrow}>Activity</p>
                 <h2>Log activity</h2>
+                <p className={styles.copy}>Capture quick internal notes so the team has a clean audit trail.</p>
               </div>
-              <button type="button" className={styles.closeButton} onClick={() => setModalOpen(false)}>
-                ×
+              <button type="button" className={styles.iconButton} onClick={() => setModalOpen(false)} aria-label="Close modal">
+                x
               </button>
             </div>
-            <form className={styles.form} onSubmit={handleSubmit}>
-              <label className={styles.field}>
-                <span>Type</span>
-                <select
-                  value={form.event_type}
-                  onChange={(event) => setForm((current) => ({ ...current, event_type: event.target.value }))}
-                  className={styles.select}
-                >
-                  {composerTypes.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label className={styles.field}>
-                <span>Title</span>
-                <input
-                  className={styles.input}
-                  value={form.title}
-                  onChange={(event) => setForm((current) => ({ ...current, title: event.target.value }))}
-                  placeholder="What happened?"
-                  required
-                />
-              </label>
+            <form className={styles.modalBody} onSubmit={handleSubmit}>
+              <div className={styles.formGrid}>
+                <label className={styles.field}>
+                  <span>Type</span>
+                  <select
+                    value={form.event_type}
+                    onChange={(event) => setForm((current) => ({ ...current, event_type: event.target.value }))}
+                  >
+                    {composerTypes.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className={styles.field}>
+                  <span>Title</span>
+                  <input
+                    value={form.title}
+                    onChange={(event) => setForm((current) => ({ ...current, title: event.target.value }))}
+                    placeholder="What happened?"
+                    required
+                  />
+                </label>
+              </div>
               <label className={styles.field}>
                 <span>Details</span>
                 <textarea
-                  className={styles.textarea}
                   value={form.description}
                   onChange={(event) => setForm((current) => ({ ...current, description: event.target.value }))}
                   placeholder="Add the important context."
@@ -217,7 +238,7 @@ export function ActivityScreen({ user }) {
                   Cancel
                 </button>
                 <button type="submit" className={styles.primaryButton} disabled={saving}>
-                  {saving ? "Saving…" : "Save activity"}
+                  {saving ? "Saving..." : "Save activity"}
                 </button>
               </div>
             </form>
