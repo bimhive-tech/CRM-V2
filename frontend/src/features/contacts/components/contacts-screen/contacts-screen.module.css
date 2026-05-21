@@ -79,7 +79,6 @@
 }
 
 .heroActions,
-.actionsCell,
 .cardActions,
 .modalActions {
   display: flex;
@@ -558,6 +557,7 @@
 
 .actionsCell {
   padding-right: 18px;
+  white-space: nowrap;
 }
 
 .rowActions {
