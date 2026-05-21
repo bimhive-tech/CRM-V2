@@ -280,6 +280,10 @@ export function DealsScreen({ user }) {
       : companies;
     return compatibleCompanies.map((company) => ({ value: String(company.id), label: company.name }));
   }, [companies, selectedFormPipeline]);
+  const allCompanyOptions = useMemo(
+    () => companies.map((company) => ({ value: String(company.id), label: company.name })),
+    [companies],
+  );
   const visibleContactOptions = useMemo(() => {
     const companyContacts = dealForm.companyId
       ? companies.find((company) => String(company.id) === dealForm.companyId)?.contacts || []
@@ -710,7 +714,7 @@ export function DealsScreen({ user }) {
               ariaLabel="Company filter"
               value={companyFilter}
               onValueChange={setCompanyFilter}
-              options={[{ value: "all", label: "All companies" }, ...companyOptions]}
+              options={[{ value: "all", label: "All companies" }, ...allCompanyOptions]}
             />
           </label>
         </section>
