@@ -104,7 +104,7 @@ class ContactListCreateView(generics.ListCreateAPIView):
             action=AuditLogEntry.ACTION_CREATE,
             title="Created contact",
             description=contact_link.contact.full_name,
-            target=contact_link.contact,
+            target=contact_link,
             company=contact_link.tenant_company,
             metadata={"company_name": contact_link.company.name},
         )
@@ -143,7 +143,7 @@ class ContactDetailView(generics.RetrieveUpdateDestroyAPIView):
             action=AuditLogEntry.ACTION_UPDATE,
             title="Updated contact",
             description=updated.contact.full_name,
-            target=updated.contact,
+            target=updated,
             company=updated.tenant_company,
             metadata={"company_name": updated.company.name},
         )
@@ -164,7 +164,7 @@ class ContactDetailView(generics.RetrieveUpdateDestroyAPIView):
             action=AuditLogEntry.ACTION_DELETE,
             title="Deleted contact",
             description=contact_name,
-            target=contact,
+            target=instance,
             company=company,
         )
 

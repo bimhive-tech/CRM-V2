@@ -277,12 +277,58 @@
   line-height: 1.5;
 }
 
-.time {
+.rowAside {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 10px;
+}
+
+.timeMeta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+  color: var(--ink-3);
+  text-align: right;
+}
+
+.timeDate,
+.timeClock,
+.timeAgo {
   color: var(--ink-3);
   font-size: 13px;
   white-space: nowrap;
-  text-align: right;
-  padding-top: 2px;
+}
+
+.timeDate {
+  color: var(--ink-2);
+  font-weight: 500;
+}
+
+.timeAgo {
+  font-size: 12px;
+}
+
+.linkButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 32px;
+  padding: 7px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-button);
+  background: var(--surface-2, color-mix(in srgb, var(--surface) 90%, var(--accent) 10%));
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 500;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.linkButton:hover {
+  border-color: color-mix(in srgb, var(--accent) 35%, var(--border) 65%);
+  color: var(--accent-strong, var(--accent-ink));
 }
 
 .modalOverlay {
@@ -336,10 +382,15 @@
     grid-template-columns: 40px minmax(0, 1fr);
   }
 
-  .time {
+  .rowAside,
+  .timeMeta {
+    align-items: flex-start;
+    text-align: left;
+  }
+
+  .rowAside {
     grid-column: 2;
     margin-top: 6px;
-    text-align: left;
   }
 
   .formGrid {

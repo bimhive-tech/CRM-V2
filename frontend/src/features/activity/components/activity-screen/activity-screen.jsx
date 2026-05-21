@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
 import { CalendarIcon, ClipboardIcon, DealsIcon, MailIcon, OfficeIcon, PeopleIcon, PhoneIcon, PipelineIcon, PlusIcon, SheetIcon } from "@/components/dashboard/dashboard-icons";
@@ -69,6 +70,59 @@ function formatRelativeTime(value) {
   if (absSeconds < 3600) return rtf.format(Math.round(diffSeconds / 60), "minute");
   if (absSeconds < 86400) return rtf.format(Math.round(diffSeconds / 3600), "hour");
   return rtf.format(Math.round(diffSeconds / 86400), "day");
+}
+
+const cairoDateFormatter = new Intl.DateTimeFormat("en-GB", {
+  timeZone: "Africa/Cairo",
+  year: "numeric",
+  month: "short",
+  day: "numeric",
+});
+
+const cairoTimeFormatter = new Intl.DateTimeFormat("en-GB", {
+  timeZone: "Africa/Cairo",
+  hour: "numeric",
+  minute: "2-digit",
+  hour12: true,
+});
+
+function formatCairoDate(value) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return "";
+  }
+  return cairoDateFormatter.format(date);
+}
+
+function formatCairoTime(value) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return "";
+  }
+  return cairoTimeFormatter.format(date);
+}
+
+function resolveEntryHref(entry) {
+  const targetType = String(entry.target_type || "").toLowerCase();
+  const targetId = entry.target_id;
+
+  if (!targetId) {
+    return "";
+  }
+
+  if (targetType === "deal") {
+    return `/projects/${targetId}`;
+  }
+
+  if (targetType === "crmcompany" || targetType === "company") {
+    return `/companies/${targetId}`;
+  }
+
+  if (targetType === "crmcontactcompanylink" || targetType === "contactcompanylink") {
+    return `/contacts/${targetId}`;
+  }
+
+  return "";
 }
 
 export function ActivityScreen({ user }) {
@@ -205,6 +259,7 @@ export function ActivityScreen({ user }) {
             {!loading
               ? visibleEntries.map((entry) => {
                   const visual = iconMap[entry.event_type] || iconMap.note;
+                  const entryHref = resolveEntryHref(entry);
                   return (
                     <article key={entry.id} className={styles.row}>
                       <div className={`${styles.iconWrap} ${styles[`tone${visual.tone[0].toUpperCase()}${visual.tone.slice(1)}`]}`}>{visual.icon}</div>
@@ -215,9 +270,18 @@ export function ActivityScreen({ user }) {
                         </p>
                         <p className={styles.description}>{entry.description || entry.target_label || entry.event_type_label}</p>
                       </div>
-                      <time className={styles.time} dateTime={entry.created_at}>
-                        {formatRelativeTime(entry.created_at)}
-                      </time>
+                      <div className={styles.rowAside}>
+                        <time className={styles.timeMeta} dateTime={entry.created_at}>
+                          <span className={styles.timeDate}>{formatCairoDate(entry.created_at)}</span>
+                          <span className={styles.timeClock}>{formatCairoTime(entry.created_at)} Cairo</span>
+                          <span className={styles.timeAgo}>{formatRelativeTime(entry.created_at)}</span>
+                        </time>
+                        {entryHref ? (
+                          <Link href={entryHref} className={styles.linkButton}>
+                            Open
+                          </Link>
+                        ) : null}
+                      </div>
                     </article>
                   );
                 })
