@@ -24,6 +24,31 @@ const emptyDealForm = {
   notes: "",
 };
 
+const amountRangeOptions = [
+  { value: "all", label: "All amounts" },
+  { value: "0-50000", label: "0 - 50k" },
+  { value: "50000-250000", label: "50k - 250k" },
+  { value: "250000-1000000", label: "250k - 1M" },
+  { value: "1000000+", label: "1M+" },
+];
+
+function amountMatchesRange(amount, range) {
+  const numericAmount = Number(amount || 0);
+  if (range === "0-50000") {
+    return numericAmount <= 50000;
+  }
+  if (range === "50000-250000") {
+    return numericAmount > 50000 && numericAmount <= 250000;
+  }
+  if (range === "250000-1000000") {
+    return numericAmount > 250000 && numericAmount <= 1000000;
+  }
+  if (range === "1000000+") {
+    return numericAmount > 1000000;
+  }
+  return true;
+}
+
 function pipelineMatchesCompany(pipeline, company) {
   if (!pipeline || !company) {
     return false;
@@ -257,6 +282,8 @@ export function DealsScreen({ user }) {
   const [selectedPipelineId, setSelectedPipelineId] = useState("");
   const [search, setSearch] = useState("");
   const [companyFilter, setCompanyFilter] = useState("all");
+  const [stageFilter, setStageFilter] = useState("all");
+  const [amountRange, setAmountRange] = useState("all");
   const [isGroupedByStage, setIsGroupedByStage] = useState(true);
   const [status, setStatus] = useState({ loading: true, error: "", success: "" });
   const [modalState, setModalState] = useState({ open: false, mode: "create", dealId: null });
@@ -273,6 +300,10 @@ export function DealsScreen({ user }) {
     [pipelines, selectedPipeline],
   );
   const pipelineOptions = useMemo(() => pipelines.map((pipeline) => ({ value: String(pipeline.id), label: pipeline.name })), [pipelines]);
+  const stageFilterOptions = useMemo(
+    () => [{ value: "all", label: "All stages" }, ...((selectedPipeline?.statuses || []).map((statusItem) => ({ value: statusItem.name, label: statusItem.name })))],
+    [selectedPipeline],
+  );
   const selectedFormPipeline = useMemo(
     () => pipelines.find((pipeline) => String(pipeline.id) === dealForm.pipelineId) || null,
     [pipelines, dealForm.pipelineId],
@@ -319,11 +350,13 @@ export function DealsScreen({ user }) {
     return deals.filter((deal) => {
       const matchesPipeline = !selectedPipelineId || String(deal.pipeline_id) === selectedPipelineId;
       const matchesCompany = companyFilter === "all" || String(deal.company?.id) === companyFilter;
+      const matchesStage = stageFilter === "all" || deal.stage === stageFilter;
+      const matchesAmount = amountMatchesRange(deal.amount, amountRange);
       const haystack = `${deal.name} ${deal.company?.name || ""} ${deal.contact?.full_name || ""}`.toLowerCase();
       const matchesSearch = !search.trim() || haystack.includes(search.trim().toLowerCase());
-      return matchesPipeline && matchesCompany && matchesSearch;
+      return matchesPipeline && matchesCompany && matchesStage && matchesAmount && matchesSearch;
     });
-  }, [companyFilter, deals, search, selectedPipelineId]);
+  }, [amountRange, companyFilter, deals, search, selectedPipelineId, stageFilter]);
 
   const groupedDeals = useMemo(() => {
     const groups = new Map();
@@ -436,6 +469,16 @@ export function DealsScreen({ user }) {
 
     window.localStorage.removeItem(storageKey);
   }, [selectedPipelineId, user]);
+
+  useEffect(() => {
+    if (stageFilter === "all") {
+      return;
+    }
+    const validStages = new Set((selectedPipeline?.statuses || []).map((statusItem) => statusItem.name));
+    if (!validStages.has(stageFilter)) {
+      setStageFilter("all");
+    }
+  }, [selectedPipeline, stageFilter]);
 
   useEffect(() => {
     let active = true;
@@ -724,6 +767,16 @@ export function DealsScreen({ user }) {
               onValueChange={setCompanyFilter}
               options={[{ value: "all", label: "All companies" }, ...allCompanyOptions]}
             />
+          </label>
+
+          <label className={styles.filterField}>
+            <span className={styles.visuallyHidden}>Stage</span>
+            <SearchableSelect ariaLabel="Stage filter" value={stageFilter} onValueChange={setStageFilter} options={stageFilterOptions} />
+          </label>
+
+          <label className={styles.filterField}>
+            <span className={styles.visuallyHidden}>Amount range</span>
+            <SearchableSelect ariaLabel="Amount range filter" value={amountRange} onValueChange={setAmountRange} options={amountRangeOptions} />
           </label>
         </section>
 

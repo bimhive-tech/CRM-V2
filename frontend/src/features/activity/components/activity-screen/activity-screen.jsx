@@ -36,6 +36,29 @@ const iconMap = {
   user: { icon: <PeopleIcon />, tone: "amber" },
 };
 
+const timeRangeOptions = [
+  { value: "all", label: "All time" },
+  { value: "7", label: "Last 7 days" },
+  { value: "30", label: "Last 30 days" },
+  { value: "90", label: "Last 90 days" },
+];
+
+function entryMatchesTimeRange(createdAt, range) {
+  if (range === "all") {
+    return true;
+  }
+  const days = Number(range);
+  if (!days) {
+    return true;
+  }
+  const created = new Date(createdAt);
+  if (Number.isNaN(created.getTime())) {
+    return true;
+  }
+  const threshold = Date.now() - days * 86400000;
+  return created.getTime() >= threshold;
+}
+
 function formatRelativeTime(value) {
   const date = new Date(value);
   const diffSeconds = Math.round((date.getTime() - Date.now()) / 1000);
@@ -53,6 +76,8 @@ export function ActivityScreen({ user }) {
   const [entries, setEntries] = useState([]);
   const [filters, setFilters] = useState([{ value: "", label: "All types" }]);
   const [eventType, setEventType] = useState("");
+  const [actorFilter, setActorFilter] = useState("all");
+  const [timeRange, setTimeRange] = useState("all");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [modalOpen, setModalOpen] = useState(false);
@@ -110,7 +135,22 @@ export function ActivityScreen({ user }) {
     setEventType(nextValue);
   }
 
-  const emptyState = useMemo(() => !loading && !entries.length, [entries.length, loading]);
+  const actorOptions = useMemo(() => {
+    const uniqueActors = [...new Set(entries.map((entry) => entry.actor_name).filter(Boolean))];
+    return [{ value: "all", label: "All actors" }, ...uniqueActors.map((actor) => ({ value: actor, label: actor }))];
+  }, [entries]);
+
+  const visibleEntries = useMemo(
+    () =>
+      entries.filter((entry) => {
+        const matchesActor = actorFilter === "all" || entry.actor_name === actorFilter;
+        const matchesTimeRange = entryMatchesTimeRange(entry.created_at, timeRange);
+        return matchesActor && matchesTimeRange;
+      }),
+    [actorFilter, entries, timeRange],
+  );
+
+  const emptyState = useMemo(() => !loading && !visibleEntries.length, [loading, visibleEntries.length]);
 
   return (
     <DashboardShell
@@ -122,7 +162,7 @@ export function ActivityScreen({ user }) {
           <div>
             <p className={styles.eyebrow}>Workspace</p>
             <h1>Activity</h1>
-            <p className={styles.heroMeta}>{entries.length} workspace events</p>
+            <p className={styles.heroMeta}>{visibleEntries.length} workspace events</p>
             <p className={styles.copy}>Everything happening across your workspace, team, and records.</p>
           </div>
           <div className={styles.heroActions}>
@@ -140,6 +180,14 @@ export function ActivityScreen({ user }) {
             <span>Type</span>
             <SearchableSelect ariaLabel="Type" value={eventType} onValueChange={handleFilterChange} options={filters} />
           </label>
+          <label className={styles.filterField}>
+            <span>Actor</span>
+            <SearchableSelect ariaLabel="Actor" value={actorFilter} onValueChange={setActorFilter} options={actorOptions} />
+          </label>
+          <label className={styles.filterField}>
+            <span>Time</span>
+            <SearchableSelect ariaLabel="Time range" value={timeRange} onValueChange={setTimeRange} options={timeRangeOptions} />
+          </label>
         </section>
 
         <section className={styles.panel}>
@@ -155,7 +203,7 @@ export function ActivityScreen({ user }) {
               <div className={styles.placeholder}>No activity yet. Team changes, imports, notes, and record updates will appear here.</div>
             ) : null}
             {!loading
-              ? entries.map((entry) => {
+              ? visibleEntries.map((entry) => {
                   const visual = iconMap[entry.event_type] || iconMap.note;
                   return (
                     <article key={entry.id} className={styles.row}>

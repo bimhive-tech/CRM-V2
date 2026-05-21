@@ -81,6 +81,9 @@ function getInitialFilters(searchParams, mode) {
     status: "All statuses",
     pipelineId: "All pipelines",
     companyId: mode === "contacts" ? searchParams.get("companyId") || "All companies" : "All companies",
+    ownerId: "All owners",
+    industry: "All industries",
+    hasContacts: "All company types",
   };
 }
 
@@ -485,6 +488,10 @@ function DirectoryScreen({ user, mode = "contacts" }) {
     () => (selectedPipeline ? selectedPipeline.team || [] : uniqueTeamUsers(pipelines)),
     [pipelines, selectedPipeline],
   );
+  const ownerFilterOptions = useMemo(
+    () => [{ value: "All owners", label: "All owners" }, ...topbarTeamUsers.map((member) => ({ value: String(member.id), label: member.full_name }))],
+    [topbarTeamUsers],
+  );
   const statusOptions = useMemo(() => {
     const sourceStatuses = selectedPipeline
       ? (selectedPipeline.statuses || []).map((status) => normalizeStatusLabel(status.name))
@@ -497,6 +504,18 @@ function DirectoryScreen({ user, mode = "contacts" }) {
   const companyIndustryOptions = useMemo(
     () => industryOptions.map((industry) => ({ value: industry.name, label: industry.name })),
     [industryOptions],
+  );
+  const companyIndustryFilterOptions = useMemo(
+    () => [{ value: "All industries", label: "All industries" }, ...companyIndustryOptions],
+    [companyIndustryOptions],
+  );
+  const companyContactFilterOptions = useMemo(
+    () => [
+      { value: "All company types", label: "All company types" },
+      { value: "yes", label: "Has contacts" },
+      { value: "no", label: "No contacts" },
+    ],
+    [],
   );
   const contactPipelineOptions = useMemo(
     () => pipelines.map((pipeline) => ({ value: String(pipeline.id), label: pipeline.name })),
@@ -559,6 +578,7 @@ function DirectoryScreen({ user, mode = "contacts" }) {
           status: filters.status !== "All stages" ? filters.status : undefined,
           pipeline_id: filters.pipelineId !== "All pipelines" ? filters.pipelineId : undefined,
           company_id: filters.companyId !== "All companies" ? filters.companyId : undefined,
+          owner_id: filters.ownerId !== "All owners" ? filters.ownerId : undefined,
         }),
       );
 
@@ -572,7 +592,7 @@ function DirectoryScreen({ user, mode = "contacts" }) {
         });
       });
     },
-    [contactPage, deferredSearch, filters.companyId, filters.pipelineId, filters.status, token],
+    [contactPage, deferredSearch, filters.companyId, filters.ownerId, filters.pipelineId, filters.status, token],
   );
 
   const loadCompaniesPage = useCallback(
@@ -582,6 +602,8 @@ function DirectoryScreen({ user, mode = "contacts" }) {
           page,
           page_size: DIRECTORY_PAGE_SIZE,
           search: deferredSearch,
+          industry: filters.industry !== "All industries" ? filters.industry : undefined,
+          has_contacts: filters.hasContacts !== "All company types" ? filters.hasContacts : undefined,
         }),
       );
 
@@ -595,7 +617,7 @@ function DirectoryScreen({ user, mode = "contacts" }) {
         });
       });
     },
-    [companyPage, deferredSearch, token],
+    [companyPage, deferredSearch, filters.hasContacts, filters.industry, token],
   );
 
   async function loadStaticData() {
@@ -1101,6 +1123,11 @@ function DirectoryScreen({ user, mode = "contacts" }) {
                 <SearchableSelect ariaLabel="Pipeline filter" name="pipelineId" value={filters.pipelineId} onChange={updateFilters} options={pipelineOptions} />
               </label>
 
+              <label className={styles.filterField}>
+                <span className={styles.visuallyHidden}>Owner</span>
+                <SearchableSelect ariaLabel="Owner filter" name="ownerId" value={filters.ownerId} onChange={updateFilters} options={ownerFilterOptions} />
+              </label>
+
               {filters.pipelineId !== "All pipelines" ? (
                 <div className={styles.statusTabs} role="tablist" aria-label="Stage filters">
                   {statusOptions.map((option) => {
@@ -1125,7 +1152,31 @@ function DirectoryScreen({ user, mode = "contacts" }) {
                 </div>
               ) : null}
             </>
-          ) : null}
+          ) : (
+            <>
+              <label className={styles.filterField}>
+                <span className={styles.visuallyHidden}>Industry</span>
+                <SearchableSelect
+                  ariaLabel="Industry filter"
+                  name="industry"
+                  value={filters.industry}
+                  onChange={updateFilters}
+                  options={companyIndustryFilterOptions}
+                />
+              </label>
+
+              <label className={styles.filterField}>
+                <span className={styles.visuallyHidden}>Company contact filter</span>
+                <SearchableSelect
+                  ariaLabel="Company contact filter"
+                  name="hasContacts"
+                  value={filters.hasContacts}
+                  onChange={updateFilters}
+                  options={companyContactFilterOptions}
+                />
+              </label>
+            </>
+          )}
 
         </section>
 

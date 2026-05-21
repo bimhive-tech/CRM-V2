@@ -60,6 +60,8 @@ class CRMCompanyListCreateView(generics.ListCreateAPIView):
     def get_queryset(self):
         queryset = crm_companies_queryset_for_user(self.request.user)
         search = self.request.query_params.get("search", "").strip()
+        industry = self.request.query_params.get("industry", "").strip()
+        has_contacts = self.request.query_params.get("has_contacts", "").strip().lower()
 
         if search:
             queryset = queryset.filter(
@@ -78,6 +80,14 @@ class CRMCompanyListCreateView(generics.ListCreateAPIView):
                 | Q(contact_links__contact__email__icontains=search)
                 | Q(contact_links__contact__phone__icontains=search)
             ).distinct()
+
+        if industry:
+            queryset = queryset.filter(industry=industry)
+
+        if has_contacts == "yes":
+            queryset = queryset.filter(contact_links__isnull=False).distinct()
+        elif has_contacts == "no":
+            queryset = queryset.filter(contact_links__isnull=True)
 
         return queryset
 
