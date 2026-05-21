@@ -98,6 +98,12 @@
   color: var(--accent-deep);
 }
 
+.pipelineSelect {
+  flex: 0 1 320px;
+  width: min(320px, 100%);
+  min-width: 240px;
+}
+
 .pipelineSelect select,
 .field input,
 .field select {
@@ -110,10 +116,6 @@
   color: var(--ink);
   font-size: 13px;
   outline: none;
-}
-
-.pipelineSelect select {
-  min-width: 220px;
 }
 
 .pipelineSelect select:focus,
@@ -986,6 +988,11 @@
   }
 
   .pipelineSelect select {
+    min-width: 0;
+  }
+
+  .pipelineSelect {
+    width: 100%;
     min-width: 0;
   }
 }
