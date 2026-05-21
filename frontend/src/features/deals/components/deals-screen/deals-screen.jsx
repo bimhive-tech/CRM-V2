@@ -749,11 +749,11 @@ export function DealsScreen({ user }) {
                           className={styles.dealRow}
                           role="button"
                           tabIndex={0}
-                          onClick={() => router.push(`/deals/${deal.id}`)}
+                          onClick={() => router.push(`/projects/${deal.id}`)}
                           onKeyDown={(event) => {
                             if (event.key === "Enter" || event.key === " ") {
                               event.preventDefault();
-                              router.push(`/deals/${deal.id}`);
+                              router.push(`/projects/${deal.id}`);
                             }
                           }}
                         >
@@ -808,11 +808,11 @@ export function DealsScreen({ user }) {
                         className={styles.dealRow}
                         role="button"
                         tabIndex={0}
-                        onClick={() => router.push(`/deals/${deal.id}`)}
+                        onClick={() => router.push(`/projects/${deal.id}`)}
                         onKeyDown={(event) => {
                           if (event.key === "Enter" || event.key === " ") {
                             event.preventDefault();
-                            router.push(`/deals/${deal.id}`);
+                            router.push(`/projects/${deal.id}`);
                           }
                         }}
                       >
