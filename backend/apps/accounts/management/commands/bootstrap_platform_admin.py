@@ -2,9 +2,8 @@ import os
 
 from django.core.management.base import BaseCommand
 
-from apps.accounts.defaults import ensure_default_company_roles
+from apps.accounts.defaults import cleanup_legacy_default_roles, ensure_default_company_roles
 from apps.accounts.models import Role, User, UserRole
-from apps.accounts.permission_catalog import SYSTEM_ROLE_DEFAULTS
 from apps.companies.models import Company
 
 
@@ -23,6 +22,7 @@ class Command(BaseCommand):
             admin_company.is_platform_owner = True
             admin_company.save(update_fields=["is_platform_owner"])
         ensure_default_company_roles(admin_company)
+        cleanup_legacy_default_roles()
 
         platform_role, _ = Role.objects.get_or_create(
             slug=UserRole.PLATFORM_ADMIN,
@@ -30,28 +30,18 @@ class Command(BaseCommand):
                 "name": "Platform Admin",
                 "description": "Full platform access.",
                 "is_system": True,
-                "permissions": SYSTEM_ROLE_DEFAULTS[UserRole.PLATFORM_ADMIN],
+                "permissions": [],
             },
         )
-        if platform_role.permissions != SYSTEM_ROLE_DEFAULTS[UserRole.PLATFORM_ADMIN]:
-            platform_role.permissions = SYSTEM_ROLE_DEFAULTS[UserRole.PLATFORM_ADMIN]
-            platform_role.save(update_fields=["permissions"])
-        for slug, name in (
-            (UserRole.COMPANY_ADMIN, "Company Admin"),
-            (UserRole.USER, "User"),
-        ):
-            role, _ = Role.objects.get_or_create(
-                slug=slug,
-                defaults={
-                    "name": name,
-                    "description": f"System role: {name}.",
-                    "is_system": True,
-                    "permissions": SYSTEM_ROLE_DEFAULTS[slug],
-                },
-            )
-            if role.permissions != SYSTEM_ROLE_DEFAULTS[slug]:
-                role.permissions = SYSTEM_ROLE_DEFAULTS[slug]
-                role.save(update_fields=["permissions"])
+        next_fields = []
+        if platform_role.permissions:
+            platform_role.permissions = []
+            next_fields.append("permissions")
+        if not platform_role.is_system:
+            platform_role.is_system = True
+            next_fields.append("is_system")
+        if next_fields:
+            platform_role.save(update_fields=next_fields)
 
         user, created = User.objects.get_or_create(
             email=email,
