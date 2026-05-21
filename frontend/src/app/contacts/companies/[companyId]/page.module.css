@@ -51,8 +51,8 @@
   padding: 2px 8px;
   border: 1px solid var(--border);
   border-radius: 999px;
-  background: oklch(0.95 0.06 150);
-  color: oklch(0.38 0.14 150);
+  background: var(--success-soft-bg);
+  color: var(--success);
   font-size: 11px;
   font-weight: 600;
   letter-spacing: 0.01em;
@@ -390,33 +390,33 @@
 }
 
 .statusLead {
-  background: oklch(0.95 0.01 80);
-  color: oklch(0.45 0.02 80);
+  background: var(--status-neutral-bg);
+  color: var(--status-neutral-fg);
 }
 
 .statusQualified {
-  background: oklch(0.94 0.05 220);
-  color: oklch(0.4 0.13 220);
+  background: var(--status-blue-bg);
+  color: var(--status-blue-fg);
 }
 
 .statusCustomer {
-  background: oklch(0.95 0.06 150);
-  color: oklch(0.38 0.14 150);
+  background: var(--success-soft-bg);
+  color: var(--success);
 }
 
 .statusProposal {
-  background: oklch(0.94 0.05 30);
-  color: oklch(0.42 0.13 30);
+  background: var(--status-warm-bg);
+  color: var(--status-warm-fg);
 }
 
 .statusNegotiation {
-  background: oklch(0.94 0.07 60);
-  color: oklch(0.42 0.14 55);
+  background: var(--status-gold-bg);
+  color: var(--status-gold-fg);
 }
 
 .statusRisk {
-  background: oklch(0.94 0.05 30);
-  color: oklch(0.5 0.18 25);
+  background: var(--status-warm-bg);
+  color: var(--danger);
 }
 
 @media (max-width: 1180px) {

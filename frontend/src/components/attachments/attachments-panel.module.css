@@ -88,8 +88,8 @@
 }
 
 .statusSuccess {
-  background: oklch(0.95 0.06 150);
-  color: oklch(0.38 0.14 150);
+  background: var(--success-soft-bg);
+  color: var(--success);
 }
 
 .list {

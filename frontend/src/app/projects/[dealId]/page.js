@@ -154,7 +154,10 @@ function OwnerAvatar({ name }) {
 
 function StageBadge({ value, color }) {
   return (
-    <span className={styles.stageBadge} style={{ background: `color-mix(in oklch, ${color || "#7C5F35"} 18%, white)`, color: color || "#7C5F35" }}>
+    <span
+      className={styles.stageBadge}
+      style={{ background: `color-mix(in oklch, ${color || "#7C5F35"} 18%, var(--surface))`, color: color || "#7C5F35" }}
+    >
       <span className={styles.stageDot} style={{ background: color || "#7C5F35" }} />
       {value || "No stage"}
     </span>

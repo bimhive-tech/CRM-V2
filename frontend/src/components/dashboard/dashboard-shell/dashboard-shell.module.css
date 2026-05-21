@@ -100,14 +100,14 @@
     position: fixed;
     inset: 0;
     display: block;
-    background: rgba(30, 18, 6, 0);
+    background: var(--overlay-scrim-transparent);
     pointer-events: none;
     transition: background 0.18s ease;
     z-index: 20;
   }
 
   .sidebarOverlayVisible {
-    background: rgba(30, 18, 6, 0.36);
+    background: var(--overlay-scrim);
     pointer-events: auto;
   }
 

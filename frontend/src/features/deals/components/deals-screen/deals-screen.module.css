@@ -130,8 +130,8 @@
 }
 
 .success {
-  background: oklch(0.95 0.06 150);
-  color: oklch(0.38 0.14 150);
+  background: var(--success-soft-bg);
+  color: var(--success);
 }
 
 .filterBar {
@@ -422,7 +422,7 @@
   display: grid;
   place-items: center;
   padding: 1.5rem;
-  background: rgba(20, 18, 14, 0.42);
+  background: var(--overlay-scrim);
 }
 
 .modal {

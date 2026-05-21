@@ -16,6 +16,7 @@ import {
   SearchIcon,
   SettingsIcon,
 } from "@/components/dashboard/dashboard-icons";
+import { useTheme } from "@/components/theme/theme-provider";
 import { clearSession } from "@/lib/session";
 
 import styles from "./sidebar.module.css";
@@ -47,6 +48,7 @@ export function Sidebar({ user, onNavigate }) {
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef(null);
+  const { isDark, toggleTheme } = useTheme();
 
   useEffect(() => {
     function handleOutside(event) {
@@ -153,6 +155,22 @@ export function Sidebar({ user, onNavigate }) {
       <div className={styles.accountWrap} ref={menuRef}>
         {menuOpen ? (
           <div className={styles.accountMenu}>
+            <div className={styles.themeRow}>
+              <div className={styles.themeMeta}>
+                <span>Dark theme</span>
+                <small>{isDark ? "On" : "Off"}</small>
+              </div>
+              <button
+                className={`${styles.themeToggle} ${isDark ? styles.themeToggleActive : ""}`}
+                type="button"
+                role="switch"
+                aria-checked={isDark}
+                aria-label={`Turn ${isDark ? "off" : "on"} dark theme`}
+                onClick={toggleTheme}
+              >
+                <span className={styles.themeToggleThumb} />
+              </button>
+            </div>
             <button type="button" onClick={handleProfileOpen}>
               Profile
             </button>

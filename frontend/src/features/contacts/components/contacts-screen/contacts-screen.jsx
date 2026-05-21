@@ -179,8 +179,8 @@ function getStatusTone(color) {
   const rgb = hexToRgb(color);
   if (!rgb) {
     return {
-      background: "oklch(0.95 0.01 80)",
-      color: "oklch(0.45 0.02 80)",
+      background: "var(--status-neutral-bg)",
+      color: "var(--status-neutral-fg)",
     };
   }
 
