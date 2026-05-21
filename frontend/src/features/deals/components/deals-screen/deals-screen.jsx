@@ -166,7 +166,7 @@ function DealModal({
             <label className={styles.field}>
               <span>Company</span>
               <select name="companyId" value={form.companyId} onChange={onChange} required>
-                <option value="">Select company</option>
+                <option value="">{companyOptions.length ? "Select company" : "No companies available"}</option>
                 {companyOptions.map((option) => (
                   <option key={option.value} value={option.value}>
                     {option.label}
@@ -177,7 +177,7 @@ function DealModal({
             <label className={styles.field}>
               <span>Contact</span>
               <select name="contactId" value={form.contactId} onChange={onChange}>
-                <option value="">No contact</option>
+                <option value="">{contactOptions.length ? "No contact" : "No contacts available"}</option>
                 {contactOptions.map((option) => (
                   <option key={option.value} value={option.value}>
                     {option.label}
@@ -188,7 +188,7 @@ function DealModal({
             <label className={styles.field}>
               <span>Pipeline</span>
               <select name="pipelineId" value={form.pipelineId} onChange={onChange} required>
-                <option value="">Select pipeline</option>
+                <option value="">{pipelineOptions.length ? "Select pipeline" : "No pipelines available"}</option>
                 {pipelineOptions.map((option) => (
                   <option key={option.value} value={option.value}>
                     {option.label}
@@ -199,7 +199,7 @@ function DealModal({
             <label className={styles.field}>
               <span>Stage</span>
               <select name="stage" value={form.stage} onChange={onChange} required>
-                <option value="">Select stage</option>
+                <option value="">{stageOptions.length ? "Select stage" : "No stages available"}</option>
                 {stageOptions.map((option) => (
                   <option key={option.value} value={option.value}>
                     {option.label}
@@ -439,6 +439,24 @@ export function DealsScreen({ user }) {
     setStatus((current) => ({ ...current, error, success, loading: false }));
   }
 
+  async function loadDealOptions() {
+    const [nextPipelines, nextCompanies, nextContacts] = await Promise.all([
+      pipelines.length ? Promise.resolve(pipelines) : listPipelines(token, { kind: "deals" }),
+      companies.length ? Promise.resolve(companies) : listCrmCompanies(token, { page: 1, page_size: 200 }).then((data) => normalizePaginatedResponse(data).results),
+      contacts.length ? Promise.resolve(contacts) : listContacts(token, { page: 1, page_size: 300 }).then((data) => normalizePaginatedResponse(data).results),
+    ]);
+
+    setPipelines(nextPipelines || []);
+    setCompanies(nextCompanies || []);
+    setContacts(nextContacts || []);
+
+    return {
+      pipelines: nextPipelines || [],
+      companies: nextCompanies || [],
+      contacts: nextContacts || [],
+    };
+  }
+
   function updateDealForm(event) {
     const { name, value } = event.target;
 
@@ -458,19 +476,42 @@ export function DealsScreen({ user }) {
     });
   }
 
-  function openCreateModal() {
-    const firstPipeline = selectedPipeline || pipelines[0] || null;
-    setDealForm({
-      ...emptyDealForm,
-      companyId: companies[0] ? String(companies[0].id) : "",
-      pipelineId: firstPipeline ? String(firstPipeline.id) : "",
-      stage: firstPipeline?.statuses?.[0]?.name || "",
-    });
-    setModalState({ open: true, mode: "create", dealId: null });
+  async function openCreateModal() {
     setMessage();
+    try {
+      const { pipelines: nextPipelines, companies: nextCompanies } = await loadDealOptions();
+      const firstPipeline = selectedPipeline || nextPipelines[0] || null;
+
+      if (!firstPipeline) {
+        setMessage("Create a deals pipeline first.");
+        return;
+      }
+
+      if (!nextCompanies.length) {
+        setMessage("Create a CRM company first before adding a deal.");
+        return;
+      }
+
+      setDealForm({
+        ...emptyDealForm,
+        companyId: nextCompanies[0] ? String(nextCompanies[0].id) : "",
+        pipelineId: firstPipeline ? String(firstPipeline.id) : "",
+        stage: firstPipeline?.statuses?.[0]?.name || "",
+      });
+      setModalState({ open: true, mode: "create", dealId: null });
+    } catch (error) {
+      setMessage(error.message || "Unable to load deal options.");
+    }
   }
 
-  function openEditModal(deal) {
+  async function openEditModal(deal) {
+    try {
+      await loadDealOptions();
+    } catch (error) {
+      setMessage(error.message || "Unable to load deal options.");
+      return;
+    }
+
     setDealForm({
       name: deal.name || "",
       companyId: deal.company?.id ? String(deal.company.id) : "",
@@ -502,6 +543,21 @@ export function DealsScreen({ user }) {
 
   async function handleDealSubmit(event) {
     event.preventDefault();
+
+    if (!dealForm.companyId) {
+      setMessage("Create or select a CRM company before saving a deal.");
+      return;
+    }
+
+    if (!dealForm.pipelineId) {
+      setMessage("Select a deals pipeline before saving.");
+      return;
+    }
+
+    if (!dealForm.stage) {
+      setMessage("Select a stage before saving.");
+      return;
+    }
 
     const payload = {
       name: dealForm.name.trim(),
