@@ -2,6 +2,7 @@ from rest_framework import serializers
 
 from apps.accounts.models import User
 from apps.crm.models import CRMCompany, CRMContact, CRMContactCompanyLink
+from apps.pipelines.models import Pipeline
 from apps.pipelines.access import user_can_access_pipeline
 
 
@@ -125,6 +126,12 @@ class CRMContactOwnerSerializer(serializers.ModelSerializer):
         fields = ["id", "full_name", "email"]
 
 
+class CRMContactPipelineSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Pipeline
+        fields = ["id", "name", "kind"]
+
+
 class CRMContactSerializer(serializers.ModelSerializer):
     full_name = serializers.CharField(source="contact.full_name")
     email = serializers.EmailField(source="contact.email")
@@ -134,7 +141,15 @@ class CRMContactSerializer(serializers.ModelSerializer):
     last_touch = serializers.DateField(source="contact.last_touch", required=False)
     company = CRMCompanySummarySerializer(read_only=True)
     owner = CRMContactOwnerSerializer(read_only=True)
+    pipeline = CRMContactPipelineSerializer(read_only=True)
     company_id = serializers.PrimaryKeyRelatedField(source="company", queryset=CRMCompany.objects.all(), write_only=True)
+    pipeline_id = serializers.PrimaryKeyRelatedField(
+        source="pipeline",
+        queryset=Pipeline.objects.all(),
+        allow_null=True,
+        required=False,
+        write_only=True,
+    )
     owner_id = serializers.PrimaryKeyRelatedField(
         source="owner",
         queryset=User.objects.all(),
@@ -154,6 +169,8 @@ class CRMContactSerializer(serializers.ModelSerializer):
             "phone_numbers",
             "company",
             "company_id",
+            "pipeline",
+            "pipeline_id",
             "owner",
             "owner_id",
             "status",
@@ -178,6 +195,8 @@ class CRMContactSerializer(serializers.ModelSerializer):
 
         if pipeline is not None and company is not None and pipeline.company_id != company.tenant_company_id:
             raise serializers.ValidationError({"pipeline_id": "The selected pipeline is not available for this company."})
+        if pipeline is not None and pipeline.kind != Pipeline.KIND_CONTACTS:
+            raise serializers.ValidationError({"pipeline_id": "The selected pipeline is not a contacts pipeline."})
         request = self.context.get("request")
         if pipeline is not None and request and request.user.is_authenticated and not user_can_access_pipeline(request.user, pipeline):
             raise serializers.ValidationError({"pipeline_id": "You do not have access to the selected pipeline."})

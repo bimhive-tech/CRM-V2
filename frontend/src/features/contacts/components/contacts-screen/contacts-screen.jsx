@@ -1149,7 +1149,7 @@ function DirectoryScreen({ user, mode = "contacts" }) {
                         <th>Company</th>
                         <th>Email</th>
                         <th>Phone</th>
-                        <th>Last touch</th>
+                        <th>Last updated</th>
                         <th>Owner</th>
                         <th aria-label="Open contact" />
                       </tr>
@@ -1267,7 +1267,7 @@ function DirectoryScreen({ user, mode = "contacts" }) {
                           <PhoneNumberStack numbers={contact.phoneNumbers || []} />
                         </div>
                         <div>
-                          <p className={styles.mobileLabel}>Last touch</p>
+                          <p className={styles.mobileLabel}>Last updated</p>
                           <p className={styles.mobileValueMono}>{contact.lastTouch}</p>
                         </div>
                       </div>

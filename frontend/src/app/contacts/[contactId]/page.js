@@ -499,7 +499,7 @@ export default function ContactDetailPage() {
                   <span className={styles.detailLabel}>Phone numbers</span>
                   <PhoneNumberBlock numbers={contact.phoneNumbers || []} />
                 </div>
-                <DetailRow label="Last touch" value={contact.lastTouchDisplay} mono />
+                <DetailRow label="Last updated" value={contact.lastTouchDisplay} mono />
                 <DetailRow label="Created" value={contact.createdAtDisplay} mono />
               </div>
             </section>

@@ -84,7 +84,7 @@ export function ContactsModal({
               </label>
             ) : null}
             <label className={styles.field}>
-              <span>Last touch</span>
+              <span>Last updated</span>
               <input name="lastTouch" type="date" value={form.lastTouch} onChange={onChange} required />
             </label>
           </div>
