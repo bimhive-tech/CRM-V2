@@ -38,7 +38,10 @@ function pipelineMatchesCompany(pipeline, company) {
   if (!pipeline || !company) {
     return false;
   }
-  return String(pipeline.company_id || "") === String(company.tenant_company_id || "");
+  if (!pipeline.company_id || !company.tenant_company_id) {
+    return true;
+  }
+  return String(pipeline.company_id) === String(company.tenant_company_id);
 }
 
 function normalizePaginatedResponse(data) {
@@ -355,7 +358,8 @@ export default function DealDetailPage() {
     const compatibleCompanies = selectedFormPipeline
       ? companies.filter((company) => pipelineMatchesCompany(selectedFormPipeline, company))
       : companies;
-    return compatibleCompanies.map((company) => ({ value: String(company.id), label: company.name }));
+    const source = compatibleCompanies.length ? compatibleCompanies : companies;
+    return source.map((company) => ({ value: String(company.id), label: company.name }));
   }, [companies, selectedFormPipeline]);
   const visibleContactOptions = useMemo(() => {
     const source = dealForm.companyId ? contacts.filter((contact) => String(contact.company?.id || "") === dealForm.companyId) : contacts;
@@ -369,7 +373,8 @@ export default function DealDetailPage() {
     const compatiblePipelines = selectedFormCompany
       ? pipelines.filter((pipeline) => pipelineMatchesCompany(pipeline, selectedFormCompany))
       : pipelines;
-    return compatiblePipelines.map((pipeline) => ({ value: String(pipeline.id), label: pipeline.name }));
+    const source = compatiblePipelines.length ? compatiblePipelines : pipelines;
+    return source.map((pipeline) => ({ value: String(pipeline.id), label: pipeline.name }));
   }, [pipelines, selectedFormCompany]);
   const dealTopbarUsers = useMemo(() => {
     const detailPipeline = pipelines.find((pipeline) => String(pipeline.id) === String(state.deal?.pipeline_id)) || null;
@@ -389,7 +394,8 @@ export default function DealDetailPage() {
       if (name === "pipelineId") {
         const nextPipeline = pipelines.find((pipeline) => String(pipeline.id) === value);
         const compatibleCompanies = nextPipeline ? companies.filter((company) => pipelineMatchesCompany(nextPipeline, company)) : companies;
-        const nextCompany = compatibleCompanies.find((company) => String(company.id) === current.companyId) || compatibleCompanies[0] || null;
+        const companyPool = compatibleCompanies.length ? compatibleCompanies : companies;
+        const nextCompany = companyPool.find((company) => String(company.id) === current.companyId) || companyPool[0] || null;
         nextState.stage = nextPipeline?.statuses?.[0]?.name || "";
         nextState.companyId = nextCompany ? String(nextCompany.id) : "";
         if (!nextCompany || !contacts.some((contact) => String(contact.id) === current.contactId && String(contact.company?.id || "") === String(nextCompany.id))) {
@@ -399,7 +405,8 @@ export default function DealDetailPage() {
       if (name === "companyId") {
         const nextCompany = companies.find((company) => String(company.id) === value) || null;
         const compatiblePipelines = nextCompany ? pipelines.filter((pipeline) => pipelineMatchesCompany(pipeline, nextCompany)) : pipelines;
-        const nextPipeline = compatiblePipelines.find((pipeline) => String(pipeline.id) === current.pipelineId) || compatiblePipelines[0] || null;
+        const pipelinePool = compatiblePipelines.length ? compatiblePipelines : pipelines;
+        const nextPipeline = pipelinePool.find((pipeline) => String(pipeline.id) === current.pipelineId) || pipelinePool[0] || null;
         const stillMatches = contacts.some((contact) => String(contact.id) === current.contactId && String(contact.company?.id) === value);
         if (!stillMatches) {
           nextState.contactId = "";
