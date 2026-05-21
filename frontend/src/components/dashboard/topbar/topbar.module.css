@@ -60,9 +60,9 @@
   width: 32px;
   height: 32px;
   margin-left: -8px;
-  border: 2px solid var(--bg);
+  border: 2px solid currentColor;
   box-shadow:
-    0 0 0 2px color-mix(in oklch, currentColor 38%, transparent),
+    0 0 0 2px color-mix(in oklch, currentColor 18%, transparent),
     0 4px 12px color-mix(in oklch, currentColor 12%, transparent);
   border-radius: 999px;
   font-size: 11px;
