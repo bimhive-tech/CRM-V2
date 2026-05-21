@@ -6,6 +6,7 @@ from django.utils import timezone
 from rest_framework.exceptions import ValidationError
 
 from apps.crm.models import CRMCompany, CRMContact, CRMContactCompanyLink
+from apps.pipelines.models import PipelineStatus
 
 
 User = get_user_model()
@@ -45,6 +46,8 @@ AVAILABLE_IMPORT_FIELDS = [
 
 EMAIL_SPLIT_RE = re.compile(r"\s{2,}|\n| / |,")
 PHONE_SPLIT_RE = re.compile(r"\s{2,}|\n| / |,| (?<!\d)- | - (?!\d)")
+DEFAULT_IMPORTED_STATUS_NAME = "Fresh Leads"
+DEFAULT_IMPORTED_STATUS_COLOR = "#8C7A61"
 
 
 def normalize_header(value):
@@ -160,18 +163,59 @@ def extract_phone_numbers(value):
 
 def normalize_status(value):
     raw = text_value(value)
+    if not raw:
+        return DEFAULT_IMPORTED_STATUS_NAME
     lowered = raw.lower()
     if any(token in lowered for token in ["sent him mail", "sent her mail", "sent mail", "sent email"]):
-        return "email_sent"
+        return "Email Sent"
     if any(token in lowered for token in ["called him directly", "called directly", "called him", "called her"]):
-        return "called"
+        return "Called"
     if lowered.startswith("meeting") or "meeting" in lowered:
-        return "meeting"
+        return "Meeting"
     if "in processing" in lowered:
-        return "in_progress"
+        return "In Progress"
     if any(token in lowered for token in ["waiting to contact", "waiting for appointment", "waiting for quotation"]):
-        return "pending"
+        return "Pending"
     return raw
+
+
+def _reorder_pipeline_statuses(pipeline, statuses):
+    for index, status in enumerate(statuses):
+        if status.position != index:
+            status.position = index
+            status.save(update_fields=["position"])
+
+
+def ensure_pipeline_status(pipeline, status_name, status_lookup):
+    normalized_name = text_value(status_name) or DEFAULT_IMPORTED_STATUS_NAME
+    status_key = normalized_name.casefold()
+    existing = status_lookup.get(status_key)
+
+    if existing:
+        if status_key == DEFAULT_IMPORTED_STATUS_NAME.casefold() and existing.position != 0:
+            siblings = [item for item in pipeline.statuses.order_by("position", "id") if item.id != existing.id]
+            _reorder_pipeline_statuses(pipeline, [existing, *siblings])
+        return existing.name
+
+    if status_key == DEFAULT_IMPORTED_STATUS_NAME.casefold():
+        siblings = list(pipeline.statuses.order_by("position", "id"))
+        created = PipelineStatus.objects.create(
+            pipeline=pipeline,
+            name=DEFAULT_IMPORTED_STATUS_NAME,
+            color=DEFAULT_IMPORTED_STATUS_COLOR,
+            position=0,
+        )
+        _reorder_pipeline_statuses(pipeline, [created, *siblings])
+    else:
+        created = PipelineStatus.objects.create(
+            pipeline=pipeline,
+            name=normalized_name,
+            color=DEFAULT_IMPORTED_STATUS_COLOR,
+            position=pipeline.statuses.count(),
+        )
+
+    status_lookup[status_key] = created
+    return created.name
 
 
 def build_contact_name(record):
@@ -363,11 +407,21 @@ def import_contact_records(records, tenant_company, pipeline=None, imported_by=N
     unresolved_sales_people = []
 
     imported_at = timezone.now()
+    status_lookup = {}
+    if pipeline is not None:
+        status_lookup = {
+            status.name.strip().casefold(): status
+            for status in pipeline.statuses.order_by("position", "id")
+        }
+        ensure_pipeline_status(pipeline, DEFAULT_IMPORTED_STATUS_NAME, status_lookup)
 
     for record in records:
         company_name = text_value(record.get("company.name"))
         contact_email = text_value(record.get("contact.email")).lower()
         contact_name = text_value(record.get("contact.name"))
+        resolved_status = normalize_status(record.get("status"))
+        if pipeline is not None:
+            resolved_status = ensure_pipeline_status(pipeline, resolved_status, status_lookup)
 
         if not company_name or not contact_name:
             continue
@@ -419,7 +473,7 @@ def import_contact_records(records, tenant_company, pipeline=None, imported_by=N
                 email=contact_email or f"missing-email-{company.id}-{company.contacts.count() + 1}@placeholder.local",
                 phone=text_value(record.get("contact.phone")),
                 phone_numbers=record.get("contact.phone_numbers", []),
-                status=text_value(record.get("status")) or "Lead",
+                status=resolved_status,
                 imported_by=imported_by,
                 created_by_import=True,
                 imported_at=imported_at,
@@ -433,8 +487,8 @@ def import_contact_records(records, tenant_company, pipeline=None, imported_by=N
             if text_value(record.get("contact.job_title")) and not contact.title:
                 contact.title = text_value(record.get("contact.job_title"))
                 dirty = True
-            if text_value(record.get("status")) and (not contact.status or contact.status == "Lead"):
-                contact.status = text_value(record.get("status"))
+            if resolved_status and (not contact.status or contact.status == "Lead"):
+                contact.status = resolved_status
                 dirty = True
             if pipeline and not contact.pipeline_id:
                 contact.pipeline = pipeline
@@ -453,7 +507,7 @@ def import_contact_records(records, tenant_company, pipeline=None, imported_by=N
             defaults={
                 "pipeline": pipeline,
                 "title": text_value(record.get("contact.job_title")),
-                "status": text_value(record.get("status")) or "Lead",
+                "status": resolved_status,
                 "owner": owner,
                 "imported_by": imported_by,
                 "created_by_import": True,
