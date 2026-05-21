@@ -488,7 +488,7 @@ export default function ContactDetailPage() {
                 <DetailRow label="Company" value={contact.companyName} />
                 <DetailRow label="Owner" value={contact.ownerName} />
                 <DetailRow label="Pipeline" value={contact.pipelineName} />
-                <DetailRow label="Status" value={contact.status} />
+                <DetailRow label="Stage" value={contact.status} />
                 <ExternalActionRow
                   label="Email"
                   value={contact.email || "No email"}

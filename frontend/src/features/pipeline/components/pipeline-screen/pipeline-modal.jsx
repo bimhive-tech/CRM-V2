@@ -18,14 +18,14 @@ const PIPELINE_PERMISSION_GROUPS = [
       ["can_invite_members", "Invite members", "Invite teammates to this pipeline and manage their access."],
       ["can_edit_pipeline", "Edit pipeline", "Rename this pipeline and update its core configuration."],
       ["can_delete_pipeline", "Delete pipeline", "Delete this pipeline when the workspace is ready to remove it."],
-      ["can_manage_statuses", "Manage statuses", "Create, edit, reorder, and delete pipeline statuses."],
+      ["can_manage_statuses", "Manage stages", "Create, edit, reorder, and delete pipeline stages."],
     ],
   },
   {
     title: "Contacts",
     permissions: [
       ["can_view_contacts", "View contacts", "Open and see contacts that belong to this pipeline."],
-      ["can_move_contacts", "Move contact cards", "Move contacts between statuses on the board."],
+      ["can_move_contacts", "Move contact cards", "Move contacts between stages on the board."],
       ["can_manage_contacts", "Create and edit contacts", "Add new contacts and update existing contact details."],
     ],
   },
@@ -37,11 +37,11 @@ const PIPELINE_PERMISSION_GROUPS = [
     ],
   },
   {
-    title: "Deals",
+    title: "Projects",
     permissions: [
-      ["can_view_deals", "View deals", "Open and see deals that belong to this pipeline."],
-      ["can_move_deals", "Move deal cards", "Move deals between statuses on the board."],
-      ["can_manage_deals", "Create and edit deals", "Add deals and update existing deal details."],
+      ["can_view_deals", "View projects", "Open and see projects that belong to this pipeline."],
+      ["can_move_deals", "Move project cards", "Move projects between stages on the board."],
+      ["can_manage_deals", "Create and edit projects", "Add projects and update existing project details."],
     ],
   },
 ];
@@ -61,7 +61,7 @@ const INVITE_PERMISSION_GROUPS = [
       ["can_invite_members", "Invite members", "Invite teammates to these selected pipelines and manage access."],
       ["can_edit_pipeline", "Edit pipeline", "Rename the selected pipelines and update their core configuration."],
       ["can_delete_pipeline", "Delete pipeline", "Delete the selected pipelines when the workspace is ready."],
-      ["can_manage_statuses", "Manage statuses", "Create, edit, reorder, and delete statuses on the selected pipelines."],
+      ["can_manage_statuses", "Manage stages", "Create, edit, reorder, and delete stages on the selected pipelines."],
     ],
   },
   {
@@ -69,7 +69,7 @@ const INVITE_PERMISSION_GROUPS = [
     title: "Contacts",
     permissions: [
       ["can_view_contacts", "View contacts", "Open and see contacts inside the selected contacts pipelines."],
-      ["can_move_contacts", "Move contact cards", "Move contacts between statuses in the selected contacts pipelines."],
+      ["can_move_contacts", "Move contact cards", "Move contacts between stages in the selected contacts pipelines."],
       ["can_manage_contacts", "Create and edit contacts", "Add contacts and update contact details there."],
     ],
   },
@@ -83,11 +83,11 @@ const INVITE_PERMISSION_GROUPS = [
   },
   {
     id: "deals",
-    title: "Deals",
+    title: "Projects",
     permissions: [
-      ["can_view_deals", "View deals", "Open and see deals inside the selected deals pipelines."],
-      ["can_move_deals", "Move deal cards", "Move deals between statuses in the selected deals pipelines."],
-      ["can_manage_deals", "Create and edit deals", "Add deals and update deal details there."],
+      ["can_view_deals", "View projects", "Open and see projects inside the selected projects pipelines."],
+      ["can_move_deals", "Move project cards", "Move projects between stages in the selected projects pipelines."],
+      ["can_manage_deals", "Create and edit projects", "Add projects and update project details there."],
     ],
   },
 ];
@@ -345,9 +345,9 @@ export function PipelineInviteModal({
               onToggle={(pipelineId) => onTogglePipeline("contacts", pipelineId)}
             />
             <SearchableMultiSelect
-              ariaLabel="Deals pipelines"
-              label="Deals pipelines"
-              placeholder="Choose deals pipelines"
+              ariaLabel="Projects pipelines"
+              label="Projects pipelines"
+              placeholder="Choose projects pipelines"
               options={dealPipelines.map((option) => ({ value: String(option.id), label: option.name }))}
               selectedValues={value.dealPipelineIds}
               onToggle={(pipelineId) => onTogglePipeline("deals", pipelineId)}
@@ -362,7 +362,7 @@ export function PipelineInviteModal({
           ) : (
             <div className={styles.membersEmptyState}>
               <strong>Select pipelines first</strong>
-              <p>Choose one or more contacts or deals pipelines to reveal the relevant permission matrix.</p>
+              <p>Choose one or more contacts or projects pipelines to reveal the relevant permission matrix.</p>
             </div>
           )}
 

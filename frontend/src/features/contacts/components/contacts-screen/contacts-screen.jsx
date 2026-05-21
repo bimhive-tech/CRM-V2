@@ -373,7 +373,7 @@ function ContactStatus({ value, color }) {
   return (
     <span className={styles.statusBadge} style={tone}>
       <span className={styles.statusDot} />
-      {value || "No status"}
+      {value || "No stage"}
     </span>
   );
 }
@@ -490,9 +490,9 @@ function DirectoryScreen({ user, mode = "contacts" }) {
       ? (selectedPipeline.statuses || []).map((status) => normalizeStatusLabel(status.name))
       : pipelines.flatMap((pipeline) => (pipeline.statuses || []).map((status) => normalizeStatusLabel(status.name)));
     const uniqueStatuses = [...new Set(sourceStatuses.filter(Boolean))];
-    return ["All statuses", ...(uniqueStatuses.length ? uniqueStatuses : ["Lead"])];
+    return ["All stages", ...(uniqueStatuses.length ? uniqueStatuses : ["Lead"])];
   }, [pipelines, selectedPipeline]);
-  const contactStatusOptions = statusOptions.filter((option) => option !== "All statuses");
+  const contactStatusOptions = statusOptions.filter((option) => option !== "All stages");
   const companyOptions = useMemo(() => allCompanies.map((company) => ({ value: String(company.id), label: company.name })), [allCompanies]);
   const companyIndustryOptions = useMemo(
     () => industryOptions.map((industry) => ({ value: industry.name, label: industry.name })),
@@ -556,7 +556,7 @@ function DirectoryScreen({ user, mode = "contacts" }) {
           page,
           page_size: DIRECTORY_PAGE_SIZE,
           search: deferredSearch,
-          status: filters.status !== "All statuses" ? filters.status : undefined,
+          status: filters.status !== "All stages" ? filters.status : undefined,
           pipeline_id: filters.pipelineId !== "All pipelines" ? filters.pipelineId : undefined,
           company_id: filters.companyId !== "All companies" ? filters.companyId : undefined,
         }),
@@ -676,12 +676,12 @@ function DirectoryScreen({ user, mode = "contacts" }) {
   }, [companyPage, contactPage, isContactsView, loadCompaniesPage, loadContactsPage]);
 
   useEffect(() => {
-    if (filters.status === "All statuses") {
+    if (filters.status === "All stages") {
       return;
     }
 
     if (!contactStatusOptions.includes(filters.status)) {
-      setFilters((current) => ({ ...current, status: "All statuses" }));
+      setFilters((current) => ({ ...current, status: "All stages" }));
       setContactPage(1);
     }
   }, [contactStatusOptions, filters.status]);
@@ -696,7 +696,7 @@ function DirectoryScreen({ user, mode = "contacts" }) {
           ? (nextPipeline.statuses || []).map((status) => normalizeStatusLabel(status.name))
           : pipelines.flatMap((pipeline) => (pipeline.statuses || []).map((status) => normalizeStatusLabel(status.name)));
         if (!nextStatuses.includes(current.status)) {
-          nextFilters.status = "All statuses";
+          nextFilters.status = "All stages";
         }
       }
       return nextFilters;
@@ -1102,9 +1102,9 @@ function DirectoryScreen({ user, mode = "contacts" }) {
               </label>
 
               {filters.pipelineId !== "All pipelines" ? (
-                <div className={styles.statusTabs} role="tablist" aria-label="Status filters">
+                <div className={styles.statusTabs} role="tablist" aria-label="Stage filters">
                   {statusOptions.map((option) => {
-                    const label = option === "All statuses" ? "All" : option;
+                    const label = option === "All stages" ? "All" : option;
                     const active = filters.status === option;
                     return (
                       <button

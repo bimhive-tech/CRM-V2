@@ -56,23 +56,23 @@ export function DashboardScreen({ user }) {
           <div>
             <p className={styles.eyebrow}>{todayLabel}</p>
             <h1>Good morning, {user.full_name.split(" ")[0]}</h1>
-            <p className={styles.copy}>Keep an eye on your pipeline, team activity, and the deals that need attention first.</p>
+            <p className={styles.copy}>Keep an eye on your pipeline, team activity, and the projects that need attention first.</p>
           </div>
           <div className={styles.heroActions}>
             <button type="button" className={styles.secondaryButton}>
               This quarter
             </button>
             <button type="button" className={styles.primaryButton}>
-              New deal
+              New project
             </button>
           </div>
         </section>
 
         <section className={styles.metrics}>
-          <MetricCard label="Open Pipeline" value={zeroValue} helper="waiting for real deals" icon={<OverviewIcon />} />
+          <MetricCard label="Open Pipeline" value={zeroValue} helper="waiting for real projects" icon={<OverviewIcon />} />
           <MetricCard label="Weighted Forecast" value={zeroValue} helper="probability-adjusted" icon={<AnalyticsIcon />} />
           <MetricCard label="Closed Won (MTD)" value={zeroValue} helper="vs last month" icon={<SheetIcon />} />
-          <MetricCard label="Avg Cycle" value="0d" helper="will calculate from real deals" icon={<PeopleIcon />} />
+          <MetricCard label="Avg Cycle" value="0d" helper="will calculate from real projects" icon={<PeopleIcon />} />
         </section>
 
         <section className={styles.panels}>
@@ -80,18 +80,18 @@ export function DashboardScreen({ user }) {
             title="Weighted Pipeline - Last 12 weeks"
             actionLabel="12w"
             emptyTitle="No revenue trend yet"
-            emptyCopy="Your pipeline trend will appear here as deals move through each stage."
+            emptyCopy="Your pipeline trend will appear here as projects move through each stage."
           />
           <DataPanel
             title="Quota Attainment"
             emptyTitle="No quota data yet"
-            emptyCopy="Quota progress will appear here once goals and deal activity are in place."
+            emptyCopy="Quota progress will appear here once goals and project activity are in place."
           />
           <DataPanel
-            title="Highest-value deals to close"
+            title="Highest-value projects to close"
             actionLabel="View pipeline"
-            emptyTitle="No deals yet"
-            emptyCopy="Your highest-value opportunities will appear here as new deals are added."
+            emptyTitle="No projects yet"
+            emptyCopy="Your highest-value opportunities will appear here as new projects are added."
           />
           <DataPanel
             title="Recent activity"

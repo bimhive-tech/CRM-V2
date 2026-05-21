@@ -723,16 +723,16 @@ export function SettingsScreen({
 
       if (modalState.mode === "edit" && modalState.itemId) {
         await updatePipelineStatusTemplate(token, modalState.itemId, payload);
-        setMessage("", "Default pipeline status updated.");
+        setMessage("", "Default pipeline stage updated.");
       } else {
         await createPipelineStatusTemplate(token, payload, { company_id: selectedCompanyId });
-        setMessage("", "Default pipeline status created.");
+        setMessage("", "Default pipeline stage created.");
       }
 
       await refreshMasterData();
       closeModal();
     } catch (error) {
-      setMessage(error.message || "Unable to save default pipeline status.");
+      setMessage(error.message || "Unable to save default pipeline stage.");
     }
   }
 
@@ -766,9 +766,9 @@ export function SettingsScreen({
     try {
       await restoreDefaultPipelineStatusTemplates(token, { company_id: selectedCompanyId });
       await refreshMasterData();
-      setMessage("", "Default pipeline statuses restored.");
+      setMessage("", "Default pipeline stages restored.");
     } catch (error) {
-      setMessage(error.message || "Unable to restore default pipeline statuses.");
+      setMessage(error.message || "Unable to restore default pipeline stages.");
     }
   }
 
@@ -942,7 +942,7 @@ export function SettingsScreen({
                     <th>Email</th>
                     <th>Roles</th>
                     <th>Companies</th>
-                    <th>Status</th>
+                    <th>Stage</th>
                     <th>Actions</th>
                   </tr>
                 </thead>
@@ -1099,7 +1099,7 @@ export function SettingsScreen({
             <div className={styles.panelHeader}>
               <div>
                 <p className={styles.panelEyebrow}>Master Data</p>
-                <h2>Industries, currencies, and default pipeline statuses</h2>
+                <h2>Industries, currencies, and default pipeline stages</h2>
                 <p className={styles.bodyCopy}>Each company manages its own copy of this data. We seed default values and you can restore them later if they get removed.</p>
               </div>
               {user?.is_platform_admin && companyOptions.length ? (
@@ -1179,7 +1179,7 @@ export function SettingsScreen({
                         <th>Name</th>
                         <th>Symbol</th>
                         <th>Default</th>
-                        <th>Status</th>
+                        <th>Stage</th>
                         <th>Actions</th>
                       </tr>
                     </thead>
@@ -1213,14 +1213,14 @@ export function SettingsScreen({
                 <div className={styles.panelHeader}>
                   <div>
                     <p className={styles.panelEyebrow}>Pipeline Defaults</p>
-                    <h2>Statuses created with every new pipeline</h2>
+                    <h2>Stages created with every new pipeline</h2>
                   </div>
                   <div className={styles.actionsCell}>
                     <button className={styles.secondaryButton} type="button" onClick={handleRestoreStatusDefaults} disabled={!selectedCompanyId}>
                       Restore defaults
                     </button>
                     <button className={styles.primaryButton} type="button" onClick={() => openStatusTemplateModal("create")} disabled={!selectedCompanyId}>
-                      Add status
+                      Add stage
                     </button>
                   </div>
                 </div>
@@ -1287,7 +1287,7 @@ export function SettingsScreen({
                   <tr>
                     <th>Name</th>
                     <th>Slug</th>
-                    <th>Status</th>
+                    <th>Stage</th>
                     <th>Actions</th>
                   </tr>
                 </thead>
@@ -1496,15 +1496,15 @@ export function SettingsScreen({
 
         {modalState.type === "status-template" ? (
           <SettingsModal
-            title={modalState.mode === "edit" ? "Edit default pipeline status" : "Create default pipeline status"}
-            description="These statuses are added automatically whenever a new pipeline is created for the selected company."
+            title={modalState.mode === "edit" ? "Edit default pipeline stage" : "Create default pipeline stage"}
+            description="These stages are added automatically whenever a new pipeline is created for the selected company."
             onClose={closeModal}
             onSubmit={handleStatusTemplateSubmit}
-            submitLabel={modalState.mode === "edit" ? "Save status" : "Create status"}
+            submitLabel={modalState.mode === "edit" ? "Save stage" : "Create stage"}
           >
             <div className={styles.formGrid}>
               <label className={styles.field}>
-                <span>Status name</span>
+                <span>Stage name</span>
                 <input name="name" value={statusTemplateForm.name} onChange={updateStatusTemplateForm} placeholder="Technical Review" required />
               </label>
               <label className={styles.field}>

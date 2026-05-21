@@ -73,9 +73,9 @@ export function ContactsModal({
             </label>
             {form.pipelineId ? (
               <label className={styles.field}>
-                <span>Status</span>
+                <span>Stage</span>
                 <SearchableSelect
-                  ariaLabel="Status"
+                  ariaLabel="Stage"
                   name="status"
                   value={form.status}
                   onChange={onChange}
@@ -438,7 +438,7 @@ export function ContactImportModal({
                               <th>Contact</th>
                               <th>Email</th>
                               <th>Phone</th>
-                              <th>Status</th>
+                              <th>Stage</th>
                             </tr>
                           </thead>
                           <tbody>

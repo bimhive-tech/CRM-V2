@@ -31,7 +31,7 @@ import styles from "./pipeline-screen.module.css";
 const DEFAULT_STATUS_COLOR = "#7C5F35";
 const PIPELINE_TABS = [
   { id: "contacts", label: "Contacts", icon: PeopleIcon },
-  { id: "deals", label: "Deals", icon: DealsIcon },
+  { id: "deals", label: "Projects", icon: DealsIcon },
 ];
 
 function getPipelineStorageKey(user, kind) {
@@ -104,34 +104,34 @@ function getTabCopy(activeTab) {
   if (activeTab === "deals") {
     return {
       eyebrow: "Pipeline",
-      title: "Manage deal stages separately from contact tracking",
-      copy: "Create deal-specific pipelines, move opportunities between stages, and keep every status column aligned with your deal flow.",
-      emptyTitle: "No deal pipelines yet",
-      emptyCopy: "Create your first deals pipeline to start organizing opportunities by stage.",
-      boardEyebrow: "Deals pipeline",
-      addStatusLabel: "Add status",
+      title: "Manage project stages separately from contact tracking",
+      copy: "Create project-specific pipelines, move opportunities between stages, and keep every stage column aligned with your project flow.",
+      emptyTitle: "No project pipelines yet",
+      emptyCopy: "Create your first projects pipeline to start organizing opportunities by stage.",
+      boardEyebrow: "Projects pipeline",
+      addStatusLabel: "Add stage",
       createPipelinePlaceholder: "Cairo Tenders",
-      createPipelineDescription: "Set up a new deals workflow with its own status columns.",
-      editPipelineDescription: "Rename this deals pipeline without changing the opportunities already assigned to it.",
+      createPipelineDescription: "Set up a new projects workflow with its own stage columns.",
+      editPipelineDescription: "Rename this projects pipeline without changing the opportunities already assigned to it.",
       deletePipelineDescription:
-        "Type Confirm to permanently delete this deals pipeline. Deals must be moved or deleted before the pipeline can be removed.",
-      emptyColumnCopy: (statusName) => `Deals assigned to ${statusName.toLowerCase()} will appear here.`,
+        "Type Confirm to permanently delete this projects pipeline. Projects must be moved or deleted before the pipeline can be removed.",
+      emptyColumnCopy: (statusName) => `Projects assigned to ${statusName.toLowerCase()} will appear here.`,
     };
   }
 
   return {
     eyebrow: "Pipeline",
     title: "Shape each workflow around your contact sales motion",
-    copy: "Switch between contact pipelines, create new stage flows, and keep every status column in the right order.",
+    copy: "Switch between contact pipelines, create new stage flows, and keep every stage column in the right order.",
     emptyTitle: "No contact pipelines yet",
     emptyCopy: "Create your first contacts pipeline to start organizing people by stage.",
     boardEyebrow: "Contacts pipeline",
-    addStatusLabel: "Add status",
+    addStatusLabel: "Add stage",
     createPipelinePlaceholder: "Consultant Outreach",
-    createPipelineDescription: "Set up a new contacts workflow with its own status columns.",
+    createPipelineDescription: "Set up a new contacts workflow with its own stage columns.",
     editPipelineDescription: "Rename this contacts pipeline without changing the people already assigned to it.",
     deletePipelineDescription:
-      "Type Confirm to permanently delete this contacts pipeline. Contacts will remain in the Contacts page, but their pipeline and status will be cleared.",
+      "Type Confirm to permanently delete this contacts pipeline. Contacts will remain in the Contacts page, but their pipeline and stage will be cleared.",
     emptyColumnCopy: (statusName) => `Contacts assigned to ${statusName.toLowerCase()} will appear here.`,
   };
 }
@@ -611,10 +611,10 @@ export function PipelineScreen({ user }) {
       } else {
         await loadPipelineContacts(selectedPipeline.id);
       }
-      setStatus({ loading: false, error: "", success: "Status added." });
+      setStatus({ loading: false, error: "", success: "Stage added." });
       closeModal();
     } catch (error) {
-      setStatus({ loading: false, error: error.message || "Unable to add status.", success: "" });
+      setStatus({ loading: false, error: error.message || "Unable to add stage.", success: "" });
     }
   }
 
@@ -626,10 +626,10 @@ export function PipelineScreen({ user }) {
     try {
       await updatePipelineStatus(token, statusId, { name: editingName.trim() });
       await loadPipelines(activeTab, selectedPipelineId);
-      setStatus({ loading: false, error: "", success: "Status updated." });
+      setStatus({ loading: false, error: "", success: "Stage updated." });
       cancelStatusEditing();
     } catch (error) {
-      setStatus({ loading: false, error: error.message || "Unable to update status.", success: "" });
+      setStatus({ loading: false, error: error.message || "Unable to update stage.", success: "" });
     }
   }
 
@@ -650,10 +650,10 @@ export function PipelineScreen({ user }) {
           await loadPipelineContacts(selectedPipeline.id);
         }
       }
-      setStatus({ loading: false, error: "", success: "Status removed." });
+      setStatus({ loading: false, error: "", success: "Stage removed." });
       closeModal();
     } catch (error) {
-      setStatus({ loading: false, error: error.message || "Unable to remove status.", success: "" });
+      setStatus({ loading: false, error: error.message || "Unable to remove stage.", success: "" });
     }
   }
 
@@ -689,9 +689,9 @@ export function PipelineScreen({ user }) {
     try {
       await updatePipelineStatus(token, statusId, { position: nextPosition });
       await loadPipelines(activeTab, selectedPipelineId);
-      setStatus({ loading: false, error: "", success: "Status order updated." });
+      setStatus({ loading: false, error: "", success: "Stage order updated." });
     } catch (error) {
-      setStatus({ loading: false, error: error.message || "Unable to reorder status.", success: "" });
+      setStatus({ loading: false, error: error.message || "Unable to reorder stage.", success: "" });
     }
   }
 
@@ -704,7 +704,7 @@ export function PipelineScreen({ user }) {
       if (activeTab === "deals") {
         await updateDeal(token, cardId, { stage: nextStatusName });
         await loadPipelineDeals(selectedPipeline.id);
-        setStatus({ loading: false, error: "", success: "Deal stage updated." });
+        setStatus({ loading: false, error: "", success: "Project stage updated." });
         return;
       }
 
@@ -712,7 +712,7 @@ export function PipelineScreen({ user }) {
       await loadPipelineContacts(selectedPipeline.id);
       setStatus({ loading: false, error: "", success: "Contact stage updated." });
     } catch (error) {
-      setStatus({ loading: false, error: error.message || `Unable to move ${activeTab === "deals" ? "deal" : "contact"}.`, success: "" });
+      setStatus({ loading: false, error: error.message || `Unable to move ${activeTab === "deals" ? "project" : "contact"}.`, success: "" });
     }
   }
 
@@ -739,7 +739,7 @@ export function PipelineScreen({ user }) {
           breadcrumbs={[
             { label: "Workspace", href: "/dashboard" },
             { label: "Pipeline", href: "/pipeline" },
-            { label: activeTab === "deals" ? "Deals" : "Contacts" },
+            { label: activeTab === "deals" ? "Projects" : "Contacts" },
             ...(selectedPipeline?.name ? [{ label: selectedPipeline.name }] : []),
           ]}
         />
@@ -928,7 +928,7 @@ export function PipelineScreen({ user }) {
                                   type="button"
                                   onClick={() => saveStatusName(statusItem.id)}
                                   aria-label={`Save ${statusItem.name}`}
-                                  title="Save status"
+                                  title="Save stage"
                                 >
                                   <CheckIcon />
                                 </button>
@@ -953,7 +953,7 @@ export function PipelineScreen({ user }) {
                               onClick={() => openModal("delete-status", statusItem)}
                               disabled={!selectedPipelineAccess?.can_manage_statuses}
                               aria-label={`Remove ${statusItem.name}`}
-                              title="Remove status"
+                              title="Remove stage"
                             >
                             <TrashIcon />
                           </button>
@@ -1026,9 +1026,9 @@ export function PipelineScreen({ user }) {
                                     </>
                                   )}
                                   <label className={styles.contactStatusSelect}>
-                                    <span className={styles.visuallyHidden}>Move {activeTab === "deals" ? "deal" : "contact"} status</span>
+                                    <span className={styles.visuallyHidden}>Move {activeTab === "deals" ? "project" : "contact"} stage</span>
                                     <SearchableSelect
-                                      ariaLabel={`Move ${activeTab === "deals" ? "deal" : "contact"} status`}
+                                      ariaLabel={`Move ${activeTab === "deals" ? "project" : "contact"} stage`}
                                       value={activeTab === "deals" ? item.stage : item.status}
                                       onValueChange={(value) => moveCardToStatus(item.id, value)}
                                       options={visibleStatuses.map((option) => ({ value: option.name, label: option.name }))}
@@ -1066,7 +1066,7 @@ export function PipelineScreen({ user }) {
                               <span className={styles.columnEmptyIcon}>
                                 <ClipboardIcon />
                               </span>
-                              <strong>No {activeTab === "deals" ? "deals" : "contacts"} in this stage</strong>
+                              <strong>No {activeTab === "deals" ? "projects" : "contacts"} in this stage</strong>
                               <p>{copy.emptyColumnCopy(statusItem.name)}</p>
                             </div>
                           )}
@@ -1082,7 +1082,7 @@ export function PipelineScreen({ user }) {
                     disabled={!selectedPipeline || !selectedPipelineAccess?.can_manage_statuses}
                   >
                     <PlusIcon />
-                    <span>Add status</span>
+                    <span>Add stage</span>
                   </button>
                 </div>
               </div>
@@ -1131,15 +1131,15 @@ export function PipelineScreen({ user }) {
 
       {modalState.type === "status" ? (
         <PipelineModal
-          title="Add status"
-          description="Add a new status column to the current pipeline and choose the color used across the workspace."
+          title="Add stage"
+          description="Add a new stage column to the current pipeline and choose the color used across the workspace."
           value={nameValue}
           colorValue={colorValue}
           onChange={setNameValue}
           onColorChange={setColorValue}
           onClose={closeModal}
           onSubmit={handleCreateStatus}
-          submitLabel="Add status"
+          submitLabel="Add stage"
           placeholder={activeTab === "deals" ? "Negotiation Review" : "Site Visit"}
           showColorField
         />
@@ -1159,13 +1159,13 @@ export function PipelineScreen({ user }) {
 
       {modalState.type === "delete-status" ? (
         <ConfirmDeleteModal
-          title="Remove status"
-          description='Type "Confirm" to remove this status from the pipeline.'
+          title="Remove stage"
+          description='Type "Confirm" to remove this stage from the pipeline.'
           value={deleteConfirmValue}
           onChange={setDeleteConfirmValue}
           onClose={closeModal}
           onSubmit={handleDeleteStatus}
-          submitLabel="Remove status"
+          submitLabel="Remove stage"
         />
       ) : null}
 

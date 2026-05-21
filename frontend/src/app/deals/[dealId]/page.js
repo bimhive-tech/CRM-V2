@@ -16,10 +16,10 @@ import { getAccessToken } from "@/lib/session";
 import styles from "./page.module.css";
 
 const activityTabs = [
-  { id: "all", label: "All Activities", emptyTitle: "No activity yet", emptyBody: "Calls, emails, notes, meetings, and tasks for this deal will appear here." },
+  { id: "all", label: "All Activities", emptyTitle: "No activity yet", emptyBody: "Calls, emails, notes, meetings, and tasks for this project will appear here." },
   { id: "notes", label: "Notes", emptyTitle: "No notes yet", emptyBody: "Commercial context, risks, and next-step notes will appear here." },
-  { id: "tasks", label: "Tasks", emptyTitle: "No tasks yet", emptyBody: "Assigned follow-up work for this deal will appear here." },
-  { id: "meetings", label: "Meetings", emptyTitle: "No meetings yet", emptyBody: "Meeting history and upcoming sessions for this deal will appear here." },
+  { id: "tasks", label: "Tasks", emptyTitle: "No tasks yet", emptyBody: "Assigned follow-up work for this project will appear here." },
+  { id: "meetings", label: "Meetings", emptyTitle: "No meetings yet", emptyBody: "Meeting history and upcoming sessions for this project will appear here." },
   { id: "attachments", label: "Attachments", emptyTitle: "", emptyBody: "" },
 ];
 
@@ -188,11 +188,11 @@ function DealEditorModal({
 }) {
   return (
     <div className={styles.modalOverlay} role="presentation">
-      <div className={styles.modal} role="dialog" aria-modal="true" aria-label="Edit deal">
+      <div className={styles.modal} role="dialog" aria-modal="true" aria-label="Edit project">
         <div className={styles.modalHeader}>
           <div>
-            <p className={styles.eyebrow}>Deals</p>
-            <h2>Edit deal</h2>
+            <p className={styles.eyebrow}>Projects</p>
+            <h2>Edit project</h2>
             <p className={styles.copy}>Update the commercial details without leaving the detail page.</p>
           </div>
           <button className={styles.iconButton} type="button" onClick={onClose} aria-label="Close modal">
@@ -203,7 +203,7 @@ function DealEditorModal({
         <form className={styles.modalBody} onSubmit={onSubmit}>
           <div className={styles.formGrid}>
             <label className={styles.field}>
-              <span>Deal name</span>
+              <span>Project name</span>
               <input name="name" value={form.name} onChange={onChange} required />
             </label>
             <label className={styles.field}>
@@ -269,7 +269,7 @@ function DealEditorModal({
               Cancel
             </button>
             <button className={styles.primaryButton} type="submit">
-              Save deal
+              Save project
             </button>
           </div>
         </form>
@@ -326,7 +326,7 @@ export default function DealDetailPage() {
         if (!active) {
           return;
         }
-        setState({ loading: false, deal: null, error: error.message || "Unable to load deal." });
+        setState({ loading: false, deal: null, error: error.message || "Unable to load project." });
       });
 
     return () => {
@@ -427,10 +427,10 @@ export default function DealDetailPage() {
     try {
       const updatedDeal = await updateDeal(getAccessToken(), state.deal.id, payload);
       setState({ loading: false, deal: updatedDeal, error: "" });
-      setSaveMessage({ error: "", success: "Deal updated." });
+      setSaveMessage({ error: "", success: "Project updated." });
       closeModal();
     } catch (error) {
-      setSaveMessage({ error: error.message || "Unable to save deal.", success: "" });
+      setSaveMessage({ error: error.message || "Unable to save project.", success: "" });
     }
   }
 
@@ -453,8 +453,8 @@ export default function DealDetailPage() {
           memberUsers={dealTopbarUsers}
           breadcrumbs={[
             { label: "Workspace", href: "/dashboard" },
-            { label: "Deals", href: "/deals" },
-            { label: deal?.name || "Deal" },
+            { label: "Projects", href: "/deals" },
+            { label: deal?.name || "Project" },
           ]}
         />
       }
@@ -504,7 +504,7 @@ export default function DealDetailPage() {
                 <StageBadge value={deal.stage} color={deal.stage_color} />
               </div>
 
-              <div className={styles.tabBar} role="tablist" aria-label="Deal activity tabs">
+              <div className={styles.tabBar} role="tablist" aria-label="Project activity tabs">
                 {activityTabs.map((tab) => (
                   <button
                     key={tab.id}
@@ -593,7 +593,7 @@ export default function DealDetailPage() {
                     <div>
                       <p className={styles.eyebrow}>Notes</p>
                       <div className={styles.infoMeta}>
-                        <strong>Deal notes</strong>
+                        <strong>Project notes</strong>
                       </div>
                     </div>
                   </div>

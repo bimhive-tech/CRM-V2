@@ -146,11 +146,11 @@ function DealModal({
 }) {
   return (
     <div className={styles.modalOverlay} role="presentation">
-      <div className={styles.modal} role="dialog" aria-modal="true" aria-label={mode === "edit" ? "Edit deal" : "Create deal"}>
+      <div className={styles.modal} role="dialog" aria-modal="true" aria-label={mode === "edit" ? "Edit project" : "Create project"}>
         <div className={styles.modalHeader}>
           <div>
-            <p className={styles.eyebrow}>Deals</p>
-            <h2>{mode === "edit" ? "Edit deal" : "Create deal"}</h2>
+            <p className={styles.eyebrow}>Projects</p>
+            <h2>{mode === "edit" ? "Edit project" : "Create project"}</h2>
             <p className={styles.copy}>Use the same modal for creation and editing so opportunity records stay consistent.</p>
           </div>
           <button className={styles.iconButton} type="button" onClick={onClose} aria-label="Close modal">
@@ -161,7 +161,7 @@ function DealModal({
         <form className={styles.modalBody} onSubmit={onSubmit}>
           <div className={styles.formGrid}>
             <label className={styles.field}>
-              <span>Deal name</span>
+              <span>Project name</span>
               <input name="name" value={form.name} onChange={onChange} placeholder="Nile Contracting - Annual Fit-Out Package" required />
             </label>
             <label className={styles.field}>
@@ -227,7 +227,7 @@ function DealModal({
               Cancel
             </button>
             <button className={styles.primaryButton} type="submit">
-              {mode === "edit" ? "Save deal" : "Create deal"}
+              {mode === "edit" ? "Save project" : "Create project"}
             </button>
           </div>
         </form>
@@ -379,7 +379,7 @@ export function DealsScreen({ user }) {
         }
         setStatus({
           loading: false,
-          error: error.message || "Unable to load deals workspace. If the backend was just updated, make sure migrations were applied.",
+          error: error.message || "Unable to load projects workspace. If the backend was just updated, make sure migrations were applied.",
           success: "",
         });
       }
@@ -427,7 +427,7 @@ export function DealsScreen({ user }) {
         }
         setStatus((current) => ({
           ...current,
-          error: error.message || "Unable to load deals. If the backend was just updated, make sure migrations were applied.",
+          error: error.message || "Unable to load projects. If the backend was just updated, make sure migrations were applied.",
         }));
       }
     }
@@ -487,12 +487,12 @@ export function DealsScreen({ user }) {
       const firstPipeline = selectedPipeline || nextPipelines[0] || null;
 
       if (!firstPipeline) {
-        setMessage("Create a deals pipeline first.");
+        setMessage("Create a projects pipeline first.");
         return;
       }
 
       if (!nextCompanies.length) {
-        setMessage("Create a CRM company first before adding a deal.");
+        setMessage("Create a CRM company first before adding a project.");
         return;
       }
 
@@ -507,7 +507,7 @@ export function DealsScreen({ user }) {
       });
       setModalState({ open: true, mode: "create", dealId: null });
     } catch (error) {
-      setMessage(error.message || "Unable to load deal options.");
+      setMessage(error.message || "Unable to load project options.");
     }
   }
 
@@ -515,7 +515,7 @@ export function DealsScreen({ user }) {
     try {
       await loadDealOptions();
     } catch (error) {
-      setMessage(error.message || "Unable to load deal options.");
+      setMessage(error.message || "Unable to load project options.");
       return;
     }
 
@@ -552,12 +552,12 @@ export function DealsScreen({ user }) {
     event.preventDefault();
 
     if (!dealForm.companyId) {
-      setMessage("Create or select a CRM company before saving a deal.");
+      setMessage("Create or select a CRM company before saving a project.");
       return;
     }
 
     if (!dealForm.pipelineId) {
-      setMessage("Select a deals pipeline before saving.");
+      setMessage("Select a projects pipeline before saving.");
       return;
     }
 
@@ -580,10 +580,10 @@ export function DealsScreen({ user }) {
     try {
       if (modalState.mode === "edit" && modalState.dealId) {
         await updateDeal(token, modalState.dealId, payload);
-        setMessage("", "Deal updated.");
+        setMessage("", "Project updated.");
       } else {
         await createDeal(token, payload);
-        setMessage("", "Deal created.");
+        setMessage("", "Project created.");
       }
 
       if (payload.pipeline_id && String(payload.pipeline_id) !== selectedPipelineId) {
@@ -593,7 +593,7 @@ export function DealsScreen({ user }) {
       }
       closeModal();
     } catch (error) {
-      setMessage(error.message || "Unable to save deal.");
+      setMessage(error.message || "Unable to save project.");
     }
   }
 
@@ -605,9 +605,9 @@ export function DealsScreen({ user }) {
     try {
       await deleteDeal(token, deal.id);
       await refreshDeals();
-      setMessage("", "Deal deleted.");
+      setMessage("", "Project deleted.");
     } catch (error) {
-      setMessage(error.message || "Unable to delete deal.");
+      setMessage(error.message || "Unable to delete project.");
     }
   }
 
@@ -618,14 +618,14 @@ export function DealsScreen({ user }) {
   return (
     <DashboardShell
       sidebar={<Sidebar user={user} />}
-      topbar={<Topbar user={user} memberUsers={topbarTeamUsers} breadcrumbs={[{ label: "Workspace", href: "/dashboard" }, { label: "Deals" }]} />}
+      topbar={<Topbar user={user} memberUsers={topbarTeamUsers} breadcrumbs={[{ label: "Workspace", href: "/dashboard" }, { label: "Projects" }]} />}
     >
       <div className={styles.stack}>
         <section className={styles.hero}>
           <div>
-            <h1>Deals</h1>
+            <h1>Projects</h1>
             <p className={styles.heroMeta}>
-              {visibleDeals.length} deals - {formatCurrency(currencySymbol, totalAmount)} total
+              {visibleDeals.length} projects - {formatCurrency(currencySymbol, totalAmount)} total
             </p>
           </div>
           <div className={styles.heroActions}>
@@ -639,7 +639,7 @@ export function DealsScreen({ user }) {
             </button>
             <button className={styles.primaryButton} type="button" onClick={openCreateModal} disabled={!pipelines.length}>
               <PlusIcon />
-              <span>New deal</span>
+              <span>New project</span>
             </button>
           </div>
         </section>
@@ -649,11 +649,11 @@ export function DealsScreen({ user }) {
 
         <section className={styles.filterBar}>
           <label className={styles.searchField}>
-            <span className={styles.visuallyHidden}>Search deals</span>
+            <span className={styles.visuallyHidden}>Search projects</span>
             <span className={styles.searchIcon} aria-hidden="true">
               <SearchIcon />
             </span>
-            <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search deals, companies, contacts..." />
+            <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search projects, companies, contacts..." />
           </label>
 
           <label className={styles.filterField}>
@@ -675,7 +675,7 @@ export function DealsScreen({ user }) {
         {selectedPipeline && visibleDeals.length ? (
           <section className={styles.panel}>
             <div className={styles.tableHeader}>
-              <span>Deal</span>
+              <span>Project</span>
               <span>Amount</span>
               <span>Primary contact</span>
               <span>Close date</span>
@@ -817,11 +817,11 @@ export function DealsScreen({ user }) {
             <span className={styles.emptyIcon}>
               <DealsIcon />
             </span>
-            <strong>No deals yet</strong>
+            <strong>No projects yet</strong>
             <p>Create your first opportunity and it will appear here grouped under its stage.</p>
             <button className={styles.primaryButton} type="button" onClick={openCreateModal}>
               <PlusIcon />
-              <span>Create first deal</span>
+              <span>Create first project</span>
             </button>
           </section>
         )}

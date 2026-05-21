@@ -16,7 +16,7 @@ const composerTypes = [
   { value: "note", label: "Note" },
   { value: "auth", label: "Auth" },
   { value: "contact", label: "Contact" },
-  { value: "deal", label: "Deal" },
+  { value: "deal", label: "Project" },
   { value: "pipeline", label: "Pipeline" },
   { value: "team", label: "Team" },
 ];

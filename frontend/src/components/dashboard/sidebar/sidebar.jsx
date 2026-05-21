@@ -28,7 +28,7 @@ const navSections = [
       { id: "pipeline", label: "Pipeline", icon: <PipelineIcon />, href: "/pipeline", match: ["/pipeline"] },
       { id: "contacts", label: "Contacts", icon: <PeopleIcon />, href: "/contacts", match: ["/contacts"] },
       { id: "companies", label: "Companies", icon: <OfficeIcon />, href: "/companies", match: ["/companies"] },
-      { id: "deals", label: "Deals", icon: <DealsIcon />, href: "/deals", match: ["/deals"] },
+      { id: "deals", label: "Projects", icon: <DealsIcon />, href: "/deals", match: ["/deals"] },
       { id: "activity", label: "Activity", icon: <ActivityIcon />, href: "/activity", match: ["/activity"], adminOnlyActivity: true },
     ],
   },
