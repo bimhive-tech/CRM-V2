@@ -199,6 +199,16 @@ export function PlusIcon() {
   );
 }
 
+export function DownloadIcon() {
+  return (
+    <DashboardIcon>
+      <path d="M12 4v10" />
+      <path d="m8 10 4 4 4-4" />
+      <path d="M4 20h16" />
+    </DashboardIcon>
+  );
+}
+
 export function ArrowUpIcon() {
   return (
     <DashboardIcon size={12}>

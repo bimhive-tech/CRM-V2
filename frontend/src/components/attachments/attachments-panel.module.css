@@ -38,9 +38,7 @@
   display: none;
 }
 
-.uploadButton,
-.inlineButton,
-.dangerButton {
+.uploadButton {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -53,22 +51,14 @@
   cursor: pointer;
 }
 
-.uploadButton,
-.inlineButton {
+.uploadButton {
   border: 1px solid var(--border);
   background: var(--surface);
   color: var(--ink);
 }
 
-.dangerButton {
-  border: 1px solid color-mix(in oklch, var(--danger) 24%, var(--border));
-  background: color-mix(in oklch, var(--danger) 6%, var(--surface));
-  color: var(--danger);
-}
-
 .uploadButton:disabled,
-.inlineButton:disabled,
-.dangerButton:disabled {
+.iconButton:disabled {
   opacity: 0.55;
   cursor: not-allowed;
 }
@@ -198,10 +188,56 @@
 }
 
 .itemActions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.actionButtons {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  flex-shrink: 0;
+}
+
+.iconButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--ink-2);
+  cursor: pointer;
+  transition:
+    border-color 0.16s ease,
+    background-color 0.16s ease,
+    color 0.16s ease;
+}
+
+.iconButton:hover {
+  border-color: color-mix(in oklch, var(--accent) 28%, var(--border));
+  background: var(--surface);
+  color: var(--accent-deep);
+}
+
+.iconButton svg {
+  width: 16px;
+  height: 16px;
+}
+
+.dangerIconButton {
+  color: var(--danger);
+}
+
+.dangerIconButton:hover {
+  border-color: color-mix(in oklch, var(--danger) 28%, var(--border));
+  background: color-mix(in oklch, var(--danger) 6%, var(--surface));
+  color: var(--danger);
 }
 
 .empty {
@@ -231,6 +267,6 @@
 
   .itemActions {
     width: 100%;
-    justify-content: flex-end;
+    align-items: flex-start;
   }
 }

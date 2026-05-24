@@ -594,7 +594,15 @@ export default function DealDetailPage() {
 
               <div className={styles.activityBody}>
                 {activeTab === "attachments" ? (
-                  <AttachmentsPanel targetType="deal" targetId={deal.id} active />
+                  <AttachmentsPanel
+                    targetType="deal"
+                    targetId={deal.id}
+                    active
+                    includeRelated
+                    relatedScope="deal_contact"
+                    showSource
+                    description="Upload files directly on this project and also review files from the selected linked contact."
+                  />
                 ) : (
                   <div className={styles.emptyState}>
                     <span className={styles.emptyIcon}>

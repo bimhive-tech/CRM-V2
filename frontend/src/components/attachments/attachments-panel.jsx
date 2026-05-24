@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
+import { DownloadIcon, TrashIcon } from "@/components/dashboard/dashboard-icons";
 import { deleteAttachment, downloadAttachment, listAttachments, uploadAttachment } from "@/lib/api/admin";
 import { getAccessToken } from "@/lib/session";
 
@@ -61,6 +62,7 @@ export function AttachmentsPanel({
   includeRelated = false,
   relatedScope = "",
   description = "",
+  showSource = false,
 }) {
   const fileInputRef = useRef(null);
   const [attachments, setAttachments] = useState([]);
@@ -158,13 +160,7 @@ export function AttachmentsPanel({
           <p>{description || "Upload files for this record, download them later, or remove anything you no longer need."}</p>
         </div>
         <div className={styles.actions}>
-          <input
-            ref={fileInputRef}
-            className={styles.hiddenInput}
-            type="file"
-            multiple
-            onChange={handleFilesSelected}
-          />
+          <input ref={fileInputRef} className={styles.hiddenInput} type="file" multiple onChange={handleFilesSelected} />
           <button
             className={styles.uploadButton}
             type="button"
@@ -191,12 +187,6 @@ export function AttachmentsPanel({
               <div className={styles.itemMeta}>
                 <div className={styles.itemHeader}>
                   <strong>{attachment.original_name}</strong>
-                  {attachment.source?.label ? (
-                    <span className={styles.sourceBadge}>
-                      {attachment.source.label}
-                      {attachment.source?.name ? `: ${attachment.source.name}` : ""}
-                    </span>
-                  ) : null}
                 </div>
                 <p>{`${formatFileSize(attachment.file_size)} · Uploaded ${formatDate(attachment.created_at)}`}</p>
                 <div className={styles.uploaderRow}>
@@ -208,24 +198,36 @@ export function AttachmentsPanel({
                     {attachment.source?.subtitle ? <span>{attachment.source.subtitle}</span> : null}
                   </p>
                 </div>
-                {attachment.source?.type === "contact" ? (
-                  <p className={styles.relatedHint}>
-                    This file was uploaded on a linked contact and is also visible on the company record.
-                  </p>
-                ) : null}
               </div>
+
               <div className={styles.itemActions}>
-                <button className={styles.inlineButton} type="button" onClick={() => handleDownload(attachment)}>
-                  Download
-                </button>
-                <button
-                  className={styles.dangerButton}
-                  type="button"
-                  onClick={() => handleDelete(attachment.id)}
-                  disabled={state.deletingId === attachment.id}
-                >
-                  {state.deletingId === attachment.id ? "Deleting..." : "Delete"}
-                </button>
+                {showSource && attachment.source?.label ? (
+                  <span className={styles.sourceBadge}>
+                    {attachment.source.label}
+                    {attachment.source?.name ? `: ${attachment.source.name}` : ""}
+                  </span>
+                ) : null}
+                <div className={styles.actionButtons}>
+                  <button
+                    className={styles.iconButton}
+                    type="button"
+                    onClick={() => handleDownload(attachment)}
+                    aria-label={`Download ${attachment.original_name}`}
+                    title="Download"
+                  >
+                    <DownloadIcon />
+                  </button>
+                  <button
+                    className={`${styles.iconButton} ${styles.dangerIconButton}`}
+                    type="button"
+                    onClick={() => handleDelete(attachment.id)}
+                    disabled={state.deletingId === attachment.id}
+                    aria-label={`${state.deletingId === attachment.id ? "Deleting" : "Delete"} ${attachment.original_name}`}
+                    title={state.deletingId === attachment.id ? "Deleting..." : "Delete"}
+                  >
+                    <TrashIcon />
+                  </button>
+                </div>
               </div>
             </article>
           ))}

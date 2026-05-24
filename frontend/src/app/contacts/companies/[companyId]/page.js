@@ -532,6 +532,7 @@ export default function CompanyDetailPage() {
                     active
                     includeRelated
                     relatedScope="company_contacts"
+                    showSource
                     description="Upload files directly on this company and also review files that were uploaded on linked contacts."
                   />
                 ) : (

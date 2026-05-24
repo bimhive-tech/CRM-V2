@@ -22,6 +22,7 @@ from apps.pipelines.access import (
 )
 
 RELATED_COMPANY_CONTACTS_SCOPE = "company_contacts"
+RELATED_DEAL_CONTACT_SCOPE = "deal_contact"
 
 
 def visible_contacts_queryset_for_user(user):
@@ -113,10 +114,9 @@ class AttachmentListCreateView(generics.GenericAPIView):
         )
 
         if include_related and target_type == Attachment.TARGET_COMPANY and related_scope == RELATED_COMPANY_CONTACTS_SCOPE:
-            queryset = queryset.filter(
-                Q(company_id=target.id)
-                | Q(contact__company_id=target.id)
-            ).distinct()
+            queryset = queryset.filter(Q(company_id=target.id) | Q(contact__company_id=target.id)).distinct()
+        elif include_related and target_type == Attachment.TARGET_DEAL and related_scope == RELATED_DEAL_CONTACT_SCOPE:
+            queryset = queryset.filter(Q(deal_id=target.id) | Q(contact_id=target.contact_link_id)).distinct()
         else:
             filters = {
                 "target_type": target_type,
