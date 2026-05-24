@@ -125,11 +125,76 @@
   word-break: break-word;
 }
 
+.itemHeader {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  justify-content: space-between;
+}
+
+.sourceBadge {
+  display: inline-flex;
+  align-items: center;
+  flex: 0 0 auto;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: var(--accent-tint);
+  color: var(--accent-deep);
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+}
+
 .itemMeta p {
   margin: 6px 0 0;
   color: var(--ink-2);
   font-size: 12px;
   line-height: 1.45;
+}
+
+.uploaderRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.uploaderAvatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 999px;
+  background: var(--avatar-bg);
+  color: var(--avatar-fg);
+  box-shadow: 0 0 0 2px var(--avatar-ring);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.uploaderMeta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0;
+}
+
+.uploaderMeta span:first-child {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.uploaderMeta span:last-child {
+  color: var(--ink-3);
+  font-size: 11px;
+}
+
+.relatedHint {
+  margin: 10px 0 0;
+  color: var(--ink-3);
+  font-size: 11.5px;
 }
 
 .itemActions {

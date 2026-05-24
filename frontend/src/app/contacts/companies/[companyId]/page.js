@@ -526,7 +526,14 @@ export default function CompanyDetailPage() {
 
               <div className={styles.activityBody}>
                 {activeTab === "attachments" ? (
-                  <AttachmentsPanel targetType="company" targetId={company.id} active />
+                  <AttachmentsPanel
+                    targetType="company"
+                    targetId={company.id}
+                    active
+                    includeRelated
+                    relatedScope="company_contacts"
+                    description="Upload files directly on this company and also review files that were uploaded on linked contacts."
+                  />
                 ) : (
                   <div className={styles.emptyState}>
                     <span className={styles.emptyIcon}>

@@ -33,7 +33,35 @@ function formatDate(value) {
   }).format(date);
 }
 
-export function AttachmentsPanel({ targetType, targetId, active = false }) {
+function initialsForUploader(person) {
+  const value = person?.full_name || person?.email || "User";
+  return (
+    value
+      .split(" ")
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((part) => part[0]?.toUpperCase())
+      .join("") || "U"
+  );
+}
+
+function buildAttachmentQuery(targetType, targetId, includeRelated, relatedScope) {
+  return {
+    target_type: targetType,
+    target_id: targetId,
+    ...(includeRelated ? { include_related: "true" } : {}),
+    ...(relatedScope ? { related_scope: relatedScope } : {}),
+  };
+}
+
+export function AttachmentsPanel({
+  targetType,
+  targetId,
+  active = false,
+  includeRelated = false,
+  relatedScope = "",
+  description = "",
+}) {
   const fileInputRef = useRef(null);
   const [attachments, setAttachments] = useState([]);
   const [state, setState] = useState({ loading: false, uploading: false, deletingId: null, error: "", success: "" });
@@ -45,7 +73,10 @@ export function AttachmentsPanel({ targetType, targetId, active = false }) {
 
     setState((current) => ({ ...current, loading: true }));
     try {
-      const nextAttachments = await listAttachments(getAccessToken(), { target_type: targetType, target_id: targetId });
+      const nextAttachments = await listAttachments(
+        getAccessToken(),
+        buildAttachmentQuery(targetType, targetId, includeRelated, relatedScope),
+      );
       setAttachments(nextAttachments || []);
       setState((current) => ({ ...current, loading: false, error: "" }));
     } catch (error) {
@@ -55,7 +86,7 @@ export function AttachmentsPanel({ targetType, targetId, active = false }) {
         error: error.message || "Unable to load attachments.",
       }));
     }
-  }, [targetId, targetType]);
+  }, [includeRelated, relatedScope, targetId, targetType]);
 
   useEffect(() => {
     if (!active || !targetId) {
@@ -124,7 +155,7 @@ export function AttachmentsPanel({ targetType, targetId, active = false }) {
       <div className={styles.toolbar}>
         <div className={styles.copy}>
           <h3>Attachments</h3>
-          <p>Upload files for this record, download them later, or remove anything you no longer need.</p>
+          <p>{description || "Upload files for this record, download them later, or remove anything you no longer need."}</p>
         </div>
         <div className={styles.actions}>
           <input
@@ -158,11 +189,30 @@ export function AttachmentsPanel({ targetType, targetId, active = false }) {
           {attachments.map((attachment) => (
             <article key={attachment.id} className={styles.item}>
               <div className={styles.itemMeta}>
-                <strong>{attachment.original_name}</strong>
-                <p>
-                  {formatFileSize(attachment.file_size)} · Uploaded {formatDate(attachment.created_at)}
-                  {attachment.uploaded_by?.full_name ? ` by ${attachment.uploaded_by.full_name}` : ""}
-                </p>
+                <div className={styles.itemHeader}>
+                  <strong>{attachment.original_name}</strong>
+                  {attachment.source?.label ? (
+                    <span className={styles.sourceBadge}>
+                      {attachment.source.label}
+                      {attachment.source?.name ? `: ${attachment.source.name}` : ""}
+                    </span>
+                  ) : null}
+                </div>
+                <p>{`${formatFileSize(attachment.file_size)} · Uploaded ${formatDate(attachment.created_at)}`}</p>
+                <div className={styles.uploaderRow}>
+                  <span className={styles.uploaderAvatar} aria-hidden="true">
+                    {initialsForUploader(attachment.uploaded_by)}
+                  </span>
+                  <p className={styles.uploaderMeta}>
+                    <span>{attachment.uploaded_by?.full_name || attachment.uploaded_by?.email || "Unknown uploader"}</span>
+                    {attachment.source?.subtitle ? <span>{attachment.source.subtitle}</span> : null}
+                  </p>
+                </div>
+                {attachment.source?.type === "contact" ? (
+                  <p className={styles.relatedHint}>
+                    This file was uploaded on a linked contact and is also visible on the company record.
+                  </p>
+                ) : null}
               </div>
               <div className={styles.itemActions}>
                 <button className={styles.inlineButton} type="button" onClick={() => handleDownload(attachment)}>

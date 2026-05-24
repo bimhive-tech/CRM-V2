@@ -21,6 +21,8 @@ from apps.pipelines.access import (
     user_can_manage_pipeline_deals,
 )
 
+RELATED_COMPANY_CONTACTS_SCOPE = "company_contacts"
+
 
 def visible_contacts_queryset_for_user(user):
     queryset = contacts_queryset_for_user(user)
@@ -99,11 +101,28 @@ class AttachmentListCreateView(generics.GenericAPIView):
             raise ValidationError({"detail": "Attachment target_type and target_id are required."})
 
         target = resolve_target(request.user, target_type, target_id)
-        filters = {
-            "target_type": target_type,
-            f"{target_type}_id": target.id,
-        }
-        queryset = Attachment.objects.select_related("uploaded_by").filter(**filters)
+        include_related = (request.query_params.get("include_related") or "").strip().lower() in {"1", "true", "yes"}
+        related_scope = (request.query_params.get("related_scope") or "").strip().lower()
+
+        queryset = Attachment.objects.select_related(
+            "uploaded_by",
+            "contact__contact",
+            "contact__company",
+            "company",
+            "deal",
+        )
+
+        if include_related and target_type == Attachment.TARGET_COMPANY and related_scope == RELATED_COMPANY_CONTACTS_SCOPE:
+            queryset = queryset.filter(
+                Q(company_id=target.id)
+                | Q(contact__company_id=target.id)
+            ).distinct()
+        else:
+            filters = {
+                "target_type": target_type,
+                f"{target_type}_id": target.id,
+            }
+            queryset = queryset.filter(**filters)
         return Response(AttachmentSerializer(queryset, many=True).data)
 
     def post(self, request):
