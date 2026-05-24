@@ -209,6 +209,14 @@ export function DownloadIcon() {
   );
 }
 
+export function AttachmentIcon() {
+  return (
+    <DashboardIcon>
+      <path d="M16.5 6.5 9 14a3.5 3.5 0 1 0 5 5l8-8a5.5 5.5 0 1 0-7.8-7.8l-8 8" />
+    </DashboardIcon>
+  );
+}
+
 export function ArrowUpIcon() {
   return (
     <DashboardIcon size={12}>

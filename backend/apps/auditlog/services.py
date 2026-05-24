@@ -27,7 +27,12 @@ def _company_from_target(target):
 def _target_type(target):
     if target is None:
         return ""
-    return target.__class__.__name__.lower()
+    model_name = getattr(getattr(target, "_meta", None), "model_name", "") or target.__class__.__name__.lower()
+    return {
+        "crmcontactcompanylink": "contact",
+        "crmcompany": "company",
+        "deal": "deal",
+    }.get(model_name, model_name)
 
 
 def _target_id(target):
@@ -42,7 +47,20 @@ def _target_label(target):
     return str(target)
 
 
-def log_audit_event(actor, *, event_type, action, title, description="", target=None, company=None, metadata=None):
+def log_audit_event(
+    actor,
+    *,
+    event_type,
+    action,
+    title,
+    description="",
+    target=None,
+    company=None,
+    metadata=None,
+    target_type="",
+    target_id="",
+    target_label="",
+):
     resolved_company = company or _company_from_target(target) or default_company_for_user(actor)
     if resolved_company is None:
         return None
@@ -54,9 +72,9 @@ def log_audit_event(actor, *, event_type, action, title, description="", target=
         action=action,
         title=title,
         description=description,
-        target_type=_target_type(target),
-        target_id=_target_id(target),
-        target_label=_target_label(target),
+        target_type=target_type or _target_type(target),
+        target_id=target_id or _target_id(target),
+        target_label=target_label or _target_label(target),
         metadata=metadata or {},
     )
 
@@ -65,4 +83,3 @@ def audit_log_queryset_for_user(user):
     return AuditLogEntry.objects.select_related("actor", "tenant_company").filter(
         tenant_company_id__in=_company_ids_for_user(user)
     )
-

@@ -159,6 +159,9 @@ class AttachmentListCreateView(generics.GenericAPIView):
             title="Uploaded attachment",
             description=attachment.original_name,
             target=target,
+            target_type=target_type,
+            target_id=str(target.id),
+            target_label=str(target),
             metadata={"target_type": target_type, "file_size": attachment.file_size},
         )
         return Response(AttachmentSerializer(attachment).data, status=201)
@@ -186,6 +189,9 @@ class AttachmentDetailView(generics.GenericAPIView):
             title="Deleted attachment",
             description=file_name,
             target=target,
+            target_type=attachment.target_type,
+            target_id=str(target.id),
+            target_label=str(target),
             metadata={"target_type": attachment.target_type},
         )
         return Response(status=204)

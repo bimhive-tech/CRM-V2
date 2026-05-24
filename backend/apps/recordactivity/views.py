@@ -38,6 +38,9 @@ def log_record_activity_event(actor, target, activity, action, *, previous_done=
         title=title,
         description=activity.title,
         target=target,
+        target_type=activity.target_type,
+        target_id=str(activity.target_id or ""),
+        target_label=str(target),
         metadata={
             "activity_kind": activity.kind,
             "activity_id": activity.id,

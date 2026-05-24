@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import {
+  AttachmentIcon,
   CalendarIcon,
   CheckIcon,
   EditIcon,
@@ -128,6 +129,9 @@ function labelForKind(kind) {
 }
 
 function labelForAuditEntry(entry) {
+  if (entry?.event_type === "attachment") {
+    return "Attachment";
+  }
   return labelForKind(entry?.metadata?.activity_kind || "note");
 }
 
@@ -617,6 +621,10 @@ function AllActivitiesList({ items, onCreate, saving }) {
                   {entry.metadata?.activity_kind === "task" ? (
                     <span className={`${styles.checkButton} ${entry.metadata?.is_done ? styles.checkButtonDone : ""}`}>
                       {entry.metadata?.is_done ? <CheckIcon /> : null}
+                    </span>
+                  ) : entry.event_type === "attachment" ? (
+                    <span className={styles.calendarIconWrap}>
+                      <AttachmentIcon />
                     </span>
                   ) : entry.metadata?.activity_kind === "meeting" ? (
                     <span className={styles.calendarIconWrap}>
