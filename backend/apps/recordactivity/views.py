@@ -3,6 +3,8 @@ from rest_framework import generics, permissions
 from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 
+from apps.auditlog.models import AuditLogEntry
+from apps.auditlog.services import log_audit_event
 from apps.attachments.views import ensure_can_manage_target, resolve_target
 from apps.recordactivity.models import RecordActivity
 from apps.recordactivity.serializers import RecordActivitySerializer, RecordActivityWriteSerializer
@@ -11,6 +13,37 @@ from apps.recordactivity.serializers import RecordActivitySerializer, RecordActi
 def activity_queryset_for_target(target_type, target_id):
     return RecordActivity.objects.select_related("created_by", "updated_by").filter(
         **{f"{target_type}_id": target_id}
+    )
+
+
+def _activity_kind_label(kind):
+    return "task" if kind == RecordActivity.KIND_TASK else "meeting" if kind == RecordActivity.KIND_MEETING else "note"
+
+
+def log_record_activity_event(actor, target, activity, action, *, previous_done=None):
+    kind_label = _activity_kind_label(activity.kind)
+    if activity.kind == RecordActivity.KIND_TASK and action == AuditLogEntry.ACTION_UPDATE and previous_done is not None and previous_done != activity.is_done:
+        title = "Completed task" if activity.is_done else "Reopened task"
+    elif action == AuditLogEntry.ACTION_CREATE:
+        title = f"Created {kind_label}"
+    elif action == AuditLogEntry.ACTION_DELETE:
+        title = f"Deleted {kind_label}"
+    else:
+        title = f"Updated {kind_label}"
+
+    log_audit_event(
+        actor,
+        event_type=AuditLogEntry.TYPE_NOTE,
+        action=action,
+        title=title,
+        description=activity.title,
+        target=target,
+        metadata={
+            "activity_kind": activity.kind,
+            "activity_id": activity.id,
+            "is_done": activity.is_done,
+            "activity_date": activity.activity_date.isoformat() if activity.activity_date else "",
+        },
     )
 
 
@@ -54,6 +87,7 @@ class RecordActivityListCreateView(generics.GenericAPIView):
             position=next_position,
             **{target_type: target},
         )
+        log_record_activity_event(request.user, target, activity, AuditLogEntry.ACTION_CREATE)
         return Response(RecordActivitySerializer(activity).data, status=201)
 
 
@@ -71,14 +105,16 @@ class RecordActivityDetailView(generics.GenericAPIView):
     def patch(self, request, pk):
         activity, target = self.get_object()
         ensure_can_manage_target(request.user, activity.target_type, target)
+        previous_done = activity.is_done
         serializer = RecordActivityWriteSerializer(activity, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
         updated = serializer.save(updated_by=request.user)
+        log_record_activity_event(request.user, target, updated, AuditLogEntry.ACTION_UPDATE, previous_done=previous_done)
         return Response(RecordActivitySerializer(updated).data)
 
     def delete(self, request, pk):
         activity, target = self.get_object()
         ensure_can_manage_target(request.user, activity.target_type, target)
+        log_record_activity_event(request.user, target, activity, AuditLogEntry.ACTION_DELETE)
         activity.delete()
         return Response(status=204)
-

@@ -17,8 +17,14 @@ class AuditLogListCreateView(generics.GenericAPIView):
         if current_company is not None:
             queryset = queryset.filter(tenant_company=current_company)
         event_type = request.query_params.get("event_type", "").strip()
+        target_type = request.query_params.get("target_type", "").strip().lower()
+        target_id = request.query_params.get("target_id", "").strip()
         if event_type:
             queryset = queryset.filter(event_type=event_type)
+        if target_type:
+            queryset = queryset.filter(target_type=target_type)
+        if target_id:
+            queryset = queryset.filter(target_id=target_id)
 
         page = self.paginate_queryset(queryset)
         serializer = AuditLogEntrySerializer(page, many=True)
@@ -48,4 +54,3 @@ class AuditLogListCreateView(generics.GenericAPIView):
             company=current_company,
         )
         return Response(AuditLogEntrySerializer(entry).data, status=201)
-

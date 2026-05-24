@@ -15,6 +15,7 @@ import {
   listRecordActivities,
   updateRecordActivity,
 } from "@/lib/api/admin";
+import { listAuditLog } from "@/lib/api/activity";
 import { getAccessToken } from "@/lib/session";
 
 import styles from "./record-activity-panel.module.css";
@@ -116,28 +117,6 @@ function normalizeDateValue(value) {
   return date.toISOString();
 }
 
-function sortAllActivities(items) {
-  const kindRank = {
-    meeting: 0,
-    task: 1,
-    note: 2,
-  };
-
-  return [...items].sort((left, right) => {
-    const rightDate = new Date(normalizeDateValue(right.activity_date) || right.updated_at || right.created_at).getTime();
-    const leftDate = new Date(normalizeDateValue(left.activity_date) || left.updated_at || left.created_at).getTime();
-    if (rightDate !== leftDate) {
-      return rightDate - leftDate;
-    }
-
-    if ((kindRank[left.kind] ?? 99) !== (kindRank[right.kind] ?? 99)) {
-      return (kindRank[left.kind] ?? 99) - (kindRank[right.kind] ?? 99);
-    }
-
-    return (right.id || 0) - (left.id || 0);
-  });
-}
-
 const emptyDraft = {
   title: "",
   description: "",
@@ -146,6 +125,10 @@ const emptyDraft = {
 
 function labelForKind(kind) {
   return kind === "meeting" ? "Meeting" : kind === "task" ? "Task" : "Note";
+}
+
+function labelForAuditEntry(entry) {
+  return labelForKind(entry?.metadata?.activity_kind || "note");
 }
 
 function ActivityEditor({ kind, draft, onChange, onSubmit, onCancel, saving, submitLabel }) {
@@ -577,13 +560,9 @@ function MeetingsCalendar({ items, onCreate, onUpdate, onDelete, saving }) {
   );
 }
 
-function AllActivitiesList({ items, onCreate, onUpdate, onDelete, saving }) {
+function AllActivitiesList({ items, onCreate, saving }) {
   const [composerKind, setComposerKind] = useState("");
   const [draft, setDraft] = useState(emptyDraft);
-  const [editingId, setEditingId] = useState(null);
-  const [editingDraft, setEditingDraft] = useState(emptyDraft);
-
-  const sortedItems = useMemo(() => sortAllActivities(items), [items]);
 
   return (
     <div className={styles.stack}>
@@ -629,91 +608,39 @@ function AllActivitiesList({ items, onCreate, onUpdate, onDelete, saving }) {
         />
       ) : null}
 
-      {sortedItems.length ? (
+      {items.length ? (
         <div className={styles.list}>
-          {sortedItems.map((item) => {
-            const isEditing = editingId === item.id;
-
-            return (
-              <article key={item.id} className={`${styles.card} ${item.kind === "task" && item.is_done ? styles.cardDone : ""}`}>
-                {isEditing ? (
-                  <ActivityEditor
-                    kind={item.kind}
-                    draft={editingDraft}
-                    saving={saving}
-                    submitLabel={`Update ${labelForKind(item.kind).toLowerCase()}`}
-                    onChange={(field, value) => setEditingDraft((current) => ({ ...current, [field]: value }))}
-                    onCancel={() => setEditingId(null)}
-                    onSubmit={(event) => {
-                      event.preventDefault();
-                      onUpdate(item.id, editingDraft, () => setEditingId(null));
-                    }}
-                  />
-                ) : (
-                  <>
-                    <div className={styles.cardHeader}>
-                      <div className={styles.taskLead}>
-                        {item.kind === "task" ? (
-                          <button
-                            className={`${styles.checkButton} ${item.is_done ? styles.checkButtonDone : ""}`}
-                            type="button"
-                            onClick={() => onUpdate(item.id, { is_done: !item.is_done })}
-                            aria-label={item.is_done ? "Mark task as not done" : "Mark task as done"}
-                          >
-                            {item.is_done ? <CheckIcon /> : null}
-                          </button>
-                        ) : item.kind === "meeting" ? (
-                          <span className={styles.calendarIconWrap}>
-                            <CalendarIcon />
-                          </span>
-                        ) : (
-                          <span className={styles.avatar}>{initialsForName(item.created_by?.full_name)}</span>
-                        )}
-                        <div>
-                          <div className={styles.inlineMeta}>
-                            <strong>{item.title}</strong>
-                            <span className={styles.kindBadge}>{labelForKind(item.kind)}</span>
-                          </div>
-                          <p>{formatDate(item.activity_date)}</p>
-                        </div>
-                      </div>
-                      <div className={styles.iconActions}>
-                        <button
-                          className={styles.iconButton}
-                          type="button"
-                          onClick={() => {
-                            setEditingId(item.id);
-                            setEditingDraft({
-                              title: item.title,
-                              description: item.description || "",
-                              activity_date: item.activity_date || "",
-                              kind: item.kind,
-                            });
-                          }}
-                          aria-label={`Edit ${item.kind}`}
-                        >
-                          <EditIcon />
-                        </button>
-                        <button
-                          className={`${styles.iconButton} ${styles.dangerIconButton}`}
-                          type="button"
-                          onClick={() => onDelete(item.id)}
-                          aria-label={`Delete ${item.kind}`}
-                        >
-                          <TrashIcon />
-                        </button>
-                      </div>
+          {items.map((entry) => (
+            <article key={entry.id} className={styles.card}>
+              <div className={styles.cardHeader}>
+                <div className={styles.taskLead}>
+                  {entry.metadata?.activity_kind === "task" ? (
+                    <span className={`${styles.checkButton} ${entry.metadata?.is_done ? styles.checkButtonDone : ""}`}>
+                      {entry.metadata?.is_done ? <CheckIcon /> : null}
+                    </span>
+                  ) : entry.metadata?.activity_kind === "meeting" ? (
+                    <span className={styles.calendarIconWrap}>
+                      <CalendarIcon />
+                    </span>
+                  ) : (
+                    <span className={styles.avatar}>{entry.actor_initials || initialsForName(entry.actor_name)}</span>
+                  )}
+                  <div>
+                    <div className={styles.inlineMeta}>
+                      <strong>{entry.title}</strong>
+                      <span className={styles.kindBadge}>{labelForAuditEntry(entry)}</span>
                     </div>
-                    {item.description ? <p className={styles.bodyCopy}>{item.description}</p> : null}
-                    <div className={styles.metaRow}>
-                      <span>{item.created_by?.full_name || "Unknown user"}</span>
-                      {item.kind === "task" ? <span>{item.is_done ? "Done" : "Open"}</span> : null}
-                    </div>
-                  </>
-                )}
-              </article>
-            );
-          })}
+                    <p>{formatDate(entry.metadata?.activity_date || entry.created_at)}</p>
+                  </div>
+                </div>
+              </div>
+              {entry.description ? <p className={styles.bodyCopy}>{entry.description}</p> : null}
+              <div className={styles.metaRow}>
+                <span>{entry.actor_name || "System"}</span>
+                <span>{entry.action_label}</span>
+              </div>
+            </article>
+          ))}
         </div>
       ) : (
         <div className={styles.emptyState}>
@@ -738,20 +665,20 @@ export function RecordActivityPanel({ targetType, targetId, activeTab, active = 
 
     setState((current) => ({ ...current, loading: true, error: "" }));
     try {
-      const data = await listRecordActivities(
-        getAccessToken(),
-        kind === "all"
-          ? {
-              target_type: targetType,
-              target_id: targetId,
-            }
-          : {
-              target_type: targetType,
-              target_id: targetId,
-              kind,
-            },
-      );
-      setItems(data || []);
+      if (kind === "all") {
+        const data = await listAuditLog(getAccessToken(), {
+          target_type: targetType,
+          target_id: targetId,
+        });
+        setItems(data?.results || []);
+      } else {
+        const data = await listRecordActivities(getAccessToken(), {
+          target_type: targetType,
+          target_id: targetId,
+          kind,
+        });
+        setItems(data || []);
+      }
       setState((current) => ({ ...current, loading: false }));
     } catch (error) {
       setState((current) => ({ ...current, loading: false, error: error.message || "Unable to load items." }));
@@ -842,7 +769,7 @@ export function RecordActivityPanel({ targetType, targetId, activeTab, active = 
         <NoteList items={items} onCreate={createItem} onUpdate={updateItem} onDelete={deleteItem} saving={state.saving} />
       ) : null}
       {!state.loading && kind === "all" ? (
-        <AllActivitiesList items={items} onCreate={createItem} onUpdate={updateItem} onDelete={deleteItem} saving={state.saving} />
+        <AllActivitiesList items={items} onCreate={createItem} saving={state.saving} />
       ) : null}
       {!state.loading && kind === "task" ? (
         <TaskList items={items} onCreate={createItem} onUpdate={updateItem} onDelete={deleteItem} onReorder={reorderTask} saving={state.saving} />
