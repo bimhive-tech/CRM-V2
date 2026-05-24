@@ -288,6 +288,9 @@
 
 .themeToggle {
   position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-start;
   flex: 0 0 auto;
   width: 42px;
   height: 24px;
@@ -295,6 +298,8 @@
   border: 1px solid var(--border);
   border-radius: 999px !important;
   background: var(--surface-2) !important;
+  box-sizing: border-box;
+  cursor: pointer;
   transition:
     background-color 0.16s ease,
     border-color 0.16s ease;
@@ -305,6 +310,7 @@
 }
 
 .themeToggleActive {
+  justify-content: flex-end;
   border-color: color-mix(in oklch, var(--accent) 50%, var(--border));
   background: color-mix(in oklch, var(--accent) 78%, var(--surface)) !important;
 }
@@ -319,11 +325,7 @@
   transition: transform 0.16s ease;
 }
 
-.themeToggleActive .themeToggleThumb {
-  transform: translateX(18px);
-}
-
-.accountMenu button {
+.accountMenu > button {
   padding: 7px 10px;
   border: 0;
   border-radius: 0;
