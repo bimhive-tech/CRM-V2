@@ -75,12 +75,20 @@ function buildCalendarDays(currentMonth, selectedDate, items) {
   return days;
 }
 
-function normalizeActivityPayload(payload, kind) {
-  const normalized = {
-    kind,
-    title: (payload?.title || "").trim(),
-    description: (payload?.description || "").trim(),
-  };
+function normalizeActivityPayload(payload, kind, mode = "create") {
+  const normalized = {};
+
+  if (kind) {
+    normalized.kind = kind;
+  }
+
+  if (mode === "create" || Object.prototype.hasOwnProperty.call(payload || {}, "title")) {
+    normalized.title = (payload?.title || "").trim();
+  }
+
+  if (mode === "create" || Object.prototype.hasOwnProperty.call(payload || {}, "description")) {
+    normalized.description = (payload?.description || "").trim();
+  }
 
   if (payload?.activity_date) {
     normalized.activity_date = payload.activity_date;
@@ -569,7 +577,7 @@ export function RecordActivityPanel({ targetType, targetId, activeTab, active = 
     try {
       await createRecordActivity(
         getAccessToken(),
-        normalizeActivityPayload(payload, nextKind),
+        normalizeActivityPayload(payload, nextKind, "create"),
         { target_type: targetType, target_id: targetId },
       );
       await loadItems();
@@ -584,7 +592,7 @@ export function RecordActivityPanel({ targetType, targetId, activeTab, active = 
     setState((current) => ({ ...current, saving: true, error: "" }));
     try {
       const nextKind = payload?.kind || items.find((item) => item.id === itemId)?.kind;
-      await updateRecordActivity(getAccessToken(), itemId, normalizeActivityPayload(payload, nextKind));
+      await updateRecordActivity(getAccessToken(), itemId, normalizeActivityPayload(payload, nextKind, "update"));
       await loadItems();
       setState((current) => ({ ...current, saving: false }));
       onDone?.();
