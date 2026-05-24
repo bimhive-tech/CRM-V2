@@ -575,42 +575,44 @@ function AllActivitiesList({ items }) {
       </div>
 
       {items.length ? (
-        <div className={styles.list}>
-          {items.map((entry) => (
-            <article key={entry.id} className={styles.card}>
-              <div className={styles.cardHeader}>
-                <div className={styles.taskLead}>
-                  {entry.metadata?.activity_kind === "task" ? (
-                    <span className={`${styles.checkButton} ${entry.metadata?.is_done ? styles.checkButtonDone : ""}`}>
-                      {entry.metadata?.is_done ? <CheckIcon /> : null}
-                    </span>
-                  ) : entry.event_type === "attachment" ? (
-                    <span className={styles.calendarIconWrap}>
-                      <AttachmentIcon />
-                    </span>
-                  ) : entry.metadata?.activity_kind === "meeting" ? (
-                    <span className={styles.calendarIconWrap}>
-                      <CalendarIcon />
-                    </span>
-                  ) : (
-                    <span className={styles.avatar}>{entry.actor_initials || initialsForName(entry.actor_name)}</span>
-                  )}
-                  <div>
-                    <div className={styles.inlineMeta}>
-                      <strong>{entry.title}</strong>
-                      <span className={styles.kindBadge}>{labelForAuditEntry(entry)}</span>
+        <div className={styles.auditFeed}>
+          <div className={styles.list}>
+            {items.map((entry) => (
+              <article key={entry.id} className={styles.card}>
+                <div className={styles.cardHeader}>
+                  <div className={styles.taskLead}>
+                    {entry.metadata?.activity_kind === "task" ? (
+                      <span className={`${styles.checkButton} ${entry.metadata?.is_done ? styles.checkButtonDone : ""}`}>
+                        {entry.metadata?.is_done ? <CheckIcon /> : null}
+                      </span>
+                    ) : entry.event_type === "attachment" ? (
+                      <span className={styles.calendarIconWrap}>
+                        <AttachmentIcon />
+                      </span>
+                    ) : entry.metadata?.activity_kind === "meeting" ? (
+                      <span className={styles.calendarIconWrap}>
+                        <CalendarIcon />
+                      </span>
+                    ) : (
+                      <span className={styles.avatar}>{entry.actor_initials || initialsForName(entry.actor_name)}</span>
+                    )}
+                    <div>
+                      <div className={styles.inlineMeta}>
+                        <strong>{entry.title}</strong>
+                        <span className={styles.kindBadge}>{labelForAuditEntry(entry)}</span>
+                      </div>
+                      <p>{formatDate(entry.metadata?.activity_date || entry.created_at)}</p>
                     </div>
-                    <p>{formatDate(entry.metadata?.activity_date || entry.created_at)}</p>
                   </div>
                 </div>
-              </div>
-              {entry.description ? <p className={styles.bodyCopy}>{entry.description}</p> : null}
-              <div className={styles.metaRow}>
-                <span>{entry.actor_name || "System"}</span>
-                <span>{entry.action_label}</span>
-              </div>
-            </article>
-          ))}
+                {entry.description ? <p className={styles.bodyCopy}>{entry.description}</p> : null}
+                <div className={styles.metaRow}>
+                  <span>{entry.actor_name || "System"}</span>
+                  <span>{entry.action_label}</span>
+                </div>
+              </article>
+            ))}
+          </div>
         </div>
       ) : (
         <div className={styles.emptyState}>
@@ -624,23 +626,36 @@ function AllActivitiesList({ items }) {
 
 export function RecordActivityPanel({ targetType, targetId, activeTab, active = false }) {
   const [items, setItems] = useState([]);
+  const [pagination, setPagination] = useState({ page: 1, hasNext: false, loadingMore: false });
   const [state, setState] = useState({ loading: false, saving: false, error: "" });
 
   const kind = activeTab === "notes" ? "note" : activeTab === "tasks" ? "task" : activeTab === "meetings" ? "meeting" : activeTab === "all" ? "all" : "";
 
-  const loadItems = useCallback(async () => {
+  const loadItems = useCallback(async (options = {}) => {
     if (!kind || !targetId) {
       return;
     }
 
-    setState((current) => ({ ...current, loading: true, error: "" }));
+    const page = options.page || 1;
+    const append = Boolean(options.append);
+
+    setState((current) => ({ ...current, loading: !append, error: "" }));
+    setPagination((current) => ({ ...current, loadingMore: append }));
     try {
       if (kind === "all") {
         const data = await listAuditLog(getAccessToken(), {
           target_type: targetType,
           target_id: targetId,
+          page,
+          page_size: 12,
         });
-        setItems(data?.results?.results || []);
+        const nextItems = data?.results?.results || [];
+        setItems((current) => (append ? [...current, ...nextItems] : nextItems));
+        setPagination({
+          page,
+          hasNext: Boolean(data?.next),
+          loadingMore: false,
+        });
       } else {
         const data = await listRecordActivities(getAccessToken(), {
           target_type: targetType,
@@ -648,9 +663,11 @@ export function RecordActivityPanel({ targetType, targetId, activeTab, active = 
           kind,
         });
         setItems(data || []);
+        setPagination({ page: 1, hasNext: false, loadingMore: false });
       }
       setState((current) => ({ ...current, loading: false }));
     } catch (error) {
+      setPagination((current) => ({ ...current, loadingMore: false }));
       setState((current) => ({ ...current, loading: false, error: error.message || "Unable to load items." }));
     }
   }, [kind, targetId, targetType]);
@@ -661,6 +678,11 @@ export function RecordActivityPanel({ targetType, targetId, activeTab, active = 
     }
     loadItems();
   }, [active, kind, targetId, loadItems]);
+
+  useEffect(() => {
+    setItems([]);
+    setPagination({ page: 1, hasNext: false, loadingMore: false });
+  }, [kind, targetId, targetType]);
 
   async function createItem(nextKind, payload, onDone) {
     setState((current) => ({ ...current, saving: true, error: "" }));
@@ -727,6 +749,13 @@ export function RecordActivityPanel({ targetType, targetId, activeTab, active = 
     }
   }
 
+  async function loadMoreAllActivities() {
+    if (kind !== "all" || !pagination.hasNext || pagination.loadingMore) {
+      return;
+    }
+    await loadItems({ page: pagination.page + 1, append: true });
+  }
+
   if (!kind) {
     return null;
   }
@@ -739,7 +768,16 @@ export function RecordActivityPanel({ targetType, targetId, activeTab, active = 
         <NoteList items={items} onCreate={createItem} onUpdate={updateItem} onDelete={deleteItem} saving={state.saving} />
       ) : null}
       {!state.loading && kind === "all" ? (
-        <AllActivitiesList items={items} />
+        <>
+          <AllActivitiesList items={items} />
+          {pagination.hasNext ? (
+            <div className={styles.paginationRow}>
+              <button className={styles.secondaryButton} type="button" onClick={loadMoreAllActivities} disabled={pagination.loadingMore}>
+                {pagination.loadingMore ? "Loading..." : "Load more"}
+              </button>
+            </div>
+          ) : null}
+        </>
       ) : null}
       {!state.loading && kind === "task" ? (
         <TaskList items={items} onCreate={createItem} onUpdate={updateItem} onDelete={deleteItem} onReorder={reorderTask} saving={state.saving} />
