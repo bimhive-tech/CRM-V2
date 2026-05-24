@@ -75,6 +75,28 @@ function buildCalendarDays(currentMonth, selectedDate, items) {
   return days;
 }
 
+function normalizeActivityPayload(payload, kind) {
+  const normalized = {
+    kind,
+    title: (payload?.title || "").trim(),
+    description: (payload?.description || "").trim(),
+  };
+
+  if (payload?.activity_date) {
+    normalized.activity_date = payload.activity_date;
+  }
+
+  if (typeof payload?.is_done === "boolean") {
+    normalized.is_done = payload.is_done;
+  }
+
+  if (payload?.position !== undefined && payload?.position !== null && payload?.position !== "") {
+    normalized.position = payload.position;
+  }
+
+  return normalized;
+}
+
 const emptyDraft = {
   title: "",
   description: "",
@@ -547,7 +569,7 @@ export function RecordActivityPanel({ targetType, targetId, activeTab, active = 
     try {
       await createRecordActivity(
         getAccessToken(),
-        payload,
+        normalizeActivityPayload(payload, nextKind),
         { target_type: targetType, target_id: targetId },
       );
       await loadItems();
@@ -561,7 +583,8 @@ export function RecordActivityPanel({ targetType, targetId, activeTab, active = 
   async function updateItem(itemId, payload, onDone) {
     setState((current) => ({ ...current, saving: true, error: "" }));
     try {
-      await updateRecordActivity(getAccessToken(), itemId, payload);
+      const nextKind = payload?.kind || items.find((item) => item.id === itemId)?.kind;
+      await updateRecordActivity(getAccessToken(), itemId, normalizeActivityPayload(payload, nextKind));
       await loadItems();
       setState((current) => ({ ...current, saving: false }));
       onDone?.();
