@@ -13,12 +13,12 @@ class AuditLogListCreateView(generics.GenericAPIView):
 
     def get(self, request):
         queryset = audit_log_queryset_for_user(request.user)
-        current_company = default_company_for_user(request.user)
-        if current_company is not None:
-            queryset = queryset.filter(tenant_company=current_company)
+        company_id = request.query_params.get("company_id", "").strip()
         event_type = request.query_params.get("event_type", "").strip()
         target_type = request.query_params.get("target_type", "").strip().lower()
         target_id = request.query_params.get("target_id", "").strip()
+        if company_id:
+            queryset = queryset.filter(tenant_company_id=company_id)
         if event_type:
             queryset = queryset.filter(event_type=event_type)
         if target_type:

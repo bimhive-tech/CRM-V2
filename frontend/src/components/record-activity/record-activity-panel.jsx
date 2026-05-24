@@ -25,7 +25,7 @@ function formatDate(value) {
   if (!value) {
     return "";
   }
-  const date = new Date(`${value}T00:00:00`);
+  const date = new Date(value.includes("T") ? value : `${value}T00:00:00`);
   if (Number.isNaN(date.getTime())) {
     return value;
   }
@@ -640,7 +640,7 @@ export function RecordActivityPanel({ targetType, targetId, activeTab, active = 
           target_type: targetType,
           target_id: targetId,
         });
-        setItems(data?.results || []);
+        setItems(data?.results?.results || []);
       } else {
         const data = await listRecordActivities(getAccessToken(), {
           target_type: targetType,
