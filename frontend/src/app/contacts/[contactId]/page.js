@@ -530,7 +530,7 @@ export default function ContactDetailPage() {
               <div className={styles.activityBody}>
                 {activeTab === "attachments" ? (
                   <AttachmentsPanel targetType="contact" targetId={contact.id} active />
-                ) : activeTab === "notes" || activeTab === "tasks" || activeTab === "meetings" ? (
+                ) : activeTab === "all" || activeTab === "notes" || activeTab === "tasks" || activeTab === "meetings" ? (
                   <RecordActivityPanel targetType="contact" targetId={contact.id} activeTab={activeTab} active />
                 ) : (
                   <div className={styles.emptyState}>

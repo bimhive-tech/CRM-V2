@@ -536,7 +536,7 @@ export default function CompanyDetailPage() {
                     showSource
                     description="Upload files directly on this company and also review files that were uploaded on linked contacts."
                   />
-                ) : activeTab === "notes" || activeTab === "tasks" || activeTab === "meetings" ? (
+                ) : activeTab === "all" || activeTab === "notes" || activeTab === "tasks" || activeTab === "meetings" ? (
                   <RecordActivityPanel targetType="company" targetId={company.id} activeTab={activeTab} active />
                 ) : (
                   <div className={styles.emptyState}>

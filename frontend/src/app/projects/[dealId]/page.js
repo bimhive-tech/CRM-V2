@@ -604,7 +604,7 @@ export default function DealDetailPage() {
                     showSource
                     description="Upload files directly on this project and also review files from the selected linked contact."
                   />
-                ) : activeTab === "notes" || activeTab === "tasks" || activeTab === "meetings" ? (
+                ) : activeTab === "all" || activeTab === "notes" || activeTab === "tasks" || activeTab === "meetings" ? (
                   <RecordActivityPanel targetType="deal" targetId={deal.id} activeTab={activeTab} active />
                 ) : (
                   <div className={styles.emptyState}>
