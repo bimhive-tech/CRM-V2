@@ -564,53 +564,15 @@ function MeetingsCalendar({ items, onCreate, onUpdate, onDelete, saving }) {
   );
 }
 
-function AllActivitiesList({ items, onCreate, saving }) {
-  const [composerKind, setComposerKind] = useState("");
-  const [draft, setDraft] = useState(emptyDraft);
-
+function AllActivitiesList({ items }) {
   return (
     <div className={styles.stack}>
       <div className={styles.sectionHeader}>
         <div>
           <strong>All activities</strong>
-          <p>See notes, tasks, and meetings together in one timeline.</p>
-        </div>
-        <div className={styles.quickActions}>
-          <button className={styles.secondaryButton} type="button" onClick={() => setComposerKind("note")}>
-            <PlusIcon />
-            <span>Note</span>
-          </button>
-          <button className={styles.secondaryButton} type="button" onClick={() => setComposerKind("task")}>
-            <PlusIcon />
-            <span>Task</span>
-          </button>
-          <button className={styles.secondaryButton} type="button" onClick={() => setComposerKind("meeting")}>
-            <PlusIcon />
-            <span>Meeting</span>
-          </button>
+          <p>Review everything that happened on this record in one audit-style timeline.</p>
         </div>
       </div>
-
-      {composerKind ? (
-        <ActivityEditor
-          kind={composerKind}
-          draft={composerKind === "meeting" ? { ...draft, activity_date: draft.activity_date || toIsoDate(new Date()) } : draft}
-          saving={saving}
-          submitLabel={`Save ${labelForKind(composerKind).toLowerCase()}`}
-          onChange={(field, value) => setDraft((current) => ({ ...current, [field]: value }))}
-          onCancel={() => {
-            setComposerKind("");
-            setDraft(emptyDraft);
-          }}
-          onSubmit={(event) => {
-            event.preventDefault();
-            onCreate(composerKind, composerKind === "meeting" ? { ...draft, activity_date: draft.activity_date || toIsoDate(new Date()) } : draft, () => {
-              setComposerKind("");
-              setDraft(emptyDraft);
-            });
-          }}
-        />
-      ) : null}
 
       {items.length ? (
         <div className={styles.list}>
@@ -777,7 +739,7 @@ export function RecordActivityPanel({ targetType, targetId, activeTab, active = 
         <NoteList items={items} onCreate={createItem} onUpdate={updateItem} onDelete={deleteItem} saving={state.saving} />
       ) : null}
       {!state.loading && kind === "all" ? (
-        <AllActivitiesList items={items} onCreate={createItem} saving={state.saving} />
+        <AllActivitiesList items={items} />
       ) : null}
       {!state.loading && kind === "task" ? (
         <TaskList items={items} onCreate={createItem} onUpdate={updateItem} onDelete={deleteItem} onReorder={reorderTask} saving={state.saving} />
