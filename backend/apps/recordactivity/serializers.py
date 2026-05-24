@@ -55,10 +55,17 @@ class RecordActivityWriteSerializer(serializers.ModelSerializer):
             "is_done",
             "position",
         ]
+        extra_kwargs = {
+            "description": {"required": False, "allow_blank": True},
+            "activity_date": {"required": False},
+            "is_done": {"required": False},
+            "position": {"required": False},
+        }
 
     def validate(self, attrs):
         kind = attrs.get("kind", getattr(self.instance, "kind", ""))
         if kind == RecordActivity.KIND_NOTE:
             attrs["is_done"] = False
+        if kind == RecordActivity.KIND_MEETING and not attrs.get("activity_date") and not getattr(self.instance, "activity_date", None):
+            raise serializers.ValidationError({"activity_date": "This field is required."})
         return attrs
-
