@@ -6,6 +6,7 @@ import { useParams, useRouter } from "next/navigation";
 
 import { DashboardShell } from "@/components/dashboard/dashboard-shell/dashboard-shell";
 import { AttachmentsPanel } from "@/components/attachments/attachments-panel";
+import { RecordActivityPanel } from "@/components/record-activity/record-activity-panel";
 import { ClipboardIcon, GlobeIcon, LinkedInIcon, MailIcon, PhoneIcon } from "@/components/dashboard/dashboard-icons";
 import { Sidebar } from "@/components/dashboard/sidebar/sidebar";
 import { Topbar } from "@/components/dashboard/topbar/topbar";
@@ -535,6 +536,8 @@ export default function CompanyDetailPage() {
                     showSource
                     description="Upload files directly on this company and also review files that were uploaded on linked contacts."
                   />
+                ) : activeTab === "notes" || activeTab === "tasks" || activeTab === "meetings" ? (
+                  <RecordActivityPanel targetType="company" targetId={company.id} activeTab={activeTab} active />
                 ) : (
                   <div className={styles.emptyState}>
                     <span className={styles.emptyIcon}>

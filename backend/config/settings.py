@@ -88,6 +88,7 @@ INSTALLED_APPS = [
     "apps.crm",
     "apps.deals",
     "apps.masterdata",
+    "apps.recordactivity",
 ]
 
 MIDDLEWARE = [

@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 
 import { DashboardShell } from "@/components/dashboard/dashboard-shell/dashboard-shell";
 import { AttachmentsPanel } from "@/components/attachments/attachments-panel";
+import { RecordActivityPanel } from "@/components/record-activity/record-activity-panel";
 import { ClipboardIcon, MailIcon } from "@/components/dashboard/dashboard-icons";
 import { Sidebar } from "@/components/dashboard/sidebar/sidebar";
 import { Topbar } from "@/components/dashboard/topbar/topbar";
@@ -603,6 +604,8 @@ export default function DealDetailPage() {
                     showSource
                     description="Upload files directly on this project and also review files from the selected linked contact."
                   />
+                ) : activeTab === "notes" || activeTab === "tasks" || activeTab === "meetings" ? (
+                  <RecordActivityPanel targetType="deal" targetId={deal.id} activeTab={activeTab} active />
                 ) : (
                   <div className={styles.emptyState}>
                     <span className={styles.emptyIcon}>

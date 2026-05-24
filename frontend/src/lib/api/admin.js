@@ -116,6 +116,36 @@ export function deleteAttachment(token, attachmentId) {
   });
 }
 
+export function listRecordActivities(token, query = {}) {
+  return apiRequest(buildApiPath("/record-activity/", query), {
+    method: "GET",
+    headers: authHeaders(token),
+  });
+}
+
+export function createRecordActivity(token, payload, query = {}) {
+  return apiRequest(buildApiPath("/record-activity/", query), {
+    method: "POST",
+    headers: authHeaders(token),
+    body: JSON.stringify(payload),
+  });
+}
+
+export function updateRecordActivity(token, activityId, payload) {
+  return apiRequest(`/record-activity/${activityId}/`, {
+    method: "PATCH",
+    headers: authHeaders(token),
+    body: JSON.stringify(payload),
+  });
+}
+
+export function deleteRecordActivity(token, activityId) {
+  return apiRequest(`/record-activity/${activityId}/`, {
+    method: "DELETE",
+    headers: authHeaders(token),
+  });
+}
+
 export async function downloadAttachment(token, attachmentId, filename = "attachment") {
   const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL || "/api"}/attachments/${attachmentId}/download/`, {
     method: "GET",
