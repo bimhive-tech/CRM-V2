@@ -105,11 +105,48 @@ function normalizeActivityPayload(payload, kind, mode = "create") {
   return normalized;
 }
 
+function normalizeDateValue(value) {
+  if (!value) {
+    return "";
+  }
+  const date = new Date(value.includes("T") ? value : `${value}T00:00:00`);
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+  return date.toISOString();
+}
+
+function sortAllActivities(items) {
+  const kindRank = {
+    meeting: 0,
+    task: 1,
+    note: 2,
+  };
+
+  return [...items].sort((left, right) => {
+    const rightDate = new Date(normalizeDateValue(right.activity_date) || right.updated_at || right.created_at).getTime();
+    const leftDate = new Date(normalizeDateValue(left.activity_date) || left.updated_at || left.created_at).getTime();
+    if (rightDate !== leftDate) {
+      return rightDate - leftDate;
+    }
+
+    if ((kindRank[left.kind] ?? 99) !== (kindRank[right.kind] ?? 99)) {
+      return (kindRank[left.kind] ?? 99) - (kindRank[right.kind] ?? 99);
+    }
+
+    return (right.id || 0) - (left.id || 0);
+  });
+}
+
 const emptyDraft = {
   title: "",
   description: "",
   activity_date: "",
 };
+
+function labelForKind(kind) {
+  return kind === "meeting" ? "Meeting" : kind === "task" ? "Task" : "Note";
+}
 
 function ActivityEditor({ kind, draft, onChange, onSubmit, onCancel, saving, submitLabel }) {
   return (
@@ -540,11 +577,159 @@ function MeetingsCalendar({ items, onCreate, onUpdate, onDelete, saving }) {
   );
 }
 
+function AllActivitiesList({ items, onCreate, onUpdate, onDelete, saving }) {
+  const [composerKind, setComposerKind] = useState("");
+  const [draft, setDraft] = useState(emptyDraft);
+  const [editingId, setEditingId] = useState(null);
+  const [editingDraft, setEditingDraft] = useState(emptyDraft);
+
+  const sortedItems = useMemo(() => sortAllActivities(items), [items]);
+
+  return (
+    <div className={styles.stack}>
+      <div className={styles.sectionHeader}>
+        <div>
+          <strong>All activities</strong>
+          <p>See notes, tasks, and meetings together in one timeline.</p>
+        </div>
+        <div className={styles.quickActions}>
+          <button className={styles.secondaryButton} type="button" onClick={() => setComposerKind("note")}>
+            <PlusIcon />
+            <span>Note</span>
+          </button>
+          <button className={styles.secondaryButton} type="button" onClick={() => setComposerKind("task")}>
+            <PlusIcon />
+            <span>Task</span>
+          </button>
+          <button className={styles.secondaryButton} type="button" onClick={() => setComposerKind("meeting")}>
+            <PlusIcon />
+            <span>Meeting</span>
+          </button>
+        </div>
+      </div>
+
+      {composerKind ? (
+        <ActivityEditor
+          kind={composerKind}
+          draft={composerKind === "meeting" ? { ...draft, activity_date: draft.activity_date || toIsoDate(new Date()) } : draft}
+          saving={saving}
+          submitLabel={`Save ${labelForKind(composerKind).toLowerCase()}`}
+          onChange={(field, value) => setDraft((current) => ({ ...current, [field]: value }))}
+          onCancel={() => {
+            setComposerKind("");
+            setDraft(emptyDraft);
+          }}
+          onSubmit={(event) => {
+            event.preventDefault();
+            onCreate(composerKind, composerKind === "meeting" ? { ...draft, activity_date: draft.activity_date || toIsoDate(new Date()) } : draft, () => {
+              setComposerKind("");
+              setDraft(emptyDraft);
+            });
+          }}
+        />
+      ) : null}
+
+      {sortedItems.length ? (
+        <div className={styles.list}>
+          {sortedItems.map((item) => {
+            const isEditing = editingId === item.id;
+
+            return (
+              <article key={item.id} className={`${styles.card} ${item.kind === "task" && item.is_done ? styles.cardDone : ""}`}>
+                {isEditing ? (
+                  <ActivityEditor
+                    kind={item.kind}
+                    draft={editingDraft}
+                    saving={saving}
+                    submitLabel={`Update ${labelForKind(item.kind).toLowerCase()}`}
+                    onChange={(field, value) => setEditingDraft((current) => ({ ...current, [field]: value }))}
+                    onCancel={() => setEditingId(null)}
+                    onSubmit={(event) => {
+                      event.preventDefault();
+                      onUpdate(item.id, editingDraft, () => setEditingId(null));
+                    }}
+                  />
+                ) : (
+                  <>
+                    <div className={styles.cardHeader}>
+                      <div className={styles.taskLead}>
+                        {item.kind === "task" ? (
+                          <button
+                            className={`${styles.checkButton} ${item.is_done ? styles.checkButtonDone : ""}`}
+                            type="button"
+                            onClick={() => onUpdate(item.id, { is_done: !item.is_done })}
+                            aria-label={item.is_done ? "Mark task as not done" : "Mark task as done"}
+                          >
+                            {item.is_done ? <CheckIcon /> : null}
+                          </button>
+                        ) : item.kind === "meeting" ? (
+                          <span className={styles.calendarIconWrap}>
+                            <CalendarIcon />
+                          </span>
+                        ) : (
+                          <span className={styles.avatar}>{initialsForName(item.created_by?.full_name)}</span>
+                        )}
+                        <div>
+                          <div className={styles.inlineMeta}>
+                            <strong>{item.title}</strong>
+                            <span className={styles.kindBadge}>{labelForKind(item.kind)}</span>
+                          </div>
+                          <p>{formatDate(item.activity_date)}</p>
+                        </div>
+                      </div>
+                      <div className={styles.iconActions}>
+                        <button
+                          className={styles.iconButton}
+                          type="button"
+                          onClick={() => {
+                            setEditingId(item.id);
+                            setEditingDraft({
+                              title: item.title,
+                              description: item.description || "",
+                              activity_date: item.activity_date || "",
+                              kind: item.kind,
+                            });
+                          }}
+                          aria-label={`Edit ${item.kind}`}
+                        >
+                          <EditIcon />
+                        </button>
+                        <button
+                          className={`${styles.iconButton} ${styles.dangerIconButton}`}
+                          type="button"
+                          onClick={() => onDelete(item.id)}
+                          aria-label={`Delete ${item.kind}`}
+                        >
+                          <TrashIcon />
+                        </button>
+                      </div>
+                    </div>
+                    {item.description ? <p className={styles.bodyCopy}>{item.description}</p> : null}
+                    <div className={styles.metaRow}>
+                      <span>{item.created_by?.full_name || "Unknown user"}</span>
+                      {item.kind === "task" ? <span>{item.is_done ? "Done" : "Open"}</span> : null}
+                    </div>
+                  </>
+                )}
+              </article>
+            );
+          })}
+        </div>
+      ) : (
+        <div className={styles.emptyState}>
+          <strong>No activity yet</strong>
+          <p>Notes, tasks, and meetings will appear here together once you add them.</p>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function RecordActivityPanel({ targetType, targetId, activeTab, active = false }) {
   const [items, setItems] = useState([]);
   const [state, setState] = useState({ loading: false, saving: false, error: "" });
 
-  const kind = activeTab === "notes" ? "note" : activeTab === "tasks" ? "task" : activeTab === "meetings" ? "meeting" : "";
+  const kind = activeTab === "notes" ? "note" : activeTab === "tasks" ? "task" : activeTab === "meetings" ? "meeting" : activeTab === "all" ? "all" : "";
 
   const loadItems = useCallback(async () => {
     if (!kind || !targetId) {
@@ -553,11 +738,19 @@ export function RecordActivityPanel({ targetType, targetId, activeTab, active = 
 
     setState((current) => ({ ...current, loading: true, error: "" }));
     try {
-      const data = await listRecordActivities(getAccessToken(), {
-        target_type: targetType,
-        target_id: targetId,
-        kind,
-      });
+      const data = await listRecordActivities(
+        getAccessToken(),
+        kind === "all"
+          ? {
+              target_type: targetType,
+              target_id: targetId,
+            }
+          : {
+              target_type: targetType,
+              target_id: targetId,
+              kind,
+            },
+      );
       setItems(data || []);
       setState((current) => ({ ...current, loading: false }));
     } catch (error) {
@@ -647,6 +840,9 @@ export function RecordActivityPanel({ targetType, targetId, activeTab, active = 
       {state.loading ? <div className={styles.emptyState}><strong>Loading</strong><p>Please wait while we load this tab.</p></div> : null}
       {!state.loading && kind === "note" ? (
         <NoteList items={items} onCreate={createItem} onUpdate={updateItem} onDelete={deleteItem} saving={state.saving} />
+      ) : null}
+      {!state.loading && kind === "all" ? (
+        <AllActivitiesList items={items} onCreate={createItem} onUpdate={updateItem} onDelete={deleteItem} saving={state.saving} />
       ) : null}
       {!state.loading && kind === "task" ? (
         <TaskList items={items} onCreate={createItem} onUpdate={updateItem} onDelete={deleteItem} onReorder={reorderTask} saving={state.saving} />
