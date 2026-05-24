@@ -104,8 +104,8 @@ function getTabCopy(activeTab) {
   if (activeTab === "deals") {
     return {
       eyebrow: "Pipeline",
-      title: "Manage project stages separately from contact tracking",
-      copy: "Create project-specific pipelines, move opportunities between stages, and keep every stage column aligned with your project flow.",
+      title: "Manage your project pipeline",
+      copy: "Create project stages, move opportunities, and keep your workflow organized.",
       emptyTitle: "No project pipelines yet",
       emptyCopy: "Create your first projects pipeline to start organizing opportunities by stage.",
       boardEyebrow: "Projects pipeline",
@@ -121,8 +121,8 @@ function getTabCopy(activeTab) {
 
   return {
     eyebrow: "Pipeline",
-    title: "Shape each workflow around your contact sales motion",
-    copy: "Switch between contact pipelines, create new stage flows, and keep every stage column in the right order.",
+    title: "Manage your contact pipeline",
+    copy: "Switch pipelines, create stages, and keep every contact in the right flow.",
     emptyTitle: "No contact pipelines yet",
     emptyCopy: "Create your first contacts pipeline to start organizing people by stage.",
     boardEyebrow: "Contacts pipeline",
