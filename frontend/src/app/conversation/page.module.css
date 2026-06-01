@@ -264,11 +264,17 @@
   overflow: auto;
 }
 
+.modalBody {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 20px;
+}
+
 .field {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  padding: 0 20px;
 }
 
 .field span {
@@ -279,30 +285,16 @@
   text-transform: uppercase;
 }
 
-.userGrid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
-}
-
-.userChip {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 12px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-button);
-  background: var(--surface);
+.modalCopy,
+.helperCopy {
+  margin: 0;
   color: var(--ink-2);
-  font-size: 13px;
-}
-
-.userChip input {
-  accent-color: var(--accent);
+  font-size: 14px;
+  line-height: 1.5;
 }
 
 .modalActions {
-  padding: 0 20px 20px;
+  justify-content: flex-end;
 }
 
 @media (max-width: 980px) {
@@ -317,10 +309,6 @@
   .modalHeader {
     flex-direction: column;
     align-items: stretch;
-  }
-
-  .userGrid {
-    grid-template-columns: 1fr;
   }
 
   .modalBackdrop {

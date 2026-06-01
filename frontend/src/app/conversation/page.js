@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { DashboardShell } from "@/components/dashboard/dashboard-shell/dashboard-shell";
 import { Sidebar } from "@/components/dashboard/sidebar/sidebar";
 import { Topbar } from "@/components/dashboard/topbar/topbar";
+import { ConversationModal } from "@/features/conversation/components/conversation-modal";
 import {
   createConversation,
   deleteConversation,
@@ -41,51 +42,6 @@ function formatTimestamp(value) {
   }).format(new Date(value));
 }
 
-function ConversationModal({ title, form, users, onChange, onToggleUser, onSubmit, onClose, saving }) {
-  return (
-    <div className={styles.modalBackdrop}>
-      <form className={styles.modal} onSubmit={onSubmit}>
-        <div className={styles.modalHeader}>
-          <div>
-            <p className={styles.modalEyebrow}>Conversation</p>
-            <h2>{title}</h2>
-          </div>
-          <button className={styles.ghostButton} type="button" onClick={onClose}>Close</button>
-        </div>
-        <label className={styles.field}>
-          <span>Type</span>
-          <select name="is_group" value={form.is_group ? "group" : "direct"} onChange={onChange}>
-            <option value="direct">One on one</option>
-            <option value="group">Group chat</option>
-          </select>
-        </label>
-        <label className={styles.field}>
-          <span>Chat name</span>
-          <input name="name" value={form.name} onChange={onChange} placeholder="BIM Coordination Team" />
-        </label>
-        <div className={styles.field}>
-          <span>Participants</span>
-          <div className={styles.userGrid}>
-            {users.map((user) => (
-              <label key={user.id} className={styles.userChip}>
-                <input
-                  type="checkbox"
-                  checked={form.participant_ids.includes(String(user.id))}
-                  onChange={() => onToggleUser(String(user.id))}
-                />
-                <span>{user.full_name}</span>
-              </label>
-            ))}
-          </div>
-        </div>
-        <div className={styles.modalActions}>
-          <button className={styles.primaryButton} type="submit" disabled={saving}>{saving ? "Saving..." : "Save conversation"}</button>
-        </div>
-      </form>
-    </div>
-  );
-}
-
 export default function ConversationPage() {
   const authState = useAuthenticatedUser();
   const token = getAccessToken();
@@ -95,8 +51,12 @@ export default function ConversationPage() {
   const [selectedConversationId, setSelectedConversationId] = useState("");
   const [composer, setComposer] = useState("");
   const [modalState, setModalState] = useState({ open: false, mode: "create" });
-  const [form, setForm] = useState({ name: "", is_group: false, participant_ids: [] });
+  const [form, setForm] = useState({ name: "", participant_ids: [] });
   const [state, setState] = useState({ loading: true, saving: false, error: "" });
+
+  const participantOptions = options
+    .filter((user) => user.id !== authState.user?.id)
+    .map((user) => ({ value: String(user.id), label: user.full_name }));
 
   const canCreate = Boolean(authState.user?.is_platform_admin || authState.user?.permissions?.includes("conversations.create"));
   const canEdit = Boolean(authState.user?.is_platform_admin || authState.user?.permissions?.includes("conversations.update"));
@@ -168,7 +128,7 @@ export default function ConversationPage() {
   const selectedConversation = conversations.find((item) => String(item.id) === selectedConversationId) || null;
 
   function openCreateModal() {
-    setForm({ name: "", is_group: false, participant_ids: [] });
+    setForm({ name: "", participant_ids: [] });
     setModalState({ open: true, mode: "create" });
   }
 
@@ -178,18 +138,16 @@ export default function ConversationPage() {
     }
     setForm({
       name: selectedConversation.name || "",
-      is_group: Boolean(selectedConversation.is_group),
-      participant_ids: (selectedConversation.participants || []).map((participant) => String(participant.id)),
+      participant_ids: (selectedConversation.participants || [])
+        .filter((participant) => participant.id !== authState.user.id)
+        .map((participant) => String(participant.id)),
     });
     setModalState({ open: true, mode: "edit" });
   }
 
   function handleFormChange(event) {
     const { name, value } = event.target;
-    setForm((current) => ({
-      ...current,
-      [name]: name === "is_group" ? value === "group" : value,
-    }));
+    setForm((current) => ({ ...current, [name]: value }));
   }
 
   function toggleUser(userId) {
@@ -209,14 +167,22 @@ export default function ConversationPage() {
 
   async function handleConversationSubmit(event) {
     event.preventDefault();
+    if (!form.participant_ids.length) {
+      setState((current) => ({ ...current, error: "Please choose at least one participant." }));
+      return;
+    }
     setState((current) => ({ ...current, saving: true, error: "" }));
+    const payload = {
+      ...form,
+      is_group: form.participant_ids.length > 1,
+    };
 
     try {
       if (modalState.mode === "create") {
-        const created = await createConversation(token, form);
+        const created = await createConversation(token, payload);
         await refreshConversations(String(created.id));
       } else if (selectedConversation) {
-        await updateConversation(token, selectedConversation.id, form);
+        await updateConversation(token, selectedConversation.id, payload);
         await refreshConversations(String(selectedConversation.id));
       }
       setModalState({ open: false, mode: "create" });
@@ -225,6 +191,10 @@ export default function ConversationPage() {
       setState((current) => ({ ...current, saving: false, error: error.message || "Unable to save conversation." }));
     }
   }
+
+  const participantsSummary = form.participant_ids.length
+    ? `${form.participant_ids.length} participant${form.participant_ids.length === 1 ? "" : "s"} selected. ${form.participant_ids.length > 1 ? "This will be created as a group chat." : "This will be created as a one-on-one chat."}`
+    : "Choose one participant for a direct chat, or more than one for a group chat.";
 
   async function handleDeleteConversation() {
     if (!selectedConversation) {
@@ -359,7 +329,8 @@ export default function ConversationPage() {
         <ConversationModal
           title={modalState.mode === "create" ? "Create conversation" : "Edit conversation"}
           form={form}
-          users={options}
+          participantsSummary={participantsSummary}
+          userOptions={participantOptions}
           onChange={handleFormChange}
           onToggleUser={toggleUser}
           onSubmit={handleConversationSubmit}
