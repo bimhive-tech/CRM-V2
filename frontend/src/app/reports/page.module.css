@@ -68,7 +68,8 @@
 
 .filters label span,
 .metrics span,
-.summaryCard span {
+.summaryCard span,
+.overviewCard span {
   color: var(--ink-3);
   font-size: 11px;
   font-weight: 600;
@@ -94,6 +95,38 @@
   border-color: var(--accent);
 }
 
+.tabBar {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  width: fit-content;
+  padding: 4px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface);
+}
+
+.tabButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 34px;
+  padding: 7px 14px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--ink-2);
+  cursor: pointer;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.tabButtonActive {
+  background: color-mix(in srgb, var(--accent) 12%, var(--surface) 88%);
+  color: var(--accent-deep);
+}
+
 .error,
 .success {
   margin: 0;
@@ -117,7 +150,8 @@
 }
 
 .summaryGrid,
-.cardGrid {
+.cardGrid,
+.overviewGrid {
   display: grid;
   gap: 16px;
 }
@@ -128,7 +162,8 @@
 
 .summaryCard,
 .cardSection,
-.targetCard {
+.targetCard,
+.overviewCard {
   border: 1px solid var(--border);
   border-radius: var(--radius-card);
   background: var(--surface);
@@ -142,14 +177,16 @@
 }
 
 .summaryCard strong,
-.metrics strong {
+.metrics strong,
+.overviewCard strong {
   color: var(--ink);
   font-size: 24px;
   font-weight: 600;
 }
 
 .summaryCard small,
-.targetHead p {
+.targetHead p,
+.overviewCard p {
   color: var(--ink-3);
   font-size: 13px;
 }
@@ -180,9 +217,24 @@
   border-bottom: 1px solid var(--border);
 }
 
+.overviewGrid,
 .cardGrid {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
   padding: 20px;
+}
+
+.overviewGrid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.overviewCard {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 18px;
+}
+
+.cardGrid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
 .targetCard {
@@ -204,11 +256,16 @@
   align-items: flex-start;
 }
 
-.targetHead strong {
-  display: block;
+.targetHead strong,
+.userLink {
+  display: inline-block;
   color: var(--ink);
   font-size: 14px;
   font-weight: 600;
+}
+
+.userLink:hover {
+  color: var(--accent-deep);
 }
 
 .badge {
@@ -274,13 +331,20 @@
 
 @media (max-width: 1180px) {
   .summaryGrid,
+  .overviewGrid,
   .cardGrid {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
 @media (max-width: 860px) {
   .hero {
     align-items: stretch;
+  }
+
+  .summaryGrid,
+  .overviewGrid,
+  .cardGrid {
+    grid-template-columns: 1fr;
   }
 }

@@ -176,6 +176,13 @@ export function listUsers(token) {
   });
 }
 
+export function getUser(token, userId) {
+  return apiRequest(`/auth/users/${userId}/`, {
+    method: "GET",
+    headers: authHeaders(token),
+  });
+}
+
 export function listRoles(token) {
   return apiRequest("/auth/roles/", {
     method: "GET",
