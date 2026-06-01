@@ -22,4 +22,6 @@ urlpatterns = [
     path("api/activity/", include("apps.auditlog.urls")),
     path("api/record-activity/", include("apps.recordactivity.urls")),
     path("api/master-data/", include("apps.masterdata.urls")),
+    path("api/targets/", include("apps.targets.urls")),
+    path("api/conversations/", include("apps.conversations.urls")),
 ]

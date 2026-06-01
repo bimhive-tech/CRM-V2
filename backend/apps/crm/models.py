@@ -114,6 +114,7 @@ class CRMContactCompanyLink(models.Model):
     owner = models.ForeignKey("accounts.User", on_delete=models.SET_NULL, null=True, blank=True, related_name="owned_crm_contact_links")
     title = models.CharField(max_length=255, blank=True)
     status = models.CharField(max_length=255, default="Lead")
+    stage_entered_at = models.DateTimeField(default=timezone.now)
     created_by_import = models.BooleanField(default=False)
     imported_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(default=timezone.now, editable=False)

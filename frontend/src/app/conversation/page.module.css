@@ -1,0 +1,213 @@
+.layout {
+  display: grid;
+  grid-template-columns: 360px minmax(0, 1fr);
+  gap: 20px;
+  min-height: calc(100vh - 180px);
+}
+
+.sidebarPanel,
+.chatPanel,
+.modal {
+  border-radius: 28px;
+  border: 1px solid rgba(124, 95, 53, 0.14);
+  background: rgba(255, 252, 247, 0.96);
+  box-shadow: 0 24px 60px rgba(73, 53, 27, 0.08);
+}
+
+.sidebarPanel,
+.chatPanel {
+  display: grid;
+  gap: 16px;
+  padding: 22px;
+}
+
+.panelHeader,
+.chatHeader,
+.modalHeader,
+.headerActions,
+.modalActions {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.eyebrow,
+.modalEyebrow {
+  margin: 0 0 6px;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: #8b6a41;
+}
+
+.panelHeader h1,
+.chatHeader h2,
+.modalHeader h2 {
+  margin: 0;
+  color: #281d13;
+}
+
+.conversationList,
+.messages {
+  display: grid;
+  gap: 10px;
+  align-content: start;
+}
+
+.conversationItem {
+  padding: 16px;
+  text-align: left;
+  border-radius: 18px;
+  border: 1px solid rgba(124, 95, 53, 0.12);
+  background: rgba(255, 255, 255, 0.8);
+  cursor: pointer;
+}
+
+.conversationItemActive {
+  background: linear-gradient(135deg, rgba(211, 159, 95, 0.18), rgba(124, 95, 53, 0.12));
+  border-color: rgba(124, 95, 53, 0.24);
+}
+
+.conversationItem strong,
+.messageMeta strong {
+  display: block;
+  margin-bottom: 6px;
+  color: #241a11;
+}
+
+.conversationItem span,
+.participants,
+.messageMeta span {
+  color: #75614a;
+  font-size: 13px;
+}
+
+.messages {
+  min-height: 420px;
+  max-height: 58vh;
+  overflow: auto;
+  padding-right: 6px;
+}
+
+.message {
+  justify-self: start;
+  max-width: min(640px, 90%);
+  padding: 16px;
+  border-radius: 20px 20px 20px 8px;
+  background: rgba(124, 95, 53, 0.08);
+}
+
+.messageOwn {
+  justify-self: end;
+  border-radius: 20px 20px 8px 20px;
+  background: linear-gradient(135deg, rgba(211, 159, 95, 0.2), rgba(124, 95, 53, 0.16));
+}
+
+.message p {
+  margin: 10px 0 0;
+  line-height: 1.65;
+  color: #2f2419;
+  white-space: pre-wrap;
+}
+
+.composer {
+  display: grid;
+  gap: 12px;
+}
+
+.composer textarea,
+.field input,
+.field select {
+  width: 100%;
+  padding: 14px 16px;
+  border-radius: 16px;
+  border: 1px solid rgba(124, 95, 53, 0.16);
+  background: rgba(255, 255, 255, 0.92);
+}
+
+.primaryButton,
+.ghostButton,
+.dangerButton {
+  padding: 11px 16px;
+  border-radius: 14px;
+  border: 0;
+  cursor: pointer;
+}
+
+.primaryButton {
+  background: #2d2217;
+  color: #fffaf3;
+}
+
+.ghostButton {
+  background: rgba(124, 95, 53, 0.1);
+  color: #5f4d39;
+}
+
+.dangerButton {
+  background: rgba(166, 64, 47, 0.12);
+  color: #8a3325;
+}
+
+.emptyState,
+.emptyChat,
+.error {
+  padding: 14px 16px;
+  border-radius: 16px;
+}
+
+.emptyState,
+.emptyChat {
+  background: rgba(124, 95, 53, 0.08);
+  color: #6e573f;
+}
+
+.error {
+  background: rgba(166, 64, 47, 0.12);
+  color: #8a3325;
+}
+
+.modalBackdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(33, 24, 17, 0.45);
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  z-index: 50;
+}
+
+.modal {
+  width: min(720px, 100%);
+  padding: 24px;
+  display: grid;
+  gap: 18px;
+}
+
+.field {
+  display: grid;
+  gap: 10px;
+  color: #5f4d39;
+}
+
+.userGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 10px;
+}
+
+.userChip {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: rgba(124, 95, 53, 0.08);
+}
+
+@media (max-width: 960px) {
+  .layout {
+    grid-template-columns: 1fr;
+  }
+}

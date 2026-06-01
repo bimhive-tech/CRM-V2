@@ -231,6 +231,7 @@ export function PipelineScreen({ user }) {
         email: contact.email || "",
         phone: contact.phone || "",
         status: contact.status,
+        daysInStage: contact.days_in_stage || 0,
         owner: contact.owner?.full_name || "Unassigned",
       })),
     );
@@ -349,18 +350,19 @@ export function PipelineScreen({ user }) {
         if (!active) {
           return;
         }
-        setPipelineContacts(
-          response.results.map((contact) => ({
-            id: contact.id,
-            fullName: contact.full_name,
-            title: contact.title,
+          setPipelineContacts(
+            response.results.map((contact) => ({
+              id: contact.id,
+              fullName: contact.full_name,
+              title: contact.title,
             company: contact.company?.name || "No company",
-            email: contact.email || "",
-            phone: contact.phone || "",
-            status: contact.status,
-            owner: contact.owner?.full_name || "Unassigned",
-          })),
-        );
+              email: contact.email || "",
+              phone: contact.phone || "",
+              status: contact.status,
+              daysInStage: contact.days_in_stage || 0,
+              owner: contact.owner?.full_name || "Unassigned",
+            })),
+          );
         setPipelineDeals([]);
       } catch {
         if (!active) {
@@ -1023,6 +1025,7 @@ export function PipelineScreen({ user }) {
                                     <>
                                       <p className={styles.contactMetaLine}>{item.email}</p>
                                       <p className={styles.contactMetaLine}>{item.phone}</p>
+                                      <p className={styles.contactMetaLine}>In stage: {item.daysInStage || 0}d</p>
                                     </>
                                   )}
                                   <label className={styles.contactStatusSelect}>

@@ -188,6 +188,21 @@ PERMISSION_GROUPS = [
             {"code": "deals.delete", "label": "Delete deals", "description": "Delete deals.", "platform_only": False, "configurable": True},
         ],
     },
+    {
+        "id": "conversations",
+        "label": "Conversations",
+        "permissions": [
+            {"code": "conversations.create", "label": "Create chats", "description": "Create one-on-one and group chats.", "platform_only": False, "configurable": True},
+            {
+                "code": "conversations.update",
+                "label": "Edit chats",
+                "description": "Rename chats and manage the participant list.",
+                "platform_only": False,
+                "configurable": True,
+            },
+            {"code": "conversations.delete", "label": "Delete chats", "description": "Delete existing chats.", "platform_only": False, "configurable": True},
+        ],
+    },
 ]
 
 

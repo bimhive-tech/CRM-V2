@@ -89,6 +89,8 @@ INSTALLED_APPS = [
     "apps.deals",
     "apps.masterdata",
     "apps.recordactivity",
+    "apps.targets",
+    "apps.conversations",
 ]
 
 MIDDLEWARE = [

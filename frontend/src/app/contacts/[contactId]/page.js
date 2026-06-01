@@ -51,6 +51,33 @@ function normalizeStatusLabel(value) {
   return legacyStatusLabelMap[value] || value;
 }
 
+function hexToRgb(value) {
+  const normalized = value?.replace("#", "");
+  if (!normalized || normalized.length !== 6) {
+    return null;
+  }
+  const channel = Number.parseInt(normalized, 16);
+  if (Number.isNaN(channel)) {
+    return null;
+  }
+  return {
+    r: (channel >> 16) & 255,
+    g: (channel >> 8) & 255,
+    b: channel & 255,
+  };
+}
+
+function getStatusTone(color) {
+  const rgb = hexToRgb(color);
+  if (!rgb) {
+    return null;
+  }
+  return {
+    background: `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.16)`,
+    color: `rgb(${rgb.r}, ${rgb.g}, ${rgb.b})`,
+  };
+}
+
 function stringToHue(value) {
   return value.split("").reduce((total, character) => total + character.charCodeAt(0), 0) % 360;
 }
@@ -123,6 +150,9 @@ function mapContactToView(contact) {
     pipelineId: contact.pipeline?.id ? String(contact.pipeline.id) : "",
     pipelineName: contact.pipeline?.name || "No pipeline",
     status: normalizeStatusLabel(contact.status) || "Lead",
+    stageColor: contact.stage_color || "#7C5F35",
+    stageEnteredAtDisplay: formatDateForLongDisplay(contact.stage_entered_at),
+    daysInStage: contact.days_in_stage || 0,
     notes: contact.notes || "",
     lastTouch: formatDateForInput(contact.last_touch),
     lastTouchDisplay: formatDateForLongDisplay(contact.last_touch),
@@ -206,22 +236,10 @@ function OwnerAvatar({ name }) {
   );
 }
 
-function ContactStatus({ value }) {
-  const toneClass =
-    value === "Qualified"
-      ? styles.statusQualified
-      : value === "Proposal"
-        ? styles.statusProposal
-        : value === "Negotiation"
-          ? styles.statusNegotiation
-          : value === "Customer"
-            ? styles.statusCustomer
-            : value === "At Risk"
-              ? styles.statusRisk
-              : styles.statusLead;
-
+function ContactStatus({ value, color }) {
+  const tone = getStatusTone(color);
   return (
-    <span className={`${styles.statusBadge} ${toneClass}`}>
+    <span className={styles.statusBadge} style={tone || undefined}>
       <span className={styles.statusDot} />
       {value}
     </span>
@@ -490,6 +508,8 @@ export default function ContactDetailPage() {
                 <DetailRow label="Owner" value={contact.ownerName} />
                 <DetailRow label="Pipeline" value={contact.pipelineName} />
                 <DetailRow label="Stage" value={contact.status} />
+                <DetailRow label="Stage entered" value={contact.stageEnteredAtDisplay} mono />
+                <DetailRow label="Days in stage" value={`${contact.daysInStage || 0} day${contact.daysInStage === 1 ? "" : "s"}`} mono />
                 <ExternalActionRow
                   label="Email"
                   value={contact.email || "No email"}
@@ -511,7 +531,7 @@ export default function ContactDetailPage() {
                   <p className={styles.eyebrow}>Activity</p>
                   <h2>Timeline</h2>
                 </div>
-                <ContactStatus value={contact.status} />
+                <ContactStatus value={contact.status} color={contact.stageColor} />
               </div>
 
               <div className={styles.tabBar} role="tablist" aria-label="Contact activity tabs">

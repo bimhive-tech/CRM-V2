@@ -62,6 +62,33 @@ function normalizeWebsiteUrl(value) {
   return /^(https?:)?\/\//i.test(value) ? value : `https://${value}`;
 }
 
+function hexToRgb(value) {
+  const normalized = value?.replace("#", "");
+  if (!normalized || normalized.length !== 6) {
+    return null;
+  }
+  const channel = Number.parseInt(normalized, 16);
+  if (Number.isNaN(channel)) {
+    return null;
+  }
+  return {
+    r: (channel >> 16) & 255,
+    g: (channel >> 8) & 255,
+    b: channel & 255,
+  };
+}
+
+function getStatusTone(color) {
+  const rgb = hexToRgb(color);
+  if (!rgb) {
+    return null;
+  }
+  return {
+    background: `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.16)`,
+    color: `rgb(${rgb.r}, ${rgb.g}, ${rgb.b})`,
+  };
+}
+
 function toCompanyFormState(company) {
   return {
     name: company.name || "",
@@ -160,22 +187,10 @@ function OwnerAvatar({ name }) {
   );
 }
 
-function ContactStatus({ value }) {
-  const toneClass =
-    value === "Qualified"
-      ? styles.statusQualified
-      : value === "Proposal"
-        ? styles.statusProposal
-        : value === "Negotiation"
-          ? styles.statusNegotiation
-          : value === "Customer"
-            ? styles.statusCustomer
-            : value === "At Risk"
-              ? styles.statusRisk
-              : styles.statusLead;
-
+function ContactStatus({ value, color }) {
+  const tone = getStatusTone(color);
   return (
-    <span className={`${styles.statusBadge} ${toneClass}`}>
+    <span className={styles.statusBadge} style={tone || undefined}>
       <span className={styles.statusDot} />
       {value}
     </span>
@@ -583,7 +598,7 @@ export default function CompanyDetailPage() {
                               <span>{contact.title || "No title"}</span>
                             </div>
                           </div>
-                          <ContactStatus value={contact.status} />
+                          <ContactStatus value={contact.status} color={contact.stage_color} />
                         </div>
 
                         <div className={styles.contactDetails}>

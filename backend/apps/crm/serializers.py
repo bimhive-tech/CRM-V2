@@ -1,3 +1,4 @@
+from django.utils import timezone
 from rest_framework import serializers
 
 from apps.accounts.models import User
@@ -69,10 +70,17 @@ class CRMCompanyContactSummarySerializer(serializers.ModelSerializer):
     email = serializers.CharField(source="contact.email", read_only=True)
     phone = serializers.CharField(source="contact.phone", read_only=True)
     phone_numbers = serializers.ListField(source="contact.phone_numbers", read_only=True)
+    stage_color = serializers.SerializerMethodField()
 
     class Meta:
         model = CRMContactCompanyLink
-        fields = ["id", "full_name", "title", "email", "phone", "phone_numbers", "status"]
+        fields = ["id", "full_name", "title", "email", "phone", "phone_numbers", "status", "stage_color"]
+
+    def get_stage_color(self, obj):
+        if not obj.pipeline_id:
+            return "#7C5F35"
+        status = obj.pipeline.statuses.filter(name=obj.status).first()
+        return status.color if status else "#7C5F35"
 
 
 class CRMCompanySerializer(serializers.ModelSerializer):
@@ -161,6 +169,9 @@ class CRMContactSerializer(serializers.ModelSerializer):
         required=False,
         write_only=True,
     )
+    stage_color = serializers.SerializerMethodField()
+    stage_entered_at = serializers.DateTimeField(read_only=True)
+    days_in_stage = serializers.SerializerMethodField()
 
     class Meta:
         model = CRMContactCompanyLink
@@ -178,6 +189,9 @@ class CRMContactSerializer(serializers.ModelSerializer):
             "owner",
             "owner_id",
             "status",
+            "stage_color",
+            "stage_entered_at",
+            "days_in_stage",
             "notes",
             "last_touch",
             "created_at",
@@ -206,6 +220,18 @@ class CRMContactSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError({"pipeline_id": "You do not have access to the selected pipeline."})
 
         return attrs
+
+    def get_stage_color(self, obj):
+        if not obj.pipeline_id:
+            return "#7C5F35"
+        status = obj.pipeline.statuses.filter(name=obj.status).first()
+        return status.color if status else "#7C5F35"
+
+    def get_days_in_stage(self, obj):
+        if not obj.stage_entered_at:
+            return 0
+        delta = timezone.now() - obj.stage_entered_at
+        return max(delta.days, 0)
 
     def to_representation(self, instance):
         data = super().to_representation(instance)
@@ -261,6 +287,7 @@ class CRMContactSerializer(serializers.ModelSerializer):
                 "owner": validated_data.get("owner"),
                 "title": validated_data.get("title", "").strip(),
                 "status": validated_data.get("status", "").strip() or "Lead",
+                "stage_entered_at": timezone.now(),
             },
         )
         return link
@@ -268,6 +295,7 @@ class CRMContactSerializer(serializers.ModelSerializer):
     def update(self, instance, validated_data):
         contact_data = validated_data.pop("contact", {})
         company = validated_data.get("company", instance.company)
+        previous_status = instance.status
 
         contact = instance.contact
         if "full_name" in contact_data:
@@ -297,5 +325,7 @@ class CRMContactSerializer(serializers.ModelSerializer):
             instance.status = validated_data.get("status", "").strip() or "Lead"
         if company:
             instance.tenant_company = company.tenant_company
+        if "status" in validated_data and instance.status != previous_status:
+            instance.stage_entered_at = timezone.now()
         instance.save()
         return instance

@@ -577,3 +577,99 @@ export function deletePipelineMembership(token, membershipId) {
     headers: authHeaders(token),
   });
 }
+
+export function listQuarterlyTargets(token, query = {}) {
+  return apiRequest(buildApiPath("/targets/", query), {
+    method: "GET",
+    headers: authHeaders(token),
+  });
+}
+
+export function createQuarterlyTarget(token, payload) {
+  return apiRequest("/targets/", {
+    method: "POST",
+    headers: authHeaders(token),
+    body: JSON.stringify(payload),
+  });
+}
+
+export function updateQuarterlyTarget(token, targetId, payload) {
+  return apiRequest(`/targets/${targetId}/`, {
+    method: "PATCH",
+    headers: authHeaders(token),
+    body: JSON.stringify(payload),
+  });
+}
+
+export function deleteQuarterlyTarget(token, targetId) {
+  return apiRequest(`/targets/${targetId}/`, {
+    method: "DELETE",
+    headers: authHeaders(token),
+  });
+}
+
+export function getTargetSummary(token, query = {}) {
+  return apiRequest(buildApiPath("/targets/summary/", query), {
+    method: "GET",
+    headers: authHeaders(token),
+  });
+}
+
+export function getMyTargetSummary(token, query = {}) {
+  return apiRequest(buildApiPath("/targets/my-summary/", query), {
+    method: "GET",
+    headers: authHeaders(token),
+  });
+}
+
+export function listConversations(token) {
+  return apiRequest("/conversations/", {
+    method: "GET",
+    headers: authHeaders(token),
+  });
+}
+
+export function createConversation(token, payload) {
+  return apiRequest("/conversations/", {
+    method: "POST",
+    headers: authHeaders(token),
+    body: JSON.stringify(payload),
+  });
+}
+
+export function updateConversation(token, conversationId, payload) {
+  return apiRequest(`/conversations/${conversationId}/`, {
+    method: "PATCH",
+    headers: authHeaders(token),
+    body: JSON.stringify(payload),
+  });
+}
+
+export function deleteConversation(token, conversationId) {
+  return apiRequest(`/conversations/${conversationId}/`, {
+    method: "DELETE",
+    headers: authHeaders(token),
+  });
+}
+
+export function listConversationMessages(token, conversationId) {
+  return apiRequest(`/conversations/${conversationId}/messages/`, {
+    method: "GET",
+    headers: authHeaders(token),
+  });
+}
+
+export function sendConversationMessage(token, conversationId, payload) {
+  return apiRequest(`/conversations/${conversationId}/messages/`, {
+    method: "POST",
+    headers: authHeaders(token),
+    body: JSON.stringify(payload),
+  });
+}
+
+export function listConversationOptions(token) {
+  return apiRequest("/conversations/options/", {
+    method: "GET",
+    headers: authHeaders(token),
+  });
+}

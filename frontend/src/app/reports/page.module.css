@@ -1,0 +1,236 @@
+.page {
+  min-height: 100vh;
+}
+
+.stack {
+  display: grid;
+  gap: 24px;
+}
+
+.hero {
+  display: flex;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 28px;
+  border-radius: 28px;
+  background:
+    radial-gradient(circle at top right, rgba(196, 147, 80, 0.2), transparent 35%),
+    linear-gradient(135deg, rgba(255, 248, 239, 0.96), rgba(245, 238, 228, 0.92));
+  border: 1px solid rgba(124, 95, 53, 0.14);
+}
+
+.eyebrow,
+.sectionEyebrow {
+  margin: 0 0 8px;
+  font-size: 12px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #8b6a41;
+}
+
+.hero h1,
+.sectionHeading h2 {
+  margin: 0;
+  font-size: 32px;
+  color: #2b2116;
+}
+
+.copy {
+  margin: 10px 0 0;
+  max-width: 620px;
+  color: #5f4d39;
+  line-height: 1.7;
+}
+
+.filters {
+  display: flex;
+  gap: 12px;
+  align-items: end;
+}
+
+.filters label {
+  display: grid;
+  gap: 8px;
+  font-size: 13px;
+  color: #5f4d39;
+}
+
+.filters select,
+.editor input {
+  min-width: 110px;
+  padding: 11px 14px;
+  border-radius: 14px;
+  border: 1px solid rgba(124, 95, 53, 0.22);
+  background: rgba(255, 255, 255, 0.92);
+}
+
+.summaryGrid,
+.cardGrid {
+  display: grid;
+  gap: 16px;
+}
+
+.summaryGrid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.summaryCard,
+.targetCard,
+.cardSection {
+  border-radius: 24px;
+  border: 1px solid rgba(124, 95, 53, 0.14);
+  background: rgba(255, 252, 247, 0.96);
+  box-shadow: 0 24px 60px rgba(73, 53, 27, 0.08);
+}
+
+.summaryCard {
+  padding: 22px;
+  display: grid;
+  gap: 10px;
+}
+
+.summaryCard span,
+.metrics span {
+  font-size: 13px;
+  color: #75614a;
+}
+
+.summaryCard strong,
+.metrics strong {
+  font-size: 28px;
+  color: #241a11;
+}
+
+.summaryCard small {
+  color: #91785a;
+}
+
+.progressTrack {
+  height: 11px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: rgba(124, 95, 53, 0.12);
+}
+
+.progressFill {
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #d39f5f, #7c5f35);
+}
+
+.cardSection {
+  padding: 24px;
+}
+
+.sectionHeading {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.cardGrid {
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+}
+
+.targetCard {
+  padding: 20px;
+  display: grid;
+  gap: 18px;
+}
+
+.targetHead,
+.metrics,
+.editor {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.targetHead strong {
+  display: block;
+  color: #281d13;
+}
+
+.targetHead p {
+  margin: 6px 0 0;
+  color: #7d6850;
+  font-size: 13px;
+}
+
+.badge {
+  align-self: start;
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: rgba(211, 159, 95, 0.14);
+  color: #7c5f35;
+  font-weight: 700;
+}
+
+.metrics {
+  align-items: flex-end;
+}
+
+.metrics > div {
+  display: grid;
+  gap: 6px;
+}
+
+.editor {
+  flex-wrap: wrap;
+}
+
+.editor button,
+.secondaryButton {
+  padding: 10px 14px;
+  border-radius: 12px;
+  border: 0;
+  cursor: pointer;
+}
+
+.editor button {
+  background: #2d2217;
+  color: #fffaf3;
+}
+
+.secondaryButton {
+  background: rgba(124, 95, 53, 0.12);
+  color: #5f4d39;
+}
+
+.error,
+.success,
+.emptyState {
+  padding: 14px 16px;
+  border-radius: 16px;
+}
+
+.error {
+  background: rgba(166, 64, 47, 0.12);
+  color: #8a3325;
+}
+
+.success {
+  background: rgba(51, 128, 82, 0.12);
+  color: #2c6a42;
+}
+
+.emptyState {
+  background: rgba(124, 95, 53, 0.08);
+  color: #6e573f;
+}
+
+@media (max-width: 900px) {
+  .hero,
+  .summaryGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .hero {
+    flex-direction: column;
+  }
+
+  .filters {
+    flex-wrap: wrap;
+  }
+}

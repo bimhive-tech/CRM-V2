@@ -37,6 +37,7 @@ const navSections = [
     title: "Tools",
     items: [
       { id: "inbox", label: "Inbox", icon: <InboxIcon />, href: "/inbox", match: ["/inbox"] },
+      { id: "conversation", label: "Conversation", icon: <InboxIcon />, href: "/conversation", match: ["/conversation"] },
       { id: "reports", label: "Reports", icon: <AnalyticsIcon />, href: "/reports", match: ["/reports"] },
       { id: "settings", label: "Settings", icon: <SettingsIcon />, href: "/settings", match: ["/settings"], requiresSettingsAccess: true },
     ],
