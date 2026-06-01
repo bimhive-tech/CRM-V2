@@ -97,7 +97,9 @@ class ConversationListCreateView(generics.ListCreateAPIView):
     def perform_create(self, serializer):
         ensure_manage_permission(self.request.user, "create")
         company = resolve_default_company_for_user(self.request.user)
-        participants = list(serializer.validated_data.pop("participant_users"))
+        participants = list(serializer.validated_data.pop("participant_ids", []))
+        if not participants:
+            raise ValidationError({"participant_ids": "Choose at least one participant."})
         if self.request.user not in participants:
             participants.append(self.request.user)
         allowed_ids = set(company_users_queryset(company).values_list("id", flat=True))
@@ -133,7 +135,7 @@ class ConversationDetailView(generics.RetrieveUpdateDestroyAPIView):
     def perform_update(self, serializer):
         ensure_manage_permission(self.request.user, "update")
         conversation = self.get_object()
-        participants = list(serializer.validated_data.pop("participant_users", [])) or [item.user for item in conversation.participants.select_related("user").all()]
+        participants = list(serializer.validated_data.pop("participant_ids", [])) or [item.user for item in conversation.participants.select_related("user").all()]
         if self.request.user not in participants:
             participants.append(self.request.user)
         allowed_ids = set(company_users_queryset(conversation.company).values_list("id", flat=True))

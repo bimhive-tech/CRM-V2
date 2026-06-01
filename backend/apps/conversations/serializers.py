@@ -26,7 +26,6 @@ class ConversationMessageSerializer(serializers.ModelSerializer):
 class ConversationSerializer(serializers.ModelSerializer):
     participants = serializers.SerializerMethodField()
     participant_ids = serializers.PrimaryKeyRelatedField(
-        source="participant_users",
         queryset=User.objects.all(),
         many=True,
         write_only=True,
