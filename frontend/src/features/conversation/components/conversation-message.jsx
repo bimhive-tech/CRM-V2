@@ -1,3 +1,5 @@
+import { EditIcon, TrashIcon } from "@/components/dashboard/dashboard-icons";
+
 import styles from "@/app/conversation/page.module.css";
 
 function formatTimestamp(value) {
@@ -54,13 +56,20 @@ export function ConversationMessage({
           {ownMessage && (canEdit || canDelete) ? (
             <div className={styles.messageActions}>
               {canEdit ? (
-                <button className={styles.messageActionButton} type="button" onClick={onStartEdit}>
-                  Edit
+                <button className={styles.messageActionButton} type="button" onClick={onStartEdit} aria-label="Edit message" title="Edit message">
+                  <EditIcon />
                 </button>
               ) : null}
               {canDelete ? (
-                <button className={styles.messageDangerButton} type="button" onClick={onDelete} disabled={saving}>
-                  Delete
+                <button
+                  className={styles.messageDangerButton}
+                  type="button"
+                  onClick={onDelete}
+                  disabled={saving}
+                  aria-label="Delete message"
+                  title="Delete message"
+                >
+                  <TrashIcon />
                 </button>
               ) : null}
             </div>

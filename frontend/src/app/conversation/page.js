@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 
+import { EditIcon, SendIcon, TrashIcon } from "@/components/dashboard/dashboard-icons";
 import { DashboardShell } from "@/components/dashboard/dashboard-shell/dashboard-shell";
 import { Sidebar } from "@/components/dashboard/sidebar/sidebar";
 import { Topbar } from "@/components/dashboard/topbar/topbar";
@@ -335,8 +336,28 @@ export default function ConversationPage() {
                   </p>
                 </div>
                 <div className={styles.headerActions}>
-                  {canEdit ? <button className={styles.ghostButton} type="button" onClick={openEditModal}>Edit</button> : null}
-                  {canDelete ? <button className={styles.dangerButton} type="button" onClick={handleDeleteConversation}>Delete</button> : null}
+                  {canEdit ? (
+                    <button
+                      className={styles.iconButton}
+                      type="button"
+                      onClick={openEditModal}
+                      aria-label="Edit conversation"
+                      title="Edit conversation"
+                    >
+                      <EditIcon />
+                    </button>
+                  ) : null}
+                  {canDelete ? (
+                    <button
+                      className={`${styles.iconButton} ${styles.dangerIconButton}`}
+                      type="button"
+                      onClick={handleDeleteConversation}
+                      aria-label="Delete conversation"
+                      title="Delete conversation"
+                    >
+                      <TrashIcon />
+                    </button>
+                  ) : null}
                 </div>
               </div>
 
@@ -369,10 +390,10 @@ export default function ConversationPage() {
                   value={composer}
                   onChange={(event) => setComposer(event.target.value)}
                   placeholder="Write a message..."
-                  rows={3}
+                  rows={1}
                 />
-                <button className={styles.primaryButton} type="submit" disabled={state.saving || !composer.trim()}>
-                  Send
+                <button className={styles.sendButton} type="submit" disabled={state.saving || !composer.trim()} aria-label="Send message" title="Send message">
+                  <SendIcon />
                 </button>
               </form>
             </>

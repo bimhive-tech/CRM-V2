@@ -76,7 +76,9 @@
 
 .primaryButton,
 .ghostButton,
-.dangerButton {
+.dangerButton,
+.iconButton,
+.sendButton {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -104,6 +106,28 @@
 
 .dangerButton {
   border: 1px solid var(--border);
+  background: var(--status-warm-bg);
+  color: var(--danger);
+}
+
+.iconButton {
+  width: 32px;
+  min-width: 32px;
+  padding: 0;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--ink);
+}
+
+.iconButton :global(svg),
+.sendButton :global(svg),
+.messageActionButton :global(svg),
+.messageDangerButton :global(svg) {
+  width: 16px;
+  height: 16px;
+}
+
+.dangerIconButton {
   background: var(--status-warm-bg);
   color: var(--danger);
 }
@@ -209,13 +233,17 @@
 
 .messageActionButton,
 .messageDangerButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
   padding: 0;
-  border: 0;
-  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface);
   cursor: pointer;
   font: inherit;
-  font-size: 12px;
-  font-weight: 600;
 }
 
 .messageActionButton {
@@ -224,6 +252,7 @@
 
 .messageDangerButton {
   color: var(--danger);
+  background: var(--status-warm-bg);
 }
 
 .messageEditForm {
@@ -252,6 +281,8 @@
 
 .composer {
   display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: stretch;
   gap: 12px;
   padding: 16px 20px 20px;
   border-top: 1px solid var(--border);
@@ -272,14 +303,29 @@
 }
 
 .composer textarea {
-  min-height: 92px;
-  resize: vertical;
+  min-height: 44px;
+  height: 44px;
+  resize: none;
+  line-height: 1.4;
+  padding-top: 10px;
+  padding-bottom: 10px;
 }
 
 .composer textarea:focus,
 .field input:focus,
 .field select:focus {
   border-color: var(--accent);
+}
+
+.sendButton {
+  width: 44px;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0;
+  border: 1px solid transparent;
+  background: var(--accent);
+  box-shadow: var(--button-highlight);
+  color: var(--accent-ink);
 }
 
 .emptyState,
@@ -359,6 +405,14 @@
   .modalHeader {
     flex-direction: column;
     align-items: stretch;
+  }
+
+  .composer {
+    grid-template-columns: 1fr;
+  }
+
+  .sendButton {
+    width: 100%;
   }
 
   .modalBackdrop {

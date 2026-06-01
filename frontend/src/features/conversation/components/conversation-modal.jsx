@@ -1,3 +1,4 @@
+import { CloseIcon } from "@/components/dashboard/dashboard-icons";
 import { SearchableMultiSelect } from "@/components/forms/searchable-select";
 
 import styles from "@/app/conversation/page.module.css";
@@ -30,7 +31,7 @@ export function ConversationModal({
             </p>
           </div>
           <button className={styles.iconButton} type="button" onClick={onClose} aria-label="Close modal">
-            x
+            <CloseIcon />
           </button>
         </div>
 

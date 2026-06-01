@@ -263,3 +263,21 @@ export function CheckIcon() {
     </DashboardIcon>
   );
 }
+
+export function CloseIcon() {
+  return (
+    <DashboardIcon>
+      <path d="M18 6 6 18" />
+      <path d="m6 6 12 12" />
+    </DashboardIcon>
+  );
+}
+
+export function SendIcon() {
+  return (
+    <DashboardIcon>
+      <path d="M22 2 11 13" />
+      <path d="m22 2-7 20-4-9-9-4Z" />
+    </DashboardIcon>
+  );
+}
