@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 
-import { EditIcon, MoreIcon, TrashIcon } from "@/components/dashboard/dashboard-icons";
+import { EditIcon, TrashIcon } from "@/components/dashboard/dashboard-icons";
 
 import styles from "@/app/conversation/page.module.css";
 
@@ -76,7 +76,11 @@ export function ConversationMessage({
                 aria-expanded={menuOpen}
                 onClick={() => setMenuOpen((current) => !current)}
               >
-                <MoreIcon />
+                <span className={styles.messageMenuDots} aria-hidden="true">
+                  <span />
+                  <span />
+                  <span />
+                </span>
               </button>
               {menuOpen ? (
                 <div className={styles.messageMenu}>

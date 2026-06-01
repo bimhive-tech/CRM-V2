@@ -335,9 +335,9 @@ export default function ConversationPage() {
                   type="button"
                   onClick={() => setSelectedConversationId(String(conversation.id))}
                 >
-                  <span className={styles.conversationAvatar} aria-hidden="true">
+                  <div className={styles.conversationAvatar} aria-hidden="true">
                     {getInitials(getConversationLabel(conversation, authState.user.id) || "Untitled chat")}
-                  </span>
+                  </div>
                   <span className={styles.conversationContent}>
                     <span className={styles.conversationTopRow}>
                       <strong>{getConversationLabel(conversation, authState.user.id) || "Untitled chat"}</strong>
