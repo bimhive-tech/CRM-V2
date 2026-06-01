@@ -261,7 +261,7 @@
 .modal {
   width: min(720px, 100%);
   max-height: calc(100vh - 48px);
-  overflow: auto;
+  overflow: visible;
 }
 
 .modalBody {
@@ -269,6 +269,8 @@
   flex-direction: column;
   gap: 16px;
   padding: 20px;
+  max-height: calc(100vh - 180px);
+  overflow-y: auto;
 }
 
 .field {
