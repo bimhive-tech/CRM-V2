@@ -76,6 +76,16 @@ export function ConversationMessage({
 
       <div className={styles.messageContent}>
         <div className={`${styles.messageHeader} ${ownMessage ? styles.messageHeaderOwn : ""}`}>
+          <div className={`${styles.messageMeta} ${ownMessage ? styles.messageMetaOwn : ""}`}>
+            <strong>{senderName}</strong>
+            <span>
+              {formatTimestamp(message.created_at)}
+              {message.is_edited ? " · edited" : ""}
+            </span>
+          </div>
+        </div>
+
+        <div className={`${styles.messageBubbleRow} ${ownMessage ? styles.messageBubbleRowOwn : ""}`}>
           {ownMessage && (canEdit || canDelete) && !editing ? (
             <div
               ref={menuRef}
@@ -127,31 +137,24 @@ export function ConversationMessage({
               ) : null}
             </div>
           ) : null}
-          <div className={`${styles.messageMeta} ${ownMessage ? styles.messageMetaOwn : ""}`}>
-            <strong>{senderName}</strong>
-            <span>
-              {formatTimestamp(message.created_at)}
-              {message.is_edited ? " · edited" : ""}
-            </span>
-          </div>
-        </div>
 
-        <div className={`${styles.messageBubble} ${ownMessage ? styles.messageBubbleOwn : ""}`}>
-          {editing ? (
-            <form className={styles.messageEditForm} onSubmit={onSubmitEdit}>
-              <textarea value={value} onChange={(event) => onChangeEditBody(event.target.value)} rows={3} />
-              <div className={styles.messageActions}>
-                <button className={styles.ghostButton} type="button" onClick={onCancelEdit}>
-                  Cancel
-                </button>
-                <button className={styles.primaryButton} type="submit" disabled={saving || !value.trim()}>
-                  {saving ? "Saving..." : "Save"}
-                </button>
-              </div>
-            </form>
-          ) : (
-            <p>{message.body}</p>
-          )}
+          <div className={`${styles.messageBubble} ${ownMessage ? styles.messageBubbleOwn : ""}`}>
+            {editing ? (
+              <form className={styles.messageEditForm} onSubmit={onSubmitEdit}>
+                <textarea value={value} onChange={(event) => onChangeEditBody(event.target.value)} rows={3} />
+                <div className={styles.messageActions}>
+                  <button className={styles.ghostButton} type="button" onClick={onCancelEdit}>
+                    Cancel
+                  </button>
+                  <button className={styles.primaryButton} type="submit" disabled={saving || !value.trim()}>
+                    {saving ? "Saving..." : "Save"}
+                  </button>
+                </div>
+              </form>
+            ) : (
+              <p>{message.body}</p>
+            )}
+          </div>
         </div>
       </div>
     </article>

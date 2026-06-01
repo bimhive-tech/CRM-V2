@@ -298,6 +298,16 @@
   justify-content: flex-end;
 }
 
+.messageBubbleRow {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.messageBubbleRowOwn {
+  justify-content: flex-end;
+}
+
 .messageMeta strong {
   color: var(--ink);
   font-size: 12px;
@@ -346,7 +356,7 @@
 }
 
 .messageMenuWrapOwn {
-  order: -1;
+  flex: 0 0 auto;
 }
 
 .messageMenuButton,
