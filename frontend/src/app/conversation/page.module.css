@@ -1,199 +1,287 @@
 .layout {
   display: grid;
-  grid-template-columns: 360px minmax(0, 1fr);
-  gap: 20px;
-  min-height: calc(100vh - 180px);
+  grid-template-columns: 320px minmax(0, 1fr);
+  gap: 16px;
 }
 
 .sidebarPanel,
 .chatPanel,
 .modal {
-  border-radius: 28px;
-  border: 1px solid rgba(124, 95, 53, 0.14);
-  background: rgba(255, 252, 247, 0.96);
-  box-shadow: 0 24px 60px rgba(73, 53, 27, 0.08);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  background: var(--surface);
 }
 
 .sidebarPanel,
 .chatPanel {
-  display: grid;
-  gap: 16px;
-  padding: 22px;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  overflow: hidden;
 }
 
 .panelHeader,
 .chatHeader,
-.modalHeader,
-.headerActions,
-.modalActions {
+.modalHeader {
   display: flex;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 12px;
-  align-items: flex-start;
-}
-
-.eyebrow,
-.modalEyebrow {
-  margin: 0 0 6px;
-  font-size: 12px;
-  text-transform: uppercase;
-  letter-spacing: 0.14em;
-  color: #8b6a41;
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--border);
 }
 
 .panelHeader h1,
 .chatHeader h2,
 .modalHeader h2 {
   margin: 0;
-  color: #281d13;
+  color: var(--ink);
+  letter-spacing: -0.02em;
 }
 
-.conversationList,
-.messages {
+.panelHeader h1 {
+  font-size: 22px;
+  font-weight: 600;
+}
+
+.chatHeader h2,
+.modalHeader h2 {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.eyebrow,
+.modalEyebrow {
+  margin: 0 0 4px;
+  color: var(--ink-3);
+  font-family: var(--font-mono), monospace;
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.participants,
+.conversationItem span,
+.messageMeta span {
+  color: var(--ink-3);
+  font-size: 13px;
+}
+
+.headerActions,
+.modalActions {
+  display: flex;
+  gap: 8px;
+}
+
+.primaryButton,
+.ghostButton,
+.dangerButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 32px;
+  padding: 7px 12px;
+  border-radius: var(--radius-button);
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  font: inherit;
+}
+
+.primaryButton {
+  border: 1px solid transparent;
+  background: var(--accent);
+  box-shadow: var(--button-highlight);
+  color: var(--accent-ink);
+}
+
+.ghostButton {
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--ink);
+}
+
+.dangerButton {
+  border: 1px solid var(--border);
+  background: var(--status-warm-bg);
+  color: var(--danger);
+}
+
+.error {
+  margin: 12px 20px 0;
+  padding: 2px 8px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  width: fit-content;
+  background: var(--status-warm-bg);
+  color: var(--danger);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+.conversationList {
   display: grid;
-  gap: 10px;
-  align-content: start;
 }
 
 .conversationItem {
-  padding: 16px;
+  padding: 14px 20px;
+  border: 0;
+  border-top: 1px solid var(--border);
+  background: transparent;
   text-align: left;
-  border-radius: 18px;
-  border: 1px solid rgba(124, 95, 53, 0.12);
-  background: rgba(255, 255, 255, 0.8);
   cursor: pointer;
+  transition: background 0.12s ease;
+}
+
+.conversationItem:first-child {
+  border-top: 0;
+}
+
+.conversationItem:hover {
+  background: var(--surface-2);
 }
 
 .conversationItemActive {
-  background: linear-gradient(135deg, rgba(211, 159, 95, 0.18), rgba(124, 95, 53, 0.12));
-  border-color: rgba(124, 95, 53, 0.24);
+  background: var(--surface-2);
 }
 
 .conversationItem strong,
 .messageMeta strong {
   display: block;
   margin-bottom: 6px;
-  color: #241a11;
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 600;
 }
 
-.conversationItem span,
-.participants,
-.messageMeta span {
-  color: #75614a;
-  font-size: 13px;
+.chatPanel {
+  min-height: 640px;
 }
 
 .messages {
-  min-height: 420px;
-  max-height: 58vh;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 20px;
   overflow: auto;
-  padding-right: 6px;
+  background: var(--surface);
 }
 
 .message {
-  justify-self: start;
-  max-width: min(640px, 90%);
-  padding: 16px;
-  border-radius: 20px 20px 20px 8px;
-  background: rgba(124, 95, 53, 0.08);
+  align-self: flex-start;
+  width: min(560px, 100%);
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--surface-2);
 }
 
 .messageOwn {
-  justify-self: end;
-  border-radius: 20px 20px 8px 20px;
-  background: linear-gradient(135deg, rgba(211, 159, 95, 0.2), rgba(124, 95, 53, 0.16));
+  align-self: flex-end;
+  background: color-mix(in srgb, var(--accent) 10%, var(--surface) 90%);
+  border-color: color-mix(in srgb, var(--accent) 30%, var(--border) 70%);
+}
+
+.messageMeta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
 }
 
 .message p {
-  margin: 10px 0 0;
-  line-height: 1.65;
-  color: #2f2419;
+  margin: 8px 0 0;
+  color: var(--ink-2);
+  font-size: 14px;
+  line-height: 1.55;
   white-space: pre-wrap;
 }
 
 .composer {
   display: grid;
   gap: 12px;
+  padding: 16px 20px 20px;
+  border-top: 1px solid var(--border);
 }
 
 .composer textarea,
 .field input,
 .field select {
   width: 100%;
-  padding: 14px 16px;
-  border-radius: 16px;
-  border: 1px solid rgba(124, 95, 53, 0.16);
-  background: rgba(255, 255, 255, 0.92);
+  min-height: 38px;
+  padding: 7px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-input);
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 14px;
+  outline: none;
 }
 
-.primaryButton,
-.ghostButton,
-.dangerButton {
-  padding: 11px 16px;
-  border-radius: 14px;
-  border: 0;
-  cursor: pointer;
+.composer textarea {
+  min-height: 92px;
+  resize: vertical;
 }
 
-.primaryButton {
-  background: #2d2217;
-  color: #fffaf3;
-}
-
-.ghostButton {
-  background: rgba(124, 95, 53, 0.1);
-  color: #5f4d39;
-}
-
-.dangerButton {
-  background: rgba(166, 64, 47, 0.12);
-  color: #8a3325;
-}
-
-.emptyState,
-.emptyChat,
-.error {
-  padding: 14px 16px;
-  border-radius: 16px;
+.composer textarea:focus,
+.field input:focus,
+.field select:focus {
+  border-color: var(--accent);
 }
 
 .emptyState,
 .emptyChat {
-  background: rgba(124, 95, 53, 0.08);
-  color: #6e573f;
+  padding: 20px;
+  color: var(--ink-3);
+  font-size: 13px;
 }
 
-.error {
-  background: rgba(166, 64, 47, 0.12);
-  color: #8a3325;
+.emptyChat {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
 }
 
 .modalBackdrop {
   position: fixed;
   inset: 0;
-  background: rgba(33, 24, 17, 0.45);
-  display: grid;
-  place-items: center;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   padding: 24px;
-  z-index: 50;
+  background: var(--overlay-scrim);
+  backdrop-filter: blur(2px);
 }
 
 .modal {
   width: min(720px, 100%);
-  padding: 24px;
-  display: grid;
-  gap: 18px;
+  max-height: calc(100vh - 48px);
+  overflow: auto;
 }
 
 .field {
-  display: grid;
-  gap: 10px;
-  color: #5f4d39;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 0 20px;
+}
+
+.field span {
+  color: var(--ink-3);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
 }
 
 .userGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
 }
 
@@ -201,13 +289,41 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 12px 14px;
-  border-radius: 14px;
-  background: rgba(124, 95, 53, 0.08);
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-button);
+  background: var(--surface);
+  color: var(--ink-2);
+  font-size: 13px;
 }
 
-@media (max-width: 960px) {
+.userChip input {
+  accent-color: var(--accent);
+}
+
+.modalActions {
+  padding: 0 20px 20px;
+}
+
+@media (max-width: 980px) {
   .layout {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 720px) {
+  .panelHeader,
+  .chatHeader,
+  .modalHeader {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .userGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .modalBackdrop {
+    padding: 12px;
   }
 }
