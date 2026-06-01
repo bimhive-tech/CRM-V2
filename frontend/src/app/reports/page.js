@@ -44,6 +44,62 @@ function getTopPerformer(summary) {
   return [...rows].sort((left, right) => Number(right.progress_percent || 0) - Number(left.progress_percent || 0))[0];
 }
 
+function ProgressGauge({ percent }) {
+  const normalized = clampProgress(percent);
+  const radius = 84;
+  const circumference = 2 * Math.PI * radius;
+  const dashOffset = circumference - (circumference * normalized) / 100;
+
+  return (
+    <div className={styles.gaugeWrap}>
+      <svg className={styles.gauge} viewBox="0 0 220 220" aria-hidden="true">
+        <circle className={styles.gaugeTrack} cx="110" cy="110" r={radius} />
+        <circle
+          className={styles.gaugeFill}
+          cx="110"
+          cy="110"
+          r={radius}
+          strokeDasharray={circumference}
+          strokeDashoffset={dashOffset}
+        />
+      </svg>
+      <div className={styles.gaugeCenter}>
+        <span>Quarter progress</span>
+        <strong>{Math.round(normalized)}%</strong>
+      </div>
+    </div>
+  );
+}
+
+function UserTargetBars({ rows, currencySymbol }) {
+  const visibleRows = [...(rows || [])]
+    .sort((left, right) => Number(right.target_value || 0) - Number(left.target_value || 0))
+    .slice(0, 4);
+
+  return (
+    <div className={styles.barList}>
+      {visibleRows.map((row) => {
+        const targetValue = Number(row.target_value || 0);
+        const achievedValue = Number(row.achieved_value || 0);
+        const progress = targetValue > 0 ? Math.min((achievedValue / targetValue) * 100, 100) : 0;
+
+        return (
+          <div key={row.user.id} className={styles.barRow}>
+            <div className={styles.barMeta}>
+              <strong>{row.user.full_name}</strong>
+              <span>{formatCurrency(currencySymbol, achievedValue)} / {formatCurrency(currencySymbol, targetValue)}</span>
+            </div>
+            <div className={styles.barTrack}>
+              <div className={styles.barFill} style={{ width: `${progress}%` }} />
+              <div className={styles.barTargetMarker} />
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 export default function ReportsPage() {
   const authState = useAuthenticatedUser();
   const token = getAccessToken();
@@ -251,13 +307,36 @@ export default function ReportsPage() {
                 {state.loading ? (
                   <div className={styles.emptyState}>Loading overview...</div>
                 ) : (
-                  <div className={styles.overviewGrid}>
-                    <article className={styles.overviewCard}>
+                  <>
+                    <div className={styles.chartGrid}>
+                      <article className={styles.chartCard}>
+                        <div className={styles.chartHeader}>
+                          <div>
+                            <span>Target achievement</span>
+                            <strong>{summary?.quarter_label || `Q${filters.quarter} ${filters.year}`}</strong>
+                          </div>
+                        </div>
+                        <ProgressGauge percent={summary?.totals?.progress_percent || 0} />
+                      </article>
+
+                      <article className={styles.chartCard}>
+                        <div className={styles.chartHeader}>
+                          <div>
+                            <span>Revenue vs target</span>
+                            <strong>Top target owners</strong>
+                          </div>
+                        </div>
+                        <UserTargetBars rows={summary?.users || []} currencySymbol={currencySymbol} />
+                      </article>
+                    </div>
+
+                    <div className={styles.overviewGrid}>
+                      <article className={styles.overviewCard}>
                       <span>Team members tracked</span>
                       <strong>{summary?.totals?.user_count || 0}</strong>
                       <p>Everyone in the selected company is included in this quarter view.</p>
-                    </article>
-                    <article className={styles.overviewCard}>
+                      </article>
+                      <article className={styles.overviewCard}>
                       <span>Top performer</span>
                       <strong>{topPerformer?.user?.full_name || "No data yet"}</strong>
                       <p>
@@ -265,13 +344,14 @@ export default function ReportsPage() {
                           ? `${Math.round(topPerformer.progress_percent || 0)}% of target achieved this quarter.`
                           : "Set targets to start comparing progress across the team."}
                       </p>
-                    </article>
-                    <article className={styles.overviewCard}>
+                      </article>
+                      <article className={styles.overviewCard}>
                       <span>Next step</span>
                       <strong>Open Targets</strong>
                       <p>Use the Targets tab to set goals, review each person, and jump into individual profiles.</p>
-                    </article>
-                  </div>
+                      </article>
+                    </div>
+                  </>
                 )}
               </section>
             </>

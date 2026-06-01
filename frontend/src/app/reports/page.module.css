@@ -151,7 +151,8 @@
 
 .summaryGrid,
 .cardGrid,
-.overviewGrid {
+.overviewGrid,
+.chartGrid {
   display: grid;
   gap: 16px;
 }
@@ -163,7 +164,8 @@
 .summaryCard,
 .cardSection,
 .targetCard,
-.overviewCard {
+.overviewCard,
+.chartCard {
   border: 1px solid var(--border);
   border-radius: var(--radius-card);
   background: var(--surface);
@@ -226,11 +228,145 @@
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
+.chartGrid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  padding: 20px 20px 0;
+}
+
 .overviewCard {
   display: flex;
   flex-direction: column;
   gap: 10px;
   padding: 18px;
+}
+
+.chartCard {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 18px;
+}
+
+.chartHeader span {
+  color: var(--ink-3);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.chartHeader strong {
+  display: block;
+  margin-top: 4px;
+  color: var(--ink);
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.gaugeWrap {
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-height: 260px;
+}
+
+.gauge {
+  width: min(260px, 100%);
+  height: auto;
+  transform: rotate(-90deg);
+}
+
+.gaugeTrack,
+.gaugeFill {
+  fill: none;
+  stroke-width: 20;
+}
+
+.gaugeTrack {
+  stroke: color-mix(in srgb, var(--surface) 78%, var(--ink) 22%);
+}
+
+.gaugeFill {
+  stroke: var(--accent);
+  stroke-linecap: round;
+  transition: stroke-dashoffset 0.2s ease;
+}
+
+.gaugeCenter {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  text-align: center;
+}
+
+.gaugeCenter span {
+  color: var(--ink-3);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.gaugeCenter strong {
+  color: var(--ink);
+  font-size: 36px;
+  font-weight: 700;
+}
+
+.barList {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.barRow {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.barMeta {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.barMeta strong {
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.barMeta span {
+  color: var(--ink-3);
+  font-size: 12px;
+}
+
+.barTrack {
+  position: relative;
+  height: 16px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--surface) 74%, var(--ink) 26%);
+}
+
+.barFill {
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--accent) 30%, white), var(--accent));
+}
+
+.barTargetMarker {
+  position: absolute;
+  top: 0;
+  right: 10px;
+  width: 3px;
+  height: 100%;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--ink) 82%, var(--surface) 18%);
 }
 
 .cardGrid {
@@ -331,6 +467,7 @@
 
 @media (max-width: 1180px) {
   .summaryGrid,
+  .chartGrid,
   .overviewGrid,
   .cardGrid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -343,6 +480,7 @@
   }
 
   .summaryGrid,
+  .chartGrid,
   .overviewGrid,
   .cardGrid {
     grid-template-columns: 1fr;

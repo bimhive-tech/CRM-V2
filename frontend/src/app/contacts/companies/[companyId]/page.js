@@ -9,6 +9,7 @@ import { AttachmentsPanel } from "@/components/attachments/attachments-panel";
 import { RecordActivityPanel } from "@/components/record-activity/record-activity-panel";
 import { ClipboardIcon, GlobeIcon, LinkedInIcon, MailIcon, PhoneIcon } from "@/components/dashboard/dashboard-icons";
 import { Sidebar } from "@/components/dashboard/sidebar/sidebar";
+import { StageHistoryPanel } from "@/components/stage-history/stage-history-panel";
 import { Topbar } from "@/components/dashboard/topbar/topbar";
 import { CompanyModal } from "@/features/contacts/components/contacts-screen/contacts-modal";
 import { getCrmCompany, listCompanyIndustries, listPipelines, updateCrmCompany } from "@/lib/api/admin";
@@ -624,6 +625,16 @@ export default function CompanyDetailPage() {
                     Show all associated contacts
                   </button>
                 ) : null}
+
+                <StageHistoryPanel
+                  title="Associated contact stage history"
+                  description="Review how long each linked contact stayed in every stage without leaving the company detail view."
+                  groups={visibleContacts.map((contact) => ({
+                    id: contact.id,
+                    label: contact.full_name,
+                    entries: contact.stage_history || [],
+                  }))}
+                />
               </div>
             </section>
           </div>

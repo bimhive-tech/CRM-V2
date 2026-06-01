@@ -5,6 +5,7 @@ from apps.crm.models import CRMCompany, CRMContactCompanyLink
 from apps.deals.models import Deal
 from apps.pipelines.access import user_can_access_pipeline
 from apps.pipelines.models import Pipeline
+from apps.pipelines.stage_history import create_stage_history_entry, ensure_stage_history, resolve_stage_color, serialize_stage_history, transition_stage_history
 
 
 def calculate_stage_probability(pipeline, stage_name):
@@ -57,6 +58,7 @@ class DealSerializer(serializers.ModelSerializer):
     owner = serializers.SerializerMethodField()
     stage_color = serializers.SerializerMethodField()
     days_in_stage = serializers.SerializerMethodField()
+    stage_history = serializers.SerializerMethodField()
 
     class Meta:
         model = Deal
@@ -77,6 +79,7 @@ class DealSerializer(serializers.ModelSerializer):
             "expected_close_date",
             "scope_of_work",
             "days_in_stage",
+            "stage_history",
             "notes",
             "created_at",
             "updated_at",
@@ -93,14 +96,16 @@ class DealSerializer(serializers.ModelSerializer):
         }
 
     def get_stage_color(self, obj):
-        status = obj.pipeline.statuses.filter(name=obj.stage).first()
-        return status.color if status else "#7C5F35"
+        return resolve_stage_color(obj.pipeline, obj.stage)
 
     def get_days_in_stage(self, obj):
         if not obj.stage_entered_at:
             return 0
         delta = timezone.now() - obj.stage_entered_at
         return max(delta.days, 0)
+
+    def get_stage_history(self, obj):
+        return serialize_stage_history(ensure_stage_history(obj.stage_history, pipeline=obj.pipeline, stage_name=obj.stage, started_at=obj.stage_entered_at))
 
     def validate(self, attrs):
         company = attrs.get("company", getattr(self.instance, "company", None))
@@ -134,15 +139,39 @@ class DealSerializer(serializers.ModelSerializer):
         validated_data["probability"] = calculate_stage_probability(validated_data["pipeline"], validated_data.get("stage", ""))
         if request and request.user.is_authenticated and "owner" not in validated_data:
             validated_data["owner"] = request.user
+        validated_data["stage_history"] = [
+            create_stage_history_entry(pipeline=validated_data["pipeline"], stage_name=validated_data.get("stage", ""))
+        ]
         return super().create(validated_data)
 
     def update(self, instance, validated_data):
         previous_stage = instance.stage
+        previous_pipeline = instance.pipeline
+        previous_started_at = instance.stage_entered_at
         pipeline = validated_data.get("pipeline", instance.pipeline)
         stage = validated_data.get("stage", instance.stage)
         validated_data["probability"] = calculate_stage_probability(pipeline, stage)
+        next_history = ensure_stage_history(
+            instance.stage_history,
+            pipeline=previous_pipeline,
+            stage_name=previous_stage,
+            started_at=previous_started_at,
+        )
+        stage_changed = "stage" in validated_data and validated_data["stage"] != previous_stage
+        pipeline_changed = "pipeline" in validated_data and getattr(validated_data["pipeline"], "id", None) != getattr(previous_pipeline, "id", None)
+        if stage_changed or pipeline_changed:
+            changed_at = timezone.now()
+            validated_data["stage_entered_at"] = changed_at
+            validated_data["stage_history"] = transition_stage_history(
+                next_history,
+                previous_pipeline=previous_pipeline,
+                previous_stage=previous_stage,
+                previous_started_at=previous_started_at,
+                next_pipeline=pipeline,
+                next_stage=stage,
+                changed_at=changed_at,
+            )
+        else:
+            validated_data["stage_history"] = next_history
         deal = super().update(instance, validated_data)
-        if "stage" in validated_data and validated_data["stage"] != previous_stage:
-            deal.stage_entered_at = timezone.now()
-            deal.save(update_fields=["stage_entered_at", "updated_at"])
         return deal

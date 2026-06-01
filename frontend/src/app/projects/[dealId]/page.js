@@ -8,6 +8,7 @@ import { AttachmentsPanel } from "@/components/attachments/attachments-panel";
 import { RecordActivityPanel } from "@/components/record-activity/record-activity-panel";
 import { ClipboardIcon, MailIcon } from "@/components/dashboard/dashboard-icons";
 import { Sidebar } from "@/components/dashboard/sidebar/sidebar";
+import { StageHistoryPanel } from "@/components/stage-history/stage-history-panel";
 import { Topbar } from "@/components/dashboard/topbar/topbar";
 import { SearchableSelect } from "@/components/forms/searchable-select";
 import { getDeal, listContacts, listCrmCompanies, listCurrencies, listPipelines, listScopeOfWorkTemplates, updateDeal } from "@/lib/api/admin";
@@ -627,6 +628,19 @@ export default function DealDetailPage() {
               </div>
 
               <div className={styles.panelBody}>
+                <article className={styles.infoCard}>
+                  <StageHistoryPanel
+                    title="Project pipeline journey"
+                    description="See when this project entered each stage, when that stage ended, and how long it stayed there."
+                    groups={[
+                      {
+                        id: deal.id,
+                        entries: deal.stage_history || [],
+                      },
+                    ]}
+                  />
+                </article>
+
                 <article className={styles.infoCard}>
                   <div className={styles.infoCardHeader}>
                     <div className={styles.ownerCell}>

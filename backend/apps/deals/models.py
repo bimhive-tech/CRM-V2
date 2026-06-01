@@ -25,6 +25,7 @@ class Deal(models.Model):
     scope_of_work = models.TextField(blank=True)
     notes = models.TextField(blank=True)
     stage_entered_at = models.DateTimeField(default=timezone.now)
+    stage_history = models.JSONField(default=list, blank=True)
     created_at = models.DateTimeField(default=timezone.now, editable=False)
     updated_at = models.DateTimeField(auto_now=True)
 

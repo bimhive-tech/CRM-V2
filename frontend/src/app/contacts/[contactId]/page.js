@@ -8,6 +8,7 @@ import { AttachmentsPanel } from "@/components/attachments/attachments-panel";
 import { RecordActivityPanel } from "@/components/record-activity/record-activity-panel";
 import { ClipboardIcon, GlobeIcon, LinkedInIcon, MailIcon, PhoneIcon } from "@/components/dashboard/dashboard-icons";
 import { Sidebar } from "@/components/dashboard/sidebar/sidebar";
+import { StageHistoryPanel } from "@/components/stage-history/stage-history-panel";
 import { Topbar } from "@/components/dashboard/topbar/topbar";
 import { ContactsModal } from "@/features/contacts/components/contacts-screen/contacts-modal";
 import { getContact, listCrmCompanies, listPipelines, updateContact } from "@/lib/api/admin";
@@ -153,6 +154,7 @@ function mapContactToView(contact) {
     stageColor: contact.stage_color || "#7C5F35",
     stageEnteredAtDisplay: formatDateForLongDisplay(contact.stage_entered_at),
     daysInStage: contact.days_in_stage || 0,
+    stageHistory: contact.stage_history || [],
     notes: contact.notes || "",
     lastTouch: formatDateForInput(contact.last_touch),
     lastTouchDisplay: formatDateForLongDisplay(contact.last_touch),
@@ -642,6 +644,17 @@ export default function ContactDetailPage() {
                     Open company detail
                   </button>
                 ) : null}
+
+                <StageHistoryPanel
+                  title="Contact pipeline journey"
+                  description="Track when this contact entered each stage, when that stage ended, and how long it lasted."
+                  groups={[
+                    {
+                      id: contact.id,
+                      entries: contact.stageHistory || [],
+                    },
+                  ]}
+                />
               </div>
             </section>
           </div>

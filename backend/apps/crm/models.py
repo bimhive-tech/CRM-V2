@@ -115,6 +115,7 @@ class CRMContactCompanyLink(models.Model):
     title = models.CharField(max_length=255, blank=True)
     status = models.CharField(max_length=255, default="Lead")
     stage_entered_at = models.DateTimeField(default=timezone.now)
+    stage_history = models.JSONField(default=list, blank=True)
     created_by_import = models.BooleanField(default=False)
     imported_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(default=timezone.now, editable=False)
