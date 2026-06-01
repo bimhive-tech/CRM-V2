@@ -1,4 +1,6 @@
-import { EditIcon, TrashIcon } from "@/components/dashboard/dashboard-icons";
+import { useEffect, useRef, useState } from "react";
+
+import { EditIcon, MoreIcon, TrashIcon } from "@/components/dashboard/dashboard-icons";
 
 import styles from "@/app/conversation/page.module.css";
 
@@ -28,14 +30,88 @@ export function ConversationMessage({
   saving,
   value,
 }) {
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef(null);
+
+  useEffect(() => {
+    if (!menuOpen) {
+      return undefined;
+    }
+
+    function handlePointerDown(event) {
+      if (menuRef.current && !menuRef.current.contains(event.target)) {
+        setMenuOpen(false);
+      }
+    }
+
+    function handleKeyDown(event) {
+      if (event.key === "Escape") {
+        setMenuOpen(false);
+      }
+    }
+
+    document.addEventListener("mousedown", handlePointerDown);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("mousedown", handlePointerDown);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [menuOpen]);
+
   return (
     <article className={`${styles.message} ${ownMessage ? styles.messageOwn : ""}`}>
       <div className={styles.messageMeta}>
         <strong>{message.sender?.full_name || "Unknown user"}</strong>
-        <span>
-          {formatTimestamp(message.created_at)}
-          {message.is_edited ? " · edited" : ""}
-        </span>
+        <div className={styles.messageMetaActions}>
+          <span>
+            {formatTimestamp(message.created_at)}
+            {message.is_edited ? " · edited" : ""}
+          </span>
+          {ownMessage && (canEdit || canDelete) && !editing ? (
+            <div ref={menuRef} className={styles.messageMenuWrap}>
+              <button
+                className={styles.messageMenuButton}
+                type="button"
+                aria-label="Open message actions"
+                aria-expanded={menuOpen}
+                onClick={() => setMenuOpen((current) => !current)}
+              >
+                <MoreIcon />
+              </button>
+              {menuOpen ? (
+                <div className={styles.messageMenu}>
+                  {canEdit ? (
+                    <button
+                      className={styles.messageMenuItem}
+                      type="button"
+                      onClick={() => {
+                        setMenuOpen(false);
+                        onStartEdit();
+                      }}
+                    >
+                      <EditIcon />
+                      <span>Edit</span>
+                    </button>
+                  ) : null}
+                  {canDelete ? (
+                    <button
+                      className={`${styles.messageMenuItem} ${styles.messageMenuDanger}`}
+                      type="button"
+                      onClick={() => {
+                        setMenuOpen(false);
+                        onDelete();
+                      }}
+                      disabled={saving}
+                    >
+                      <TrashIcon />
+                      <span>Delete</span>
+                    </button>
+                  ) : null}
+                </div>
+              ) : null}
+            </div>
+          ) : null}
+        </div>
       </div>
 
       {editing ? (
@@ -51,30 +127,7 @@ export function ConversationMessage({
           </div>
         </form>
       ) : (
-        <>
-          <p>{message.body}</p>
-          {ownMessage && (canEdit || canDelete) ? (
-            <div className={styles.messageActions}>
-              {canEdit ? (
-                <button className={styles.messageActionButton} type="button" onClick={onStartEdit} aria-label="Edit message" title="Edit message">
-                  <EditIcon />
-                </button>
-              ) : null}
-              {canDelete ? (
-                <button
-                  className={styles.messageDangerButton}
-                  type="button"
-                  onClick={onDelete}
-                  disabled={saving}
-                  aria-label="Delete message"
-                  title="Delete message"
-                >
-                  <TrashIcon />
-                </button>
-              ) : null}
-            </div>
-          ) : null}
-        </>
+        <p>{message.body}</p>
       )}
     </article>
   );

@@ -150,6 +150,10 @@
 }
 
 .conversationItem {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
   padding: 14px 20px;
   border: 0;
   border-top: 1px solid var(--border);
@@ -173,11 +177,50 @@
 
 .conversationItem strong,
 .messageMeta strong {
-  display: block;
-  margin-bottom: 6px;
   color: var(--ink);
   font-size: 13px;
   font-weight: 600;
+}
+
+.conversationAvatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  color: var(--accent-deep);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.conversationContent {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.conversationTopRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.conversationPreview {
+  overflow: hidden;
+  color: var(--ink-3);
+  font-size: 13px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.conversationTime {
+  color: var(--ink-3);
+  font-size: 12px;
+  white-space: nowrap;
 }
 
 .chatPanel {
@@ -216,6 +259,12 @@
   gap: 12px;
 }
 
+.messageMetaActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .message p {
   margin: 8px 0 0;
   color: var(--ink-2);
@@ -231,6 +280,11 @@
   margin-top: 10px;
 }
 
+.messageMenuWrap {
+  position: relative;
+}
+
+.messageMenuButton,
 .messageActionButton,
 .messageDangerButton {
   display: inline-flex;
@@ -246,6 +300,10 @@
   font: inherit;
 }
 
+.messageMenuButton {
+  color: var(--ink-3);
+}
+
 .messageActionButton {
   color: var(--accent-deep);
 }
@@ -253,6 +311,43 @@
 .messageDangerButton {
   color: var(--danger);
   background: var(--status-warm-bg);
+}
+
+.messageMenu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 20;
+  min-width: 132px;
+  padding: 6px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  box-shadow: var(--shadow-popover);
+}
+
+.messageMenuItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--ink);
+  cursor: pointer;
+  font: inherit;
+  font-size: 13px;
+  text-align: left;
+}
+
+.messageMenuItem:hover {
+  background: var(--surface-2);
+}
+
+.messageMenuDanger {
+  color: var(--danger);
 }
 
 .messageEditForm {

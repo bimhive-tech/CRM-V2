@@ -34,6 +34,27 @@ function getConversationLabel(conversation, currentUserId) {
     .join(", ");
 }
 
+function getInitials(value) {
+  return String(value || "Chat")
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase())
+    .join("");
+}
+
+function formatConversationTimestamp(value) {
+  if (!value) {
+    return "";
+  }
+  const date = new Date(value);
+  const now = new Date();
+  const sameDay = date.toDateString() === now.toDateString();
+  return sameDay
+    ? new Intl.DateTimeFormat("en-US", { hour: "numeric", minute: "2-digit" }).format(date)
+    : new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric" }).format(date);
+}
+
 export default function ConversationPage() {
   const authState = useAuthenticatedUser();
   const token = getAccessToken();
@@ -314,8 +335,20 @@ export default function ConversationPage() {
                   type="button"
                   onClick={() => setSelectedConversationId(String(conversation.id))}
                 >
-                  <strong>{getConversationLabel(conversation, authState.user.id) || "Untitled chat"}</strong>
-                  <span>{conversation.latest_message?.body || "No messages yet."}</span>
+                  <span className={styles.conversationAvatar} aria-hidden="true">
+                    {getInitials(getConversationLabel(conversation, authState.user.id) || "Untitled chat")}
+                  </span>
+                  <span className={styles.conversationContent}>
+                    <span className={styles.conversationTopRow}>
+                      <strong>{getConversationLabel(conversation, authState.user.id) || "Untitled chat"}</strong>
+                      <time className={styles.conversationTime}>
+                        {formatConversationTimestamp(conversation.latest_message?.created_at)}
+                      </time>
+                    </span>
+                    <span className={styles.conversationPreview}>
+                      {conversation.latest_message?.body || "No messages yet."}
+                    </span>
+                  </span>
                 </button>
               ))
             ) : (
