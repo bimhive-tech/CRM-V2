@@ -34,6 +34,15 @@ function getConversationLabel(conversation, currentUserId) {
     .join(", ");
 }
 
+function getConversationHeaderTitle(conversation, currentUserId) {
+  if (conversation.name) {
+    return conversation.name;
+  }
+
+  const otherParticipants = (conversation.participants || []).filter((participant) => participant.id !== currentUserId);
+  return otherParticipants.length > 1 ? "Group conversation" : "Direct conversation";
+}
+
 function getInitials(value) {
   return String(value || "Chat")
     .split(" ")
@@ -55,6 +64,17 @@ function formatConversationTimestamp(value) {
     : new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric" }).format(date);
 }
 
+function getParticipantSummary(conversation, currentUserId) {
+  const otherParticipants = (conversation.participants || []).filter((participant) => participant.id !== currentUserId);
+  if (!otherParticipants.length) {
+    return "Only you are in this chat right now.";
+  }
+  if (otherParticipants.length === 1) {
+    return `Chatting with ${otherParticipants[0].full_name}`;
+  }
+  return `${otherParticipants.length + 1} participants in this conversation`;
+}
+
 export default function ConversationPage() {
   const authState = useAuthenticatedUser();
   const token = getAccessToken();
@@ -64,6 +84,7 @@ export default function ConversationPage() {
   const [selectedConversationId, setSelectedConversationId] = useState("");
   const [composer, setComposer] = useState("");
   const [modalState, setModalState] = useState({ open: false, mode: "create" });
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [form, setForm] = useState({ name: "", participant_ids: [] });
   const [editingMessageId, setEditingMessageId] = useState(null);
   const [editingBody, setEditingBody] = useState("");
@@ -231,10 +252,25 @@ export default function ConversationPage() {
       await deleteConversation(token, selectedConversation.id);
       await refreshConversations("");
       setMessages([]);
+      setDeleteModalOpen(false);
       setState({ loading: false, saving: false, error: "" });
     } catch (error) {
       setState((current) => ({ ...current, saving: false, error: error.message || "Unable to delete conversation." }));
     }
+  }
+
+  function openDeleteConversationModal() {
+    if (!selectedConversation) {
+      return;
+    }
+    setDeleteModalOpen(true);
+  }
+
+  function closeDeleteConversationModal() {
+    if (state.saving) {
+      return;
+    }
+    setDeleteModalOpen(false);
   }
 
   async function handleSendMessage(event) {
@@ -361,12 +397,23 @@ export default function ConversationPage() {
           {selectedConversation ? (
             <>
               <div className={styles.chatHeader}>
-                <div>
+                <div className={styles.chatHeaderContent}>
                   <p className={styles.eyebrow}>Active chat</p>
-                  <h2>{getConversationLabel(selectedConversation, authState.user.id) || "Untitled chat"}</h2>
-                  <p className={styles.participants}>
-                    {(selectedConversation.participants || []).map((participant) => participant.full_name).join(", ")}
-                  </p>
+                  <div className={styles.chatHeaderIdentity}>
+                    <div className={styles.chatAvatarStack} aria-hidden="true">
+                      {(selectedConversation.participants || []).slice(0, 5).map((participant) => (
+                        <span key={participant.id} className={styles.chatHeaderAvatar} title={participant.full_name}>
+                          {getInitials(participant.full_name || "User")}
+                        </span>
+                      ))}
+                    </div>
+                    <div className={styles.chatHeaderText}>
+                      <h2>{getConversationHeaderTitle(selectedConversation, authState.user.id)}</h2>
+                      <p className={styles.participants}>
+                        {getParticipantSummary(selectedConversation, authState.user.id)}
+                      </p>
+                    </div>
+                  </div>
                 </div>
                 <div className={styles.headerActions}>
                   {canEdit ? (
@@ -384,7 +431,7 @@ export default function ConversationPage() {
                     <button
                       className={`${styles.iconButton} ${styles.dangerIconButton}`}
                       type="button"
-                      onClick={handleDeleteConversation}
+                      onClick={openDeleteConversationModal}
                       aria-label="Delete conversation"
                       title="Delete conversation"
                     >
@@ -450,6 +497,36 @@ export default function ConversationPage() {
           onClose={() => setModalState({ open: false, mode: "create" })}
           saving={state.saving}
         />
+      ) : null}
+
+      {deleteModalOpen ? (
+        <div className={styles.modalBackdrop} role="presentation">
+          <div className={styles.confirmModal} role="dialog" aria-modal="true" aria-label="Delete conversation">
+            <div className={styles.modalHeader}>
+              <div>
+                <p className={styles.modalEyebrow}>Conversation</p>
+                <h2>Delete chat?</h2>
+                <p className={styles.modalCopy}>
+                  This will permanently remove
+                  {" "}
+                  <strong>{getConversationHeaderTitle(selectedConversation, authState.user.id)}</strong>
+                  {" "}
+                  and its messages for everyone who can access it.
+                </p>
+              </div>
+            </div>
+            <div className={styles.modalBody}>
+              <div className={styles.modalActions}>
+                <button className={styles.secondaryButton} type="button" onClick={closeDeleteConversationModal}>
+                  Cancel
+                </button>
+                <button className={styles.dangerButton} type="button" onClick={handleDeleteConversation} disabled={state.saving}>
+                  {state.saving ? "Deleting..." : "Delete chat"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       ) : null}
     </DashboardShell>
   );

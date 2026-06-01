@@ -75,6 +75,7 @@
 }
 
 .primaryButton,
+.secondaryButton,
 .ghostButton,
 .dangerButton,
 .iconButton,
@@ -99,6 +100,12 @@
 }
 
 .ghostButton {
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--ink);
+}
+
+.secondaryButton {
   border: 1px solid var(--border);
   background: var(--surface);
   color: var(--ink);
@@ -226,6 +233,49 @@
 
 .chatPanel {
   min-height: 640px;
+}
+
+.chatHeaderContent {
+  min-width: 0;
+}
+
+.chatHeaderIdentity {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.chatHeaderText {
+  min-width: 0;
+}
+
+.chatAvatarStack {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  margin-right: 2px;
+}
+
+.chatHeaderAvatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  margin-left: -8px;
+  border: 2px solid var(--surface);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--accent) 16%, var(--surface) 84%);
+  color: var(--accent-deep);
+  font-size: 11px;
+  font-weight: 700;
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--accent) 18%, var(--border) 82%),
+    0 6px 14px color-mix(in srgb, var(--accent) 10%, transparent);
+}
+
+.chatHeaderAvatar:first-child {
+  margin-left: 0;
 }
 
 .messages {
@@ -557,6 +607,14 @@
 .modal {
   width: min(720px, 100%);
   overflow: visible;
+}
+
+.confirmModal {
+  width: min(520px, 100%);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  background: var(--surface);
+  box-shadow: var(--shadow-popover);
 }
 
 .modalBody {
