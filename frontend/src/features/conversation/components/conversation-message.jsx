@@ -74,7 +74,7 @@ export function ConversationMessage({
         {getInitials(senderName)}
       </div>
 
-      <div className={styles.messageContent}>
+      <div className={`${styles.messageContent} ${ownMessage ? styles.messageContentOwn : ""}`}>
         <div className={`${styles.messageHeader} ${ownMessage ? styles.messageHeaderOwn : ""}`}>
           <div className={`${styles.messageMeta} ${ownMessage ? styles.messageMetaOwn : ""}`}>
             <strong>{senderName}</strong>

@@ -272,15 +272,23 @@
 .messageContent {
   display: flex;
   flex-direction: column;
+  align-items: flex-start;
   gap: 6px;
   min-width: 0;
+  max-width: min(100%, 620px);
+}
+
+.messageContentOwn {
+  margin-left: auto;
+  align-items: flex-end;
 }
 
 .messageHeader {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 12px;
+  gap: 8px;
+  width: fit-content;
+  max-width: 100%;
 }
 
 .messageHeaderOwn {
@@ -295,13 +303,15 @@
 }
 
 .messageMetaOwn {
+  flex-direction: row-reverse;
   justify-content: flex-end;
 }
 
 .messageBubbleRow {
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   gap: 8px;
+  max-width: 100%;
 }
 
 .messageBubbleRowOwn {
