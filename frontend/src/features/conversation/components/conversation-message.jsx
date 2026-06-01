@@ -16,6 +16,15 @@ function formatTimestamp(value) {
   }).format(new Date(value));
 }
 
+function getInitials(value) {
+  return String(value || "User")
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase())
+    .join("");
+}
+
 export function ConversationMessage({
   canDelete,
   canEdit,
@@ -32,6 +41,7 @@ export function ConversationMessage({
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef(null);
+  const senderName = message.sender?.full_name || "Unknown user";
 
   useEffect(() => {
     if (!menuOpen) {
@@ -59,14 +69,20 @@ export function ConversationMessage({
   }, [menuOpen]);
 
   return (
-    <article className={`${styles.message} ${ownMessage ? styles.messageOwn : ""}`}>
-      <div className={styles.messageMeta}>
-        <strong>{message.sender?.full_name || "Unknown user"}</strong>
-        <div className={styles.messageMetaActions}>
-          <span>
-            {formatTimestamp(message.created_at)}
-            {message.is_edited ? " · edited" : ""}
-          </span>
+    <article className={`${styles.messageRow} ${ownMessage ? styles.messageRowOwn : ""}`}>
+      <div className={styles.messageAvatar} aria-hidden="true">
+        {getInitials(senderName)}
+      </div>
+
+      <div className={styles.messageContent}>
+        <div className={styles.messageHeader}>
+          <div className={styles.messageMeta}>
+            <strong>{senderName}</strong>
+            <span>
+              {formatTimestamp(message.created_at)}
+              {message.is_edited ? " · edited" : ""}
+            </span>
+          </div>
           {ownMessage && (canEdit || canDelete) && !editing ? (
             <div ref={menuRef} className={styles.messageMenuWrap}>
               <button
@@ -116,23 +132,25 @@ export function ConversationMessage({
             </div>
           ) : null}
         </div>
-      </div>
 
-      {editing ? (
-        <form className={styles.messageEditForm} onSubmit={onSubmitEdit}>
-          <textarea value={value} onChange={(event) => onChangeEditBody(event.target.value)} rows={3} />
-          <div className={styles.messageActions}>
-            <button className={styles.ghostButton} type="button" onClick={onCancelEdit}>
-              Cancel
-            </button>
-            <button className={styles.primaryButton} type="submit" disabled={saving || !value.trim()}>
-              {saving ? "Saving..." : "Save"}
-            </button>
-          </div>
-        </form>
-      ) : (
-        <p>{message.body}</p>
-      )}
+        <div className={`${styles.messageBubble} ${ownMessage ? styles.messageBubbleOwn : ""}`}>
+          {editing ? (
+            <form className={styles.messageEditForm} onSubmit={onSubmitEdit}>
+              <textarea value={value} onChange={(event) => onChangeEditBody(event.target.value)} rows={3} />
+              <div className={styles.messageActions}>
+                <button className={styles.ghostButton} type="button" onClick={onCancelEdit}>
+                  Cancel
+                </button>
+                <button className={styles.primaryButton} type="submit" disabled={saving || !value.trim()}>
+                  {saving ? "Saving..." : "Save"}
+                </button>
+              </div>
+            </form>
+          ) : (
+            <p>{message.body}</p>
+          )}
+        </div>
+      </div>
     </article>
   );
 }
