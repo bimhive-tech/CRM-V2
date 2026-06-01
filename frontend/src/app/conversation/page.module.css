@@ -241,8 +241,9 @@
 
 .chatHeaderIdentity {
   display: flex;
-  align-items: center;
-  gap: 12px;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
 }
 
 .chatHeaderText {
@@ -253,7 +254,6 @@
   display: inline-flex;
   align-items: center;
   flex-shrink: 0;
-  margin-right: 2px;
 }
 
 .chatHeaderAvatar {

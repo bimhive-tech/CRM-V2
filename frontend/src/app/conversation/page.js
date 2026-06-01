@@ -64,15 +64,6 @@ function formatConversationTimestamp(value) {
     : new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric" }).format(date);
 }
 
-function getParticipantSummary(conversation, currentUserId) {
-  const orderedParticipants = [
-    ...(conversation.participants || []).filter((participant) => participant.id === currentUserId),
-    ...(conversation.participants || []).filter((participant) => participant.id !== currentUserId),
-  ];
-
-  return orderedParticipants.map((participant) => participant.full_name).join(", ");
-}
-
 export default function ConversationPage() {
   const authState = useAuthenticatedUser();
   const token = getAccessToken();
@@ -397,18 +388,15 @@ export default function ConversationPage() {
               <div className={styles.chatHeader}>
                 <div className={styles.chatHeaderContent}>
                   <div className={styles.chatHeaderIdentity}>
+                    <div className={styles.chatHeaderText}>
+                      <h2>{getConversationHeaderTitle(selectedConversation, authState.user.id)}</h2>
+                    </div>
                     <div className={styles.chatAvatarStack} aria-hidden="true">
                       {(selectedConversation.participants || []).slice(0, 5).map((participant) => (
                         <span key={participant.id} className={styles.chatHeaderAvatar} title={participant.full_name}>
                           {getInitials(participant.full_name || "User")}
                         </span>
                       ))}
-                    </div>
-                    <div className={styles.chatHeaderText}>
-                      <h2>{getConversationHeaderTitle(selectedConversation, authState.user.id)}</h2>
-                      <p className={styles.participants}>
-                        {getParticipantSummary(selectedConversation, authState.user.id)}
-                      </p>
                     </div>
                   </div>
                 </div>
