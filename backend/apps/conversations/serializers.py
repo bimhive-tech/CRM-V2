@@ -12,11 +12,15 @@ class ConversationUserSerializer(serializers.ModelSerializer):
 
 class ConversationMessageSerializer(serializers.ModelSerializer):
     sender = ConversationUserSerializer(read_only=True)
+    is_edited = serializers.SerializerMethodField()
 
     class Meta:
         model = ConversationMessage
-        fields = ["id", "sender", "body", "created_at"]
-        read_only_fields = ["id", "sender", "created_at"]
+        fields = ["id", "sender", "body", "created_at", "updated_at", "is_edited"]
+        read_only_fields = ["id", "sender", "created_at", "updated_at", "is_edited"]
+
+    def get_is_edited(self, obj):
+        return obj.updated_at > obj.created_at
 
 
 class ConversationSerializer(serializers.ModelSerializer):

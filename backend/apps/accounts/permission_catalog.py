@@ -201,6 +201,20 @@ PERMISSION_GROUPS = [
                 "configurable": True,
             },
             {"code": "conversations.delete", "label": "Delete chats", "description": "Delete existing chats.", "platform_only": False, "configurable": True},
+            {
+                "code": "conversations.update_own_messages",
+                "label": "Edit own messages",
+                "description": "Edit messages the user has sent.",
+                "platform_only": False,
+                "configurable": True,
+            },
+            {
+                "code": "conversations.delete_own_messages",
+                "label": "Delete own messages",
+                "description": "Delete messages the user has sent.",
+                "platform_only": False,
+                "configurable": True,
+            },
         ],
     },
 ]

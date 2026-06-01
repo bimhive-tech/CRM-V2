@@ -1,6 +1,12 @@
 from django.urls import path
 
-from apps.conversations.views import ConversationDetailView, ConversationListCreateView, ConversationMessageListCreateView, ConversationOptionsView
+from apps.conversations.views import (
+    ConversationDetailView,
+    ConversationListCreateView,
+    ConversationMessageDetailView,
+    ConversationMessageListCreateView,
+    ConversationOptionsView,
+)
 
 
 urlpatterns = [
@@ -8,4 +14,5 @@ urlpatterns = [
     path("options/", ConversationOptionsView.as_view(), name="conversation-options"),
     path("<int:pk>/", ConversationDetailView.as_view(), name="conversation-detail"),
     path("<int:conversation_pk>/messages/", ConversationMessageListCreateView.as_view(), name="conversation-messages"),
+    path("messages/<int:pk>/", ConversationMessageDetailView.as_view(), name="conversation-message-detail"),
 ]

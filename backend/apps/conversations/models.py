@@ -50,6 +50,7 @@ class ConversationMessage(models.Model):
     sender = models.ForeignKey("accounts.User", on_delete=models.CASCADE, related_name="sent_conversation_messages")
     body = models.TextField()
     created_at = models.DateTimeField(default=timezone.now, editable=False)
+    updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         ordering = ["created_at", "id"]

@@ -68,6 +68,20 @@ def sync_participants(conversation, users, actor):
         ConversationParticipant.objects.bulk_create(new_rows)
 
 
+def ensure_manage_own_message_permission(user, message, action):
+    permission_map = {
+        "update": "conversations.update_own_messages",
+        "delete": "conversations.delete_own_messages",
+    }
+    if user.is_platform_admin:
+        return
+    if message.sender_id != user.id:
+        raise ValidationError({"detail": "You can only manage messages you have sent."})
+    if user.has_app_permission(permission_map[action]):
+        return
+    raise ValidationError({"detail": "You do not have permission to manage your own messages."})
+
+
 class ConversationListCreateView(generics.ListCreateAPIView):
     permission_classes = [permissions.IsAuthenticated]
 
@@ -83,7 +97,7 @@ class ConversationListCreateView(generics.ListCreateAPIView):
     def perform_create(self, serializer):
         ensure_manage_permission(self.request.user, "create")
         company = resolve_default_company_for_user(self.request.user)
-        participants = list(serializer.validated_data["participant_users"])
+        participants = list(serializer.validated_data.pop("participant_users"))
         if self.request.user not in participants:
             participants.append(self.request.user)
         allowed_ids = set(company_users_queryset(company).values_list("id", flat=True))
@@ -119,7 +133,7 @@ class ConversationDetailView(generics.RetrieveUpdateDestroyAPIView):
     def perform_update(self, serializer):
         ensure_manage_permission(self.request.user, "update")
         conversation = self.get_object()
-        participants = list(serializer.validated_data.get("participant_users", [])) or [item.user for item in conversation.participants.select_related("user").all()]
+        participants = list(serializer.validated_data.pop("participant_users", [])) or [item.user for item in conversation.participants.select_related("user").all()]
         if self.request.user not in participants:
             participants.append(self.request.user)
         allowed_ids = set(company_users_queryset(conversation.company).values_list("id", flat=True))
@@ -180,6 +194,51 @@ class ConversationMessageListCreateView(generics.ListCreateAPIView):
             target=conversation,
             company=conversation.company,
             metadata={"message_id": message.id},
+        )
+
+
+class ConversationMessageDetailView(generics.RetrieveUpdateDestroyAPIView):
+    serializer_class = ConversationMessageSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return (
+            ConversationMessage.objects.select_related("sender", "conversation", "conversation__company")
+            .filter(conversation__in=conversation_queryset_for_user(self.request.user))
+        )
+
+    def perform_update(self, serializer):
+        message = self.get_object()
+        ensure_manage_own_message_permission(self.request.user, message, "update")
+        body = (serializer.validated_data.get("body") or "").strip()
+        if not body:
+            raise ValidationError({"body": "Message body is required."})
+        updated = serializer.save(body=body)
+        log_audit_event(
+            self.request.user,
+            event_type=AuditLogEntry.TYPE_TEAM,
+            action=AuditLogEntry.ACTION_UPDATE,
+            title="Edited conversation message",
+            description=updated.conversation.name or "Conversation",
+            target=updated.conversation,
+            company=updated.conversation.company,
+            metadata={"message_id": updated.id},
+        )
+
+    def perform_destroy(self, instance):
+        ensure_manage_own_message_permission(self.request.user, instance, "delete")
+        conversation = instance.conversation
+        message_id = instance.id
+        instance.delete()
+        log_audit_event(
+            self.request.user,
+            event_type=AuditLogEntry.TYPE_TEAM,
+            action=AuditLogEntry.ACTION_DELETE,
+            title="Deleted conversation message",
+            description=conversation.name or "Conversation",
+            target=conversation,
+            company=conversation.company,
+            metadata={"message_id": message_id},
         )
 
 

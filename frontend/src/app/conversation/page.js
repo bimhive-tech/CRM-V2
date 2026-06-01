@@ -5,15 +5,18 @@ import { useEffect, useState } from "react";
 import { DashboardShell } from "@/components/dashboard/dashboard-shell/dashboard-shell";
 import { Sidebar } from "@/components/dashboard/sidebar/sidebar";
 import { Topbar } from "@/components/dashboard/topbar/topbar";
+import { ConversationMessage } from "@/features/conversation/components/conversation-message";
 import { ConversationModal } from "@/features/conversation/components/conversation-modal";
 import {
   createConversation,
   deleteConversation,
+  deleteConversationMessage,
   listConversationMessages,
   listConversationOptions,
   listConversations,
   sendConversationMessage,
   updateConversation,
+  updateConversationMessage,
 } from "@/lib/api/admin";
 import { useAuthenticatedUser } from "@/lib/hooks/use-authenticated-user";
 import { getAccessToken } from "@/lib/session";
@@ -30,18 +33,6 @@ function getConversationLabel(conversation, currentUserId) {
     .join(", ");
 }
 
-function formatTimestamp(value) {
-  if (!value) {
-    return "";
-  }
-  return new Intl.DateTimeFormat("en-US", {
-    month: "short",
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-  }).format(new Date(value));
-}
-
 export default function ConversationPage() {
   const authState = useAuthenticatedUser();
   const token = getAccessToken();
@@ -52,6 +43,8 @@ export default function ConversationPage() {
   const [composer, setComposer] = useState("");
   const [modalState, setModalState] = useState({ open: false, mode: "create" });
   const [form, setForm] = useState({ name: "", participant_ids: [] });
+  const [editingMessageId, setEditingMessageId] = useState(null);
+  const [editingBody, setEditingBody] = useState("");
   const [state, setState] = useState({ loading: true, saving: false, error: "" });
 
   const participantOptions = options
@@ -61,6 +54,12 @@ export default function ConversationPage() {
   const canCreate = Boolean(authState.user?.is_platform_admin || authState.user?.permissions?.includes("conversations.create"));
   const canEdit = Boolean(authState.user?.is_platform_admin || authState.user?.permissions?.includes("conversations.update"));
   const canDelete = Boolean(authState.user?.is_platform_admin || authState.user?.permissions?.includes("conversations.delete"));
+  const canEditOwnMessages = Boolean(
+    authState.user?.is_platform_admin || authState.user?.permissions?.includes("conversations.update_own_messages"),
+  );
+  const canDeleteOwnMessages = Boolean(
+    authState.user?.is_platform_admin || authState.user?.permissions?.includes("conversations.delete_own_messages"),
+  );
 
   useEffect(() => {
     if (!authState.user) {
@@ -165,6 +164,11 @@ export default function ConversationPage() {
     setSelectedConversationId(preferredId || String(nextConversations[0]?.id || ""));
   }
 
+  async function refreshMessages(conversationId) {
+    const nextMessages = await listConversationMessages(token, conversationId);
+    setMessages(nextMessages);
+  }
+
   async function handleConversationSubmit(event) {
     event.preventDefault();
     if (!form.participant_ids.length) {
@@ -219,16 +223,63 @@ export default function ConversationPage() {
     setState((current) => ({ ...current, saving: true, error: "" }));
     try {
       await sendConversationMessage(token, selectedConversation.id, { body: composer.trim() });
-      const [nextMessages, nextConversations] = await Promise.all([
-        listConversationMessages(token, selectedConversation.id),
+      const [nextConversations] = await Promise.all([
         listConversations(token),
+        refreshMessages(selectedConversation.id),
       ]);
-      setMessages(nextMessages);
       setConversations(nextConversations);
       setComposer("");
       setState({ loading: false, saving: false, error: "" });
     } catch (error) {
       setState((current) => ({ ...current, saving: false, error: error.message || "Unable to send the message." }));
+    }
+  }
+
+  function startEditingMessage(message) {
+    setEditingMessageId(message.id);
+    setEditingBody(message.body || "");
+    setState((current) => ({ ...current, error: "" }));
+  }
+
+  function cancelEditingMessage() {
+    setEditingMessageId(null);
+    setEditingBody("");
+  }
+
+  async function handleEditMessage(event, messageId) {
+    event.preventDefault();
+    if (!selectedConversation || !editingBody.trim()) {
+      return;
+    }
+    setState((current) => ({ ...current, saving: true, error: "" }));
+    try {
+      await updateConversationMessage(token, messageId, { body: editingBody.trim() });
+      await refreshMessages(selectedConversation.id);
+      const nextConversations = await listConversations(token);
+      setConversations(nextConversations);
+      cancelEditingMessage();
+      setState({ loading: false, saving: false, error: "" });
+    } catch (error) {
+      setState((current) => ({ ...current, saving: false, error: error.message || "Unable to edit the message." }));
+    }
+  }
+
+  async function handleDeleteMessage(messageId) {
+    if (!selectedConversation) {
+      return;
+    }
+    setState((current) => ({ ...current, saving: true, error: "" }));
+    try {
+      await deleteConversationMessage(token, messageId);
+      await refreshMessages(selectedConversation.id);
+      const nextConversations = await listConversations(token);
+      setConversations(nextConversations);
+      if (editingMessageId === messageId) {
+        cancelEditingMessage();
+      }
+      setState({ loading: false, saving: false, error: "" });
+    } catch (error) {
+      setState((current) => ({ ...current, saving: false, error: error.message || "Unable to delete the message." }));
     }
   }
 
@@ -292,13 +343,21 @@ export default function ConversationPage() {
               <div className={styles.messages}>
                 {messages.length ? (
                   messages.map((message) => (
-                    <article key={message.id} className={`${styles.message} ${message.sender?.id === authState.user.id ? styles.messageOwn : ""}`}>
-                      <div className={styles.messageMeta}>
-                        <strong>{message.sender?.full_name || "Unknown user"}</strong>
-                        <span>{formatTimestamp(message.created_at)}</span>
-                      </div>
-                      <p>{message.body}</p>
-                    </article>
+                    <ConversationMessage
+                      key={message.id}
+                      canDelete={canDeleteOwnMessages}
+                      canEdit={canEditOwnMessages}
+                      editing={editingMessageId === message.id}
+                      message={message}
+                      ownMessage={message.sender?.id === authState.user.id}
+                      saving={state.saving}
+                      value={editingMessageId === message.id ? editingBody : ""}
+                      onCancelEdit={cancelEditingMessage}
+                      onChangeEditBody={setEditingBody}
+                      onDelete={() => handleDeleteMessage(message.id)}
+                      onStartEdit={() => startEditingMessage(message)}
+                      onSubmitEdit={(event) => handleEditMessage(event, message.id)}
+                    />
                   ))
                 ) : (
                   <div className={styles.emptyState}>No messages yet in this conversation.</div>

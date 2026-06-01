@@ -673,3 +673,18 @@ export function listConversationOptions(token) {
     headers: authHeaders(token),
   });
 }
+
+export function updateConversationMessage(token, messageId, payload) {
+  return apiRequest(`/conversations/messages/${messageId}/`, {
+    method: "PATCH",
+    headers: authHeaders(token),
+    body: JSON.stringify(payload),
+  });
+}
+
+export function deleteConversationMessage(token, messageId) {
+  return apiRequest(`/conversations/messages/${messageId}/`, {
+    method: "DELETE",
+    headers: authHeaders(token),
+  });
+}
