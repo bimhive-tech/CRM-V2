@@ -75,16 +75,12 @@ export function ConversationMessage({
       </div>
 
       <div className={styles.messageContent}>
-        <div className={styles.messageHeader}>
-          <div className={styles.messageMeta}>
-            <strong>{senderName}</strong>
-            <span>
-              {formatTimestamp(message.created_at)}
-              {message.is_edited ? " · edited" : ""}
-            </span>
-          </div>
+        <div className={`${styles.messageHeader} ${ownMessage ? styles.messageHeaderOwn : ""}`}>
           {ownMessage && (canEdit || canDelete) && !editing ? (
-            <div ref={menuRef} className={styles.messageMenuWrap}>
+            <div
+              ref={menuRef}
+              className={`${styles.messageMenuWrap} ${ownMessage ? styles.messageMenuWrapOwn : ""}`}
+            >
               <button
                 className={styles.messageMenuButton}
                 type="button"
@@ -131,6 +127,13 @@ export function ConversationMessage({
               ) : null}
             </div>
           ) : null}
+          <div className={`${styles.messageMeta} ${ownMessage ? styles.messageMetaOwn : ""}`}>
+            <strong>{senderName}</strong>
+            <span>
+              {formatTimestamp(message.created_at)}
+              {message.is_edited ? " · edited" : ""}
+            </span>
+          </div>
         </div>
 
         <div className={`${styles.messageBubble} ${ownMessage ? styles.messageBubbleOwn : ""}`}>

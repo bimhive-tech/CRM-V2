@@ -283,11 +283,19 @@
   gap: 12px;
 }
 
+.messageHeaderOwn {
+  justify-content: flex-start;
+}
+
 .messageMeta {
   display: flex;
   align-items: center;
   gap: 8px;
   min-width: 0;
+}
+
+.messageMetaOwn {
+  justify-content: flex-end;
 }
 
 .messageMeta strong {
@@ -335,6 +343,10 @@
 
 .messageMenuWrap {
   position: relative;
+}
+
+.messageMenuWrapOwn {
+  order: -1;
 }
 
 .messageMenuButton,
@@ -393,6 +405,11 @@
   border-radius: 12px;
   background: var(--surface);
   box-shadow: var(--shadow-popover);
+}
+
+.messageMenuWrapOwn .messageMenu {
+  right: auto;
+  left: 0;
 }
 
 .messageMenuItem {
