@@ -427,6 +427,7 @@
 .columnContent {
   display: flex;
   flex: 1;
+  min-height: 0;
 }
 
 .contactStack {
@@ -434,6 +435,28 @@
   flex: 1;
   flex-direction: column;
   gap: 8px;
+  max-height: 536px;
+  overflow-y: auto;
+  padding-right: 4px;
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in oklch, var(--accent) 45%, var(--border)) transparent;
+}
+
+.contactStack::-webkit-scrollbar {
+  width: 8px;
+}
+
+.contactStack::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.contactStack::-webkit-scrollbar-thumb {
+  background: color-mix(in oklch, var(--accent) 45%, var(--border));
+  border-radius: 999px;
+}
+
+.contactStack::-webkit-scrollbar-thumb:hover {
+  background: color-mix(in oklch, var(--accent) 62%, var(--border));
 }
 
 .contactCard {

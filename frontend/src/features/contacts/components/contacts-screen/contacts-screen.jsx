@@ -396,31 +396,12 @@ function PaginationControls({ page, totalPages, count, onPageChange }) {
   }
 
   function getVisiblePages() {
-    if (totalPages <= 5) {
+    if (totalPages <= 4) {
       return Array.from({ length: totalPages }, (_, index) => index + 1);
     }
 
     const startPage = Math.max(1, Math.min(page - 1, totalPages - 3));
-    const endPage = Math.min(totalPages, startPage + 3);
-    const items = [];
-
-    if (startPage > 1) {
-      items.push(1);
-      if (startPage > 2) {
-        items.push("ellipsis-start");
-      }
-    }
-
-    for (let pageNumber = startPage; pageNumber <= endPage; pageNumber += 1) {
-      items.push(pageNumber);
-    }
-
-    if (endPage < totalPages - 1) {
-      items.push("ellipsis-end");
-      items.push(totalPages);
-    }
-
-    return items;
+    return Array.from({ length: 4 }, (_, index) => startPage + index).filter((pageNumber) => pageNumber <= totalPages);
   }
 
   const visiblePages = getVisiblePages();
@@ -433,23 +414,17 @@ function PaginationControls({ page, totalPages, count, onPageChange }) {
           <button className={styles.secondaryButton} type="button" onClick={() => onPageChange(page - 1)} disabled={page <= 1}>
             Previous
           </button>
-          {visiblePages.map((pageNumber, index) =>
-            pageNumber === "ellipsis" ? (
-              <span key={`ellipsis-${index}`} className={styles.paginationEllipsis} aria-hidden="true">
-                ...
-              </span>
-            ) : (
-              <button
-                key={pageNumber}
-                className={pageNumber === page ? styles.paginationNumberActive : styles.paginationNumber}
-                type="button"
-                onClick={() => onPageChange(pageNumber)}
-                aria-current={pageNumber === page ? "page" : undefined}
-              >
-                {pageNumber}
-              </button>
-            ),
-          )}
+          {visiblePages.map((pageNumber) => (
+            <button
+              key={pageNumber}
+              className={pageNumber === page ? styles.paginationNumberActive : styles.paginationNumber}
+              type="button"
+              onClick={() => onPageChange(pageNumber)}
+              aria-current={pageNumber === page ? "page" : undefined}
+            >
+              {pageNumber}
+            </button>
+          ))}
           <button className={styles.secondaryButton} type="button" onClick={() => onPageChange(page + 1)} disabled={page >= totalPages}>
             Next
           </button>

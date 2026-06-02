@@ -644,16 +644,6 @@
   color: var(--accent);
 }
 
-.paginationEllipsis {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 18px;
-  color: var(--ink-3);
-  font-family: var(--font-mono), monospace;
-  font-size: 11px;
-}
-
 .emptyState {
   display: flex;
   flex-direction: column;
