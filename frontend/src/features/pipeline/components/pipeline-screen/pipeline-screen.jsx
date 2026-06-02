@@ -860,6 +860,7 @@ export function PipelineScreen({ user }) {
                     <article
                       key={statusItem.id}
                       className={`${styles.column} ${dragState.draggingId === statusItem.id ? styles.columnDragging : ""}`}
+                      style={{ "--stage-color": statusItem.color || DEFAULT_STATUS_COLOR }}
                       draggable
                       onDragStart={() => {
                         if (draggingCardId !== null) {

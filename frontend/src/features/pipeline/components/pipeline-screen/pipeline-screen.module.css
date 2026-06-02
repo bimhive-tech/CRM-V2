@@ -279,6 +279,7 @@
   display: flex;
   flex-direction: column;
   background: var(--surface-2);
+  --stage-color: var(--accent);
   transition:
     transform 0.18s ease,
     background 0.12s ease,
@@ -300,7 +301,8 @@
   justify-content: space-between;
   gap: 10px;
   padding: 12px 14px;
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid color-mix(in srgb, var(--stage-color) 24%, var(--border) 76%);
+  background: color-mix(in srgb, var(--stage-color) 18%, var(--surface) 82%);
 }
 
 .columnLead {
@@ -329,7 +331,7 @@
 
 .columnTitle {
   margin: 0;
-  color: var(--ink);
+  color: color-mix(in srgb, var(--stage-color) 72%, var(--ink) 28%);
   font-size: 13px;
   font-weight: 600;
 }
@@ -364,7 +366,7 @@
 .stageCount {
   display: block;
   margin-top: 5px;
-  color: var(--ink-3);
+  color: color-mix(in srgb, var(--stage-color) 58%, var(--ink-2) 42%);
   font-family: var(--font-mono), monospace;
   font-size: 11px;
 }
