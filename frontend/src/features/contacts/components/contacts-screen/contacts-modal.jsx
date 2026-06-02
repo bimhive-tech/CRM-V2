@@ -102,6 +102,8 @@ export function ContactsModal({
                   <input
                     value={phone}
                     onChange={(event) => onPhoneChange(index, event.target.value)}
+                    inputMode="tel"
+                    maxLength={11}
                     placeholder={index === 0 ? "+20 10 1234 5678" : "Another Egypt mobile number"}
                     required={index === 0}
                   />
@@ -215,6 +217,8 @@ export function CompanyModal({
                   <input
                     value={phone}
                     onChange={(event) => onPhoneChange(index, event.target.value)}
+                    inputMode="tel"
+                    maxLength={11}
                     placeholder={index === 0 ? "+20 2 2461 2345" : "Another Egypt office number"}
                   />
                   {form.phoneNumbers.length > 1 ? (

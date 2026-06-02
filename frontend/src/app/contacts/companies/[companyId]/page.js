@@ -51,6 +51,13 @@ const emptyCompanyForm = {
   longitude: "",
 };
 
+function sanitizePhoneInput(value) {
+  const raw = String(value || "");
+  const hasPlus = raw.trim().startsWith("+");
+  const digits = raw.replace(/\D/g, "").slice(0, 10);
+  return hasPlus ? `+${digits}` : digits;
+}
+
 function stringToHue(value) {
   return value.split("").reduce((total, character) => total + character.charCodeAt(0), 0) % 360;
 }
@@ -337,7 +344,7 @@ export default function CompanyDetailPage() {
   function updateCompanyPhone(index, value) {
     setCompanyForm((current) => ({
       ...current,
-      phoneNumbers: current.phoneNumbers.map((phone, phoneIndex) => (phoneIndex === index ? value : phone)),
+      phoneNumbers: current.phoneNumbers.map((phone, phoneIndex) => (phoneIndex === index ? sanitizePhoneInput(value) : phone)),
     }));
   }
 

@@ -75,6 +75,13 @@ const emptyCompanyForm = {
 const DIRECTORY_PAGE_SIZE = 10;
 const COMPANY_OPTIONS_PAGE_SIZE = 200;
 
+function sanitizePhoneInput(value) {
+  const raw = String(value || "");
+  const hasPlus = raw.trim().startsWith("+");
+  const digits = raw.replace(/\D/g, "").slice(0, 10);
+  return hasPlus ? `+${digits}` : digits;
+}
+
 function getInitialFilters(searchParams, mode) {
   return {
     search: "",
@@ -753,7 +760,7 @@ function DirectoryScreen({ user, mode = "contacts" }) {
   function updateContactPhone(index, value) {
     setContactForm((current) => ({
       ...current,
-      phoneNumbers: current.phoneNumbers.map((phone, phoneIndex) => (phoneIndex === index ? value : phone)),
+      phoneNumbers: current.phoneNumbers.map((phone, phoneIndex) => (phoneIndex === index ? sanitizePhoneInput(value) : phone)),
     }));
   }
 
@@ -776,7 +783,7 @@ function DirectoryScreen({ user, mode = "contacts" }) {
   function updateCompanyPhone(index, value) {
     setCompanyForm((current) => ({
       ...current,
-      phoneNumbers: current.phoneNumbers.map((phone, phoneIndex) => (phoneIndex === index ? value : phone)),
+      phoneNumbers: current.phoneNumbers.map((phone, phoneIndex) => (phoneIndex === index ? sanitizePhoneInput(value) : phone)),
     }));
   }
 

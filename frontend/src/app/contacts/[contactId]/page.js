@@ -48,6 +48,13 @@ const emptyContactForm = {
 
 const COMPANY_OPTIONS_PAGE_SIZE = 200;
 
+function sanitizePhoneInput(value) {
+  const raw = String(value || "");
+  const hasPlus = raw.trim().startsWith("+");
+  const digits = raw.replace(/\D/g, "").slice(0, 10);
+  return hasPlus ? `+${digits}` : digits;
+}
+
 function normalizeStatusLabel(value) {
   return legacyStatusLabelMap[value] || value;
 }
@@ -411,7 +418,7 @@ export default function ContactDetailPage() {
   function updateContactPhone(index, value) {
     setContactForm((current) => ({
       ...current,
-      phoneNumbers: current.phoneNumbers.map((phone, phoneIndex) => (phoneIndex === index ? value : phone)),
+      phoneNumbers: current.phoneNumbers.map((phone, phoneIndex) => (phoneIndex === index ? sanitizePhoneInput(value) : phone)),
     }));
   }
 

@@ -65,6 +65,13 @@ const userInitialState = {
   is_active: true,
 };
 
+function sanitizePhoneInput(value) {
+  const raw = String(value || "");
+  const hasPlus = raw.trim().startsWith("+");
+  const digits = raw.replace(/\D/g, "").slice(0, 10);
+  return hasPlus ? `+${digits}` : digits;
+}
+
 function StatusBadge({ tone = "neutral", children }) {
   return (
     <span className={`${styles.statusBadge} ${tone === "danger" ? styles.statusBadgeDanger : styles.statusBadgeNeutral}`}>
@@ -201,7 +208,7 @@ function CompanyFormFields({
         </label>
         <label className={styles.field}>
           <span>Phone number</span>
-          <input name="phone_number" value={form.phone_number} onChange={onChange} placeholder="+20 2 2265 7788" />
+          <input name="phone_number" value={form.phone_number} onChange={onChange} placeholder="+20 2 2265 7788" inputMode="tel" maxLength={11} />
         </label>
         <label className={styles.field}>
           <span>Website</span>
@@ -468,12 +475,18 @@ export function SettingsScreen({
 
   function updateCompanyForm(event) {
     const { name, value, type, checked } = event.target;
-    setCompanyForm((current) => ({ ...current, [name]: type === "checkbox" ? checked : value }));
+    setCompanyForm((current) => ({
+      ...current,
+      [name]: type === "checkbox" ? checked : name === "phone_number" ? sanitizePhoneInput(value) : value,
+    }));
   }
 
   function updateCompanyInfoForm(event) {
     const { name, value, type, checked } = event.target;
-    setCompanyInfoForm((current) => ({ ...current, [name]: type === "checkbox" ? checked : value }));
+    setCompanyInfoForm((current) => ({
+      ...current,
+      [name]: type === "checkbox" ? checked : name === "phone_number" ? sanitizePhoneInput(value) : value,
+    }));
   }
 
   function updateRoleForm(event) {
