@@ -50,6 +50,7 @@ const emptyCompanyForm = {
   latitude: "",
   longitude: "",
 };
+const MAX_PHONE_NUMBERS = 10;
 
 function sanitizePhoneInput(value) {
   const raw = String(value || "");
@@ -349,7 +350,10 @@ export default function CompanyDetailPage() {
   }
 
   function addCompanyPhone() {
-    setCompanyForm((current) => ({ ...current, phoneNumbers: [...current.phoneNumbers, ""] }));
+    setCompanyForm((current) => ({
+      ...current,
+      phoneNumbers: current.phoneNumbers.length >= MAX_PHONE_NUMBERS ? current.phoneNumbers : [...current.phoneNumbers, ""],
+    }));
   }
 
   function removeCompanyPhone(index) {

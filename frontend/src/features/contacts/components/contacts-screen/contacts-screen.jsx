@@ -74,6 +74,7 @@ const emptyCompanyForm = {
 
 const DIRECTORY_PAGE_SIZE = 10;
 const COMPANY_OPTIONS_PAGE_SIZE = 200;
+const MAX_PHONE_NUMBERS = 10;
 
 function sanitizePhoneInput(value) {
   const raw = String(value || "");
@@ -765,7 +766,10 @@ function DirectoryScreen({ user, mode = "contacts" }) {
   }
 
   function addContactPhone() {
-    setContactForm((current) => ({ ...current, phoneNumbers: [...current.phoneNumbers, ""] }));
+    setContactForm((current) => ({
+      ...current,
+      phoneNumbers: current.phoneNumbers.length >= MAX_PHONE_NUMBERS ? current.phoneNumbers : [...current.phoneNumbers, ""],
+    }));
   }
 
   function removeContactPhone(index) {
@@ -814,7 +818,10 @@ function DirectoryScreen({ user, mode = "contacts" }) {
   }
 
   function addCompanyPhone() {
-    setCompanyForm((current) => ({ ...current, phoneNumbers: [...current.phoneNumbers, ""] }));
+    setCompanyForm((current) => ({
+      ...current,
+      phoneNumbers: current.phoneNumbers.length >= MAX_PHONE_NUMBERS ? current.phoneNumbers : [...current.phoneNumbers, ""],
+    }));
   }
 
   function removeCompanyPhone(index) {

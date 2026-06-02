@@ -47,6 +47,7 @@ const emptyContactForm = {
 };
 
 const COMPANY_OPTIONS_PAGE_SIZE = 200;
+const MAX_PHONE_NUMBERS = 10;
 
 function sanitizePhoneInput(value) {
   const raw = String(value || "");
@@ -423,7 +424,10 @@ export default function ContactDetailPage() {
   }
 
   function addContactPhone() {
-    setContactForm((current) => ({ ...current, phoneNumbers: [...current.phoneNumbers, ""] }));
+    setContactForm((current) => ({
+      ...current,
+      phoneNumbers: current.phoneNumbers.length >= MAX_PHONE_NUMBERS ? current.phoneNumbers : [...current.phoneNumbers, ""],
+    }));
   }
 
   function removeContactPhone(index) {

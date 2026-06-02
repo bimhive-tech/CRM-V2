@@ -6,6 +6,7 @@ import { COUNTRY_OPTIONS } from "@/lib/countries";
 import styles from "./contacts-screen.module.css";
 
 const SOCIAL_PLATFORM_OPTIONS = ["LinkedIn", "Facebook", "Instagram", "X", "YouTube", "TikTok", "Behance", "Other"];
+const MAX_PHONE_NUMBERS = 10;
 const CompanyLocationMap = dynamic(
   () => import("@/components/maps/company-location-map").then((module) => module.CompanyLocationMap),
   { ssr: false },
@@ -92,10 +93,16 @@ export function ContactsModal({
           <div className={styles.phoneSection}>
             <div className={styles.sectionRow}>
               <span className={styles.sectionLabel}>Phone numbers</span>
-              <button className={styles.inlineButton} type="button" onClick={onAddPhone}>
+              <button
+                className={styles.inlineButton}
+                type="button"
+                onClick={onAddPhone}
+                disabled={form.phoneNumbers.length >= MAX_PHONE_NUMBERS}
+              >
                 Add number
               </button>
             </div>
+            <span className={styles.helperText}>Up to 10 phone numbers per contact.</span>
             <div className={styles.phoneList}>
               {form.phoneNumbers.map((phone, index) => (
                 <div key={`contact-phone-${index}`} className={styles.phoneRow}>
@@ -207,10 +214,16 @@ export function CompanyModal({
           <div className={styles.phoneSection}>
             <div className={styles.sectionRow}>
               <span className={styles.sectionLabel}>Phone numbers</span>
-              <button className={styles.inlineButton} type="button" onClick={onAddPhone}>
+              <button
+                className={styles.inlineButton}
+                type="button"
+                onClick={onAddPhone}
+                disabled={form.phoneNumbers.length >= MAX_PHONE_NUMBERS}
+              >
                 Add number
               </button>
             </div>
+            <span className={styles.helperText}>Up to 10 phone numbers per company.</span>
             <div className={styles.phoneList}>
               {form.phoneNumbers.map((phone, index) => (
                 <div key={`phone-${index}`} className={styles.phoneRow}>
