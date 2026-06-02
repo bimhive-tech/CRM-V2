@@ -395,19 +395,37 @@ function PaginationControls({ page, totalPages, count, onPageChange }) {
     return null;
   }
 
+  const windowSize = 4;
+  const windowIndex = Math.floor((page - 1) / windowSize);
+  const startPage = windowIndex * windowSize + 1;
+  const endPage = Math.min(totalPages, startPage + windowSize - 1);
+  const visiblePages = Array.from({ length: endPage - startPage + 1 }, (_, index) => startPage + index);
+
   return (
     <div className={styles.paginationBar}>
-      <p className={styles.paginationMeta}>
-        {count} total · Page {page} of {totalPages}
-      </p>
-      <div className={styles.paginationActions}>
-        <button className={styles.secondaryButton} type="button" onClick={() => onPageChange(page - 1)} disabled={page <= 1}>
-          Previous
-        </button>
-        <button className={styles.secondaryButton} type="button" onClick={() => onPageChange(page + 1)} disabled={page >= totalPages}>
-          Next
-        </button>
+      <div className={styles.paginationGroup}>
+        <p className={styles.paginationMeta}>{count} total</p>
+        <div className={styles.paginationActions}>
+          <button className={styles.secondaryButton} type="button" onClick={() => onPageChange(page - 1)} disabled={page <= 1}>
+            Previous
+          </button>
+          {visiblePages.map((pageNumber) => (
+            <button
+              key={pageNumber}
+              className={pageNumber === page ? styles.paginationNumberActive : styles.paginationNumber}
+              type="button"
+              onClick={() => onPageChange(pageNumber)}
+              aria-current={pageNumber === page ? "page" : undefined}
+            >
+              {pageNumber}
+            </button>
+          ))}
+          <button className={styles.secondaryButton} type="button" onClick={() => onPageChange(page + 1)} disabled={page >= totalPages}>
+            Next
+          </button>
+        </div>
       </div>
+      <p className={styles.paginationMeta}>Page {page} of {totalPages}</p>
     </div>
   );
 }
