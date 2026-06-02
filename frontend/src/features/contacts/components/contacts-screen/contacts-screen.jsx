@@ -400,15 +400,27 @@ function PaginationControls({ page, totalPages, count, onPageChange }) {
       return Array.from({ length: totalPages }, (_, index) => index + 1);
     }
 
-    if (page <= 4) {
-      return [1, 2, 3, 4, "ellipsis", totalPages];
+    const startPage = Math.max(1, Math.min(page - 1, totalPages - 3));
+    const endPage = Math.min(totalPages, startPage + 3);
+    const items = [];
+
+    if (startPage > 1) {
+      items.push(1);
+      if (startPage > 2) {
+        items.push("ellipsis-start");
+      }
     }
 
-    if (page >= totalPages - 1) {
-      return [1, "ellipsis", totalPages - 3, totalPages - 2, totalPages - 1, totalPages];
+    for (let pageNumber = startPage; pageNumber <= endPage; pageNumber += 1) {
+      items.push(pageNumber);
     }
 
-    return [1, "ellipsis", page - 1, page, page + 1, page + 2];
+    if (endPage < totalPages - 1) {
+      items.push("ellipsis-end");
+      items.push(totalPages);
+    }
+
+    return items;
   }
 
   const visiblePages = getVisiblePages();
