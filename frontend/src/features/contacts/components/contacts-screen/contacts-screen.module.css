@@ -595,7 +595,7 @@
 .paginationGroup {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   min-width: 0;
 }
 
@@ -610,19 +610,19 @@
 .paginationActions {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 6px;
 }
 
 .paginationNumber,
 .paginationNumberActive {
-  min-width: 38px;
-  padding: 10px 12px;
-  border-radius: 10px;
+  min-width: 32px;
+  padding: 8px 10px;
+  border-radius: 8px;
   border: 1px solid var(--border);
   background: var(--surface);
   color: var(--ink-2);
   font: inherit;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 600;
   cursor: pointer;
   transition:
@@ -648,10 +648,10 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 24px;
+  min-width: 18px;
   color: var(--ink-3);
   font-family: var(--font-mono), monospace;
-  font-size: 12px;
+  font-size: 11px;
 }
 
 .emptyState {
