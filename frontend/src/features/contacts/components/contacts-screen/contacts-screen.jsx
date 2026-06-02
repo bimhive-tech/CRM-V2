@@ -75,6 +75,7 @@ const emptyCompanyForm = {
 const DIRECTORY_PAGE_SIZE = 10;
 const COMPANY_OPTIONS_PAGE_SIZE = 200;
 const MAX_PHONE_NUMBERS = 10;
+const MAX_SOCIAL_LINKS = 10;
 
 function sanitizePhoneInput(value) {
   const raw = String(value || "");
@@ -799,7 +800,10 @@ function DirectoryScreen({ user, mode = "contacts" }) {
   }
 
   function addCompanySocial() {
-    setCompanyForm((current) => ({ ...current, socialLinks: [...current.socialLinks, { platform: "", url: "" }] }));
+    setCompanyForm((current) => ({
+      ...current,
+      socialLinks: current.socialLinks.length >= MAX_SOCIAL_LINKS ? current.socialLinks : [...current.socialLinks, { platform: "", url: "" }],
+    }));
   }
 
   function removeCompanySocial(index) {

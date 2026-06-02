@@ -51,6 +51,7 @@ const emptyCompanyForm = {
   longitude: "",
 };
 const MAX_PHONE_NUMBERS = 10;
+const MAX_SOCIAL_LINKS = 10;
 
 function sanitizePhoneInput(value) {
   const raw = String(value || "");
@@ -373,7 +374,7 @@ export default function CompanyDetailPage() {
   function addCompanySocial() {
     setCompanyForm((current) => ({
       ...current,
-      socialLinks: [...current.socialLinks, { platform: "LinkedIn", url: "" }],
+      socialLinks: current.socialLinks.length >= MAX_SOCIAL_LINKS ? current.socialLinks : [...current.socialLinks, { platform: "LinkedIn", url: "" }],
     }));
   }
 

@@ -7,6 +7,7 @@ import styles from "./contacts-screen.module.css";
 
 const SOCIAL_PLATFORM_OPTIONS = ["LinkedIn", "Facebook", "Instagram", "X", "YouTube", "TikTok", "Behance", "Other"];
 const MAX_PHONE_NUMBERS = 10;
+const MAX_SOCIAL_LINKS = 10;
 const CompanyLocationMap = dynamic(
   () => import("@/components/maps/company-location-map").then((module) => module.CompanyLocationMap),
   { ssr: false },
@@ -247,10 +248,16 @@ export function CompanyModal({
           <div className={styles.phoneSection}>
             <div className={styles.sectionRow}>
               <span className={styles.sectionLabel}>Other socials</span>
-              <button className={styles.inlineButton} type="button" onClick={onAddSocial}>
+              <button
+                className={styles.inlineButton}
+                type="button"
+                onClick={onAddSocial}
+                disabled={form.socialLinks.length >= MAX_SOCIAL_LINKS}
+              >
                 Add social
               </button>
             </div>
+            <span className={styles.helperText}>Up to 10 social links per company.</span>
             <div className={styles.phoneList}>
               {form.socialLinks.length ? (
                 form.socialLinks.map((social, index) => (
