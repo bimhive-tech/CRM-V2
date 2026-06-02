@@ -595,7 +595,7 @@
 .paginationGroup {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
   min-width: 0;
 }
 
@@ -617,7 +617,7 @@
 .paginationNumberActive {
   min-width: 38px;
   padding: 10px 12px;
-  border-radius: 999px;
+  border-radius: 10px;
   border: 1px solid var(--border);
   background: var(--surface);
   color: var(--ink-2);
@@ -642,6 +642,16 @@
   border-color: var(--accent);
   background: color-mix(in srgb, var(--accent) 12%, var(--surface));
   color: var(--accent);
+}
+
+.paginationEllipsis {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  color: var(--ink-3);
+  font-family: var(--font-mono), monospace;
+  font-size: 12px;
 }
 
 .emptyState {
