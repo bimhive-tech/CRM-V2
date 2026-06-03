@@ -817,11 +817,6 @@
   overflow: visible;
 }
 
-.importModal {
-  width: min(1040px, 100%);
-  overflow: visible;
-}
-
 .modalBody {
   display: flex;
   flex-direction: column;

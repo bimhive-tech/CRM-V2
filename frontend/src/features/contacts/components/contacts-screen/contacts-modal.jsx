@@ -368,7 +368,7 @@ export function ContactImportModal({
 }) {
   return (
     <div className={styles.modalOverlay} role="presentation">
-      <div className={`${styles.modal} ${styles.importModal}`} role="dialog" aria-modal="true" aria-label="Import contacts">
+      <div className={styles.modal} role="dialog" aria-modal="true" aria-label="Import contacts">
         <div className={styles.modalHeader}>
           <div>
             <p className={styles.eyebrow}>Contacts</p>

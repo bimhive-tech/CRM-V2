@@ -29,19 +29,17 @@ FIELD_ALIASES = {
 
 AVAILABLE_IMPORT_FIELDS = [
     {"value": "", "label": "Ignore"},
-    {"value": "company.name", "label": "Company name"},
-    {"value": "company.website", "label": "Company website"},
+    {"value": "company.name", "label": "Company"},
+    {"value": "company.website", "label": "Website"},
     {"value": "company.email", "label": "Company email"},
-    {"value": "company.phone", "label": "Company phone"},
+    {"value": "company.phone", "label": "Phone"},
     {"value": "company.industry", "label": "Industry"},
-    {"value": "contact.name", "label": "Contact name"},
-    {"value": "contact.first_name", "label": "Contact first name"},
-    {"value": "contact.last_name", "label": "Contact last name"},
-    {"value": "contact.job_title", "label": "Contact job title"},
-    {"value": "contact.email", "label": "Contact email"},
-    {"value": "contact.phone", "label": "Contact phone"},
-    {"value": "status", "label": "Status"},
-    {"value": "sales_person", "label": "Sales person"},
+    {"value": "contact.name", "label": "Contact"},
+    {"value": "contact.job_title", "label": "Job title"},
+    {"value": "contact.email", "label": "Email"},
+    {"value": "contact.phone", "label": "Phone"},
+    {"value": "status", "label": "Stage"},
+    {"value": "sales_person", "label": "Owner"},
 ]
 
 EMAIL_SPLIT_RE = re.compile(r"\s{2,}|\n| / |,")
@@ -280,7 +278,11 @@ def parse_sheet(sheet, sheet_index, explicit_mapping=None):
             raw_value = row[column_index] if column_index < len(row) else ""
             target_field = (explicit_mapping or {}).get(column["source_key"], column["suggested_field"])
             if target_field:
-                mapped[target_field] = text_value(raw_value)
+                next_value = text_value(raw_value)
+                if target_field == "contact.name" and mapped.get(target_field) and next_value:
+                    mapped[target_field] = f"{mapped[target_field]} {next_value}".strip()
+                else:
+                    mapped[target_field] = next_value
             elif text_value(raw_value):
                 custom_fields[column["header"]] = text_value(raw_value)
         mapped["custom_fields"] = custom_fields

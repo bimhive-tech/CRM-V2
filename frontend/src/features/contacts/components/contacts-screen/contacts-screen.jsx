@@ -83,6 +83,10 @@ const EXPORT_DATE_OPERATOR_OPTIONS = [
   { value: "after", label: "After date" },
   { value: "between", label: "Between dates" },
 ];
+const IMPORT_FIELD_NORMALIZATION = {
+  "contact.first_name": "contact.name",
+  "contact.last_name": "contact.name",
+};
 
 function sanitizePhoneInput(value) {
   const raw = String(value || "");
@@ -989,7 +993,7 @@ function DirectoryScreen({ user, mode = "contacts" }) {
       ...current,
       mapping: {
         ...current.mapping,
-        [sourceKey]: value,
+        [sourceKey]: IMPORT_FIELD_NORMALIZATION[value] || value,
       },
     }));
   }
@@ -1009,7 +1013,7 @@ function DirectoryScreen({ user, mode = "contacts" }) {
       const suggestedMapping = {};
       preview.sheets.forEach((sheet) => {
         sheet.columns.forEach((column) => {
-          suggestedMapping[column.source_key] = column.suggested_field || "";
+          suggestedMapping[column.source_key] = IMPORT_FIELD_NORMALIZATION[column.suggested_field] || column.suggested_field || "";
         });
       });
       setImportState((current) => ({
