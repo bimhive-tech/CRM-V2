@@ -813,11 +813,19 @@
   background: var(--bg);
 }
 
+.exportModal {
+  overflow: visible;
+}
+
 .modalBody {
   display: flex;
   flex-direction: column;
   gap: 16px;
   padding: 20px;
+}
+
+.exportModalBody {
+  overflow: visible;
 }
 
 .checkboxRow {

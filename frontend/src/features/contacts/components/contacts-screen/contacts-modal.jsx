@@ -527,7 +527,7 @@ export function DirectoryExportModal({
 
   return (
     <div className={styles.modalOverlay} role="presentation">
-      <div className={styles.modal} role="dialog" aria-modal="true" aria-label={`Export ${noun}`}>
+      <div className={`${styles.modal} ${styles.exportModal}`} role="dialog" aria-modal="true" aria-label={`Export ${noun}`}>
         <div className={styles.modalHeader}>
           <div>
             <p className={styles.eyebrow}>{mode === "contacts" ? "Contacts" : "Companies"}</p>
@@ -539,7 +539,7 @@ export function DirectoryExportModal({
           </button>
         </div>
 
-        <form className={styles.modalBody} onSubmit={onSubmit}>
+        <form className={`${styles.modalBody} ${styles.exportModalBody}`} onSubmit={onSubmit}>
           <label className={styles.checkboxRow}>
             <input type="checkbox" checked={value.exportAll} onChange={(event) => onToggleExportAll(event.target.checked)} />
             <span>Export all {noun}</span>

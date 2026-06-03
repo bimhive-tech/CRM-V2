@@ -398,7 +398,7 @@ class ContactExportView(APIView):
                 "Pipeline",
                 "Stage",
                 "Owner",
-                "Last touched",
+                "Last updated",
                 "Created date",
                 "Stage entered",
                 "Notes",

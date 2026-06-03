@@ -613,7 +613,7 @@ function DirectoryScreen({ user, mode = "contacts" }) {
   const exportDateFieldOptions = useMemo(() => {
     if (isContactsView) {
       return [
-        { value: "last_touch", label: "Last touched" },
+        { value: "last_touch", label: "Last updated" },
         { value: "created_at", label: "Created date" },
         { value: "stage_entered_at", label: "Stage entered" },
       ];
