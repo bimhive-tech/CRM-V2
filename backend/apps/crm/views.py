@@ -6,6 +6,8 @@ from rest_framework import generics, permissions, serializers
 from rest_framework.exceptions import ValidationError
 from rest_framework.views import APIView
 from openpyxl import Workbook
+from openpyxl.styles import Alignment, Font, PatternFill
+from openpyxl.utils import get_column_letter
 
 from apps.auditlog.models import AuditLogEntry
 from apps.auditlog.services import log_audit_event
@@ -101,6 +103,33 @@ def build_excel_response(workbook, *, filename):
     response["Content-Disposition"] = f'attachment; filename="{filename}"'
     workbook.save(response)
     return response
+
+
+def format_export_sheet(sheet):
+    header_fill = PatternFill(fill_type="solid", fgColor="C89A2B")
+    header_font = Font(color="FFFFFF", bold=True)
+    header_alignment = Alignment(horizontal="center", vertical="center")
+    body_alignment = Alignment(vertical="top", wrap_text=True)
+
+    for cell in sheet[1]:
+        cell.fill = header_fill
+        cell.font = header_font
+        cell.alignment = header_alignment
+
+    for row in sheet.iter_rows(min_row=2):
+        for cell in row:
+            cell.alignment = body_alignment
+
+    for column_cells in sheet.columns:
+        max_length = 0
+        column_letter = get_column_letter(column_cells[0].column)
+        for cell in column_cells:
+            cell_length = len(str(cell.value or ""))
+            if cell_length > max_length:
+                max_length = cell_length
+        sheet.column_dimensions[column_letter].width = min(max(max_length + 2, 14), 42)
+
+    sheet.freeze_panes = "A2"
 
 
 class CRMCompanyListCreateView(generics.ListCreateAPIView):
@@ -331,4 +360,5 @@ class CRMCompanyExportView(APIView):
                 ]
             )
 
+        format_export_sheet(sheet)
         return build_excel_response(workbook, filename="companies-export.xlsx")
