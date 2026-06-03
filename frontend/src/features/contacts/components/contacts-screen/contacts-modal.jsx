@@ -1,6 +1,6 @@
 import dynamic from "next/dynamic";
 
-import { SearchableSelect } from "@/components/forms/searchable-select";
+import { SearchableMultiSelect, SearchableSelect } from "@/components/forms/searchable-select";
 import { COUNTRY_OPTIONS } from "@/lib/countries";
 
 import styles from "./contacts-screen.module.css";
@@ -502,6 +502,135 @@ export function ContactImportModal({
             </>
           )}
         </div>
+      </div>
+    </div>
+  );
+}
+
+export function DirectoryExportModal({
+  mode,
+  value,
+  pipelineOptions,
+  stageOptions,
+  dateFieldOptions,
+  dateOperatorOptions,
+  onToggleExportAll,
+  onTogglePipeline,
+  onToggleStage,
+  onDateFieldChange,
+  onDateOperatorChange,
+  onDateChange,
+  onClose,
+  onSubmit,
+}) {
+  const noun = mode === "contacts" ? "contacts" : "companies";
+
+  return (
+    <div className={styles.modalOverlay} role="presentation">
+      <div className={styles.modal} role="dialog" aria-modal="true" aria-label={`Export ${noun}`}>
+        <div className={styles.modalHeader}>
+          <div>
+            <p className={styles.eyebrow}>{mode === "contacts" ? "Contacts" : "Companies"}</p>
+            <h2>Export</h2>
+            <p className={styles.copy}>Choose what to include in the Excel export, then download it with the same filtered rules you use in the CRM.</p>
+          </div>
+          <button className={styles.iconButton} type="button" onClick={onClose} aria-label="Close modal">
+            x
+          </button>
+        </div>
+
+        <form className={styles.modalBody} onSubmit={onSubmit}>
+          <label className={styles.checkboxRow}>
+            <input type="checkbox" checked={value.exportAll} onChange={(event) => onToggleExportAll(event.target.checked)} />
+            <span>Export all {noun}</span>
+          </label>
+
+          <div className={styles.formGrid}>
+            <label className={styles.field}>
+              <span>Pipelines</span>
+              <SearchableMultiSelect
+                ariaLabel="Export pipelines"
+                options={pipelineOptions}
+                selectedValues={value.pipelineIds}
+                onToggle={onTogglePipeline}
+                placeholder="All pipelines"
+              />
+            </label>
+
+            <label className={styles.field}>
+              <span>Stages</span>
+              <SearchableMultiSelect
+                ariaLabel="Export stages"
+                options={stageOptions}
+                selectedValues={value.stageKeys}
+                onToggle={onToggleStage}
+                placeholder="All stages"
+              />
+            </label>
+          </div>
+
+          <span className={styles.helperText}>
+            Leave pipelines or stages empty to include all of them.
+          </span>
+
+          <div className={styles.formGrid}>
+            <label className={styles.field}>
+              <span>Date field</span>
+              <SearchableSelect
+                ariaLabel="Export date field"
+                value={value.dateField}
+                onValueChange={onDateFieldChange}
+                options={[{ value: "", label: "No date filter" }, ...dateFieldOptions]}
+              />
+            </label>
+
+            <label className={styles.field}>
+              <span>Date rule</span>
+              <SearchableSelect
+                ariaLabel="Export date rule"
+                value={value.dateOperator}
+                onValueChange={onDateOperatorChange}
+                options={[{ value: "", label: "Select rule" }, ...dateOperatorOptions]}
+                disabled={!value.dateField}
+              />
+            </label>
+          </div>
+
+          {value.dateField && value.dateOperator ? (
+            <div className={styles.formGrid}>
+              <label className={styles.field}>
+                <span>{value.dateOperator === "between" ? "Start date" : "Date"}</span>
+                <input
+                  type="date"
+                  value={value.dateFrom}
+                  onChange={(event) => onDateChange("dateFrom", event.target.value)}
+                />
+              </label>
+
+              {value.dateOperator === "between" ? (
+                <label className={styles.field}>
+                  <span>End date</span>
+                  <input
+                    type="date"
+                    value={value.dateTo}
+                    onChange={(event) => onDateChange("dateTo", event.target.value)}
+                  />
+                </label>
+              ) : (
+                <div />
+              )}
+            </div>
+          ) : null}
+
+          <div className={styles.modalActions}>
+            <button className={styles.secondaryButton} type="button" onClick={onClose}>
+              Cancel
+            </button>
+            <button className={styles.primaryButton} type="submit" disabled={value.loading}>
+              {value.loading ? "Downloading..." : "Download Excel"}
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   );

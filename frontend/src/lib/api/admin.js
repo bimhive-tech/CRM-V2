@@ -169,6 +169,32 @@ export async function downloadAttachment(token, attachmentId, filename = "attach
   window.URL.revokeObjectURL(objectUrl);
 }
 
+async function downloadApiFile(token, path, fallbackFilename) {
+  const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL || "/api"}${path}`, {
+    method: "GET",
+    headers: authHeaders(token),
+    cache: "no-store",
+  });
+
+  if (!response.ok) {
+    const data = await response.json().catch(() => ({}));
+    throw new Error(data?.detail || "Unable to download file.");
+  }
+
+  const contentDisposition = response.headers.get("Content-Disposition") || "";
+  const filenameMatch = contentDisposition.match(/filename="([^"]+)"/i);
+  const filename = filenameMatch?.[1] || fallbackFilename;
+  const blob = await response.blob();
+  const objectUrl = window.URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = objectUrl;
+  anchor.download = filename;
+  document.body.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
+  window.URL.revokeObjectURL(objectUrl);
+}
+
 export function listUsers(token) {
   return apiRequest("/auth/users/", {
     method: "GET",
@@ -456,6 +482,14 @@ export function deleteImportedContactData(token) {
     method: "POST",
     headers: authHeaders(token),
   });
+}
+
+export function downloadContactsExport(token, query = {}) {
+  return downloadApiFile(token, buildApiPath("/contacts/export/", query), "contacts-export.xlsx");
+}
+
+export function downloadCompaniesExport(token, query = {}) {
+  return downloadApiFile(token, buildApiPath("/crm-companies/export/", query), "companies-export.xlsx");
 }
 
 export function listPipelines(token, query = {}) {

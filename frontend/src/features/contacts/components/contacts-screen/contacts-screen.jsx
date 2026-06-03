@@ -14,6 +14,8 @@ import {
   deleteContact,
   deleteCrmCompany,
   deleteImportedContactData,
+  downloadCompaniesExport,
+  downloadContactsExport,
   executeContactImportWithPipeline,
   listCompanyIndustries,
   listContacts,
@@ -25,7 +27,7 @@ import {
 } from "@/lib/api/admin";
 import { getAccessToken } from "@/lib/session";
 
-import { CompanyModal, ContactImportModal, ContactsModal } from "./contacts-modal";
+import { CompanyModal, ContactImportModal, ContactsModal, DirectoryExportModal } from "./contacts-modal";
 import styles from "./contacts-screen.module.css";
 
 const legacyStatusLabelMap = {
@@ -76,6 +78,11 @@ const DIRECTORY_PAGE_SIZE = 10;
 const COMPANY_OPTIONS_PAGE_SIZE = 200;
 const MAX_PHONE_NUMBERS = 10;
 const MAX_SOCIAL_LINKS = 10;
+const EXPORT_DATE_OPERATOR_OPTIONS = [
+  { value: "before", label: "Before date" },
+  { value: "after", label: "After date" },
+  { value: "between", label: "Between dates" },
+];
 
 function sanitizePhoneInput(value) {
   const raw = String(value || "");
@@ -506,6 +513,17 @@ function DirectoryScreen({ user, mode = "contacts" }) {
     pipelineId: "",
     loading: false,
   });
+  const [exportState, setExportState] = useState({
+    open: false,
+    exportAll: true,
+    pipelineIds: [],
+    stageKeys: [],
+    dateField: "",
+    dateOperator: "",
+    dateFrom: "",
+    dateTo: "",
+    loading: false,
+  });
 
   const pipelineOptions = useMemo(
     () => [{ value: "All pipelines", label: "All pipelines" }, ...pipelines.map((pipeline) => ({ value: String(pipeline.id), label: pipeline.name }))],
@@ -577,6 +595,31 @@ function DirectoryScreen({ user, mode = "contacts" }) {
     const statuses = (selectedContactPipeline.statuses || []).map((status) => normalizeStatusLabel(status.name));
     return statuses.length ? [...new Set(statuses)] : ["Lead"];
   }, [contactForm.pipelineId, contactStatusOptions, pipelines]);
+  const exportPipelineOptions = useMemo(
+    () => pipelines.map((pipeline) => ({ value: String(pipeline.id), label: pipeline.name })),
+    [pipelines],
+  );
+  const exportStageOptions = useMemo(() => {
+    const visiblePipelines = exportState.pipelineIds.length
+      ? pipelines.filter((pipeline) => exportState.pipelineIds.includes(String(pipeline.id)))
+      : pipelines;
+    return visiblePipelines.flatMap((pipeline) =>
+      (pipeline.statuses || []).map((statusItem) => ({
+        value: `${pipeline.id}:${normalizeStatusLabel(statusItem.name)}`,
+        label: `${pipeline.name} / ${normalizeStatusLabel(statusItem.name)}`,
+      })),
+    );
+  }, [exportState.pipelineIds, pipelines]);
+  const exportDateFieldOptions = useMemo(() => {
+    if (isContactsView) {
+      return [
+        { value: "last_touch", label: "Last touched" },
+        { value: "created_at", label: "Created date" },
+        { value: "stage_entered_at", label: "Stage entered" },
+      ];
+    }
+    return [{ value: "created_at", label: "Created date" }];
+  }, [isContactsView]);
   const loading = initialLoading || directoryLoading;
 
   const fetchStaticData = useCallback(async () => {
@@ -1103,6 +1146,110 @@ function DirectoryScreen({ user, mode = "contacts" }) {
     router.push(`/contacts/${contactId}`);
   }
 
+  function openExportModal() {
+    setExportState({
+      open: true,
+      exportAll: true,
+      pipelineIds: [],
+      stageKeys: [],
+      dateField: "",
+      dateOperator: "",
+      dateFrom: "",
+      dateTo: "",
+      loading: false,
+    });
+  }
+
+  function closeExportModal() {
+    setExportState((current) => ({ ...current, open: false, loading: false }));
+  }
+
+  function toggleExportAll(checked) {
+    setExportState((current) => ({ ...current, exportAll: checked }));
+  }
+
+  function toggleExportPipeline(pipelineId) {
+    setExportState((current) => {
+      const nextPipelineIds = current.pipelineIds.includes(pipelineId)
+        ? current.pipelineIds.filter((value) => value !== pipelineId)
+        : [...current.pipelineIds, pipelineId];
+      const nextStageKeys = current.stageKeys.filter((stageKey) => nextPipelineIds.includes(stageKey.split(":")[0]));
+      return {
+        ...current,
+        exportAll: false,
+        pipelineIds: nextPipelineIds,
+        stageKeys: nextStageKeys,
+      };
+    });
+  }
+
+  function toggleExportStage(stageKey) {
+    setExportState((current) => ({
+      ...current,
+      exportAll: false,
+      stageKeys: current.stageKeys.includes(stageKey)
+        ? current.stageKeys.filter((value) => value !== stageKey)
+        : [...current.stageKeys, stageKey],
+    }));
+  }
+
+  function updateExportDateField(value) {
+    setExportState((current) => ({
+      ...current,
+      exportAll: false,
+      dateField: value,
+      dateOperator: value ? current.dateOperator : "",
+      dateFrom: value ? current.dateFrom : "",
+      dateTo: value ? current.dateTo : "",
+    }));
+  }
+
+  function updateExportDateOperator(value) {
+    setExportState((current) => ({
+      ...current,
+      exportAll: false,
+      dateOperator: value,
+      dateTo: value === "between" ? current.dateTo : "",
+    }));
+  }
+
+  function updateExportDate(field, value) {
+    setExportState((current) => ({
+      ...current,
+      exportAll: false,
+      [field]: value,
+    }));
+  }
+
+  async function handleExportSubmit(event) {
+    event.preventDefault();
+
+    const query = {
+      export_all: exportState.exportAll ? "true" : "false",
+      pipeline_ids: exportState.pipelineIds.join(","),
+      stage_keys: exportState.stageKeys.join(","),
+      date_field: exportState.dateField,
+      date_operator: exportState.dateOperator,
+      date_from: exportState.dateFrom,
+      date_to: exportState.dateTo,
+    };
+
+    try {
+      setExportState((current) => ({ ...current, loading: true }));
+      if (isContactsView) {
+        await downloadContactsExport(token, query);
+        setStatusMessage({ error: "", success: "Contacts export downloaded." });
+      } else {
+        await downloadCompaniesExport(token, query);
+        setStatusMessage({ error: "", success: "Companies export downloaded." });
+      }
+      closeExportModal();
+    } catch (error) {
+      setExportState((current) => ({ ...current, loading: false }));
+      setStatusMessage({ error: error.message || "Unable to export data.", success: "" });
+    }
+  }
+
   return (
     <DashboardShell
       sidebar={<Sidebar user={user} />}
@@ -1125,6 +1272,9 @@ function DirectoryScreen({ user, mode = "contacts" }) {
           </div>
           <div className={styles.heroActions}>
             {isContactsView ? <button className={styles.secondaryButton} type="button" onClick={openImportModal}>Import</button> : null}
+            <button className={styles.secondaryButton} type="button" onClick={openExportModal}>
+              Export
+            </button>
             {!isContactsView ? (
               <button className={styles.primaryButton} type="button" onClick={openCreateCompanyModal}>
                 <PlusIcon />
@@ -1608,6 +1758,25 @@ function DirectoryScreen({ user, mode = "contacts" }) {
           onImport={handleExecuteImport}
           onDeleteImported={handleDeleteImportedData}
           onClose={closeImportModal}
+        />
+      ) : null}
+
+      {exportState.open ? (
+        <DirectoryExportModal
+          mode={mode}
+          value={exportState}
+          pipelineOptions={exportPipelineOptions}
+          stageOptions={exportStageOptions}
+          dateFieldOptions={exportDateFieldOptions}
+          dateOperatorOptions={EXPORT_DATE_OPERATOR_OPTIONS}
+          onToggleExportAll={toggleExportAll}
+          onTogglePipeline={toggleExportPipeline}
+          onToggleStage={toggleExportStage}
+          onDateFieldChange={updateExportDateField}
+          onDateOperatorChange={updateExportDateOperator}
+          onDateChange={updateExportDate}
+          onClose={closeExportModal}
+          onSubmit={handleExportSubmit}
         />
       ) : null}
     </DashboardShell>

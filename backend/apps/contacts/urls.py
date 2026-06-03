@@ -2,6 +2,7 @@ from django.urls import path
 
 from apps.contacts.views import (
     ContactDetailView,
+    ContactExportView,
     ContactImportDeleteImportedView,
     ContactImportExecuteView,
     ContactImportPreviewView,
@@ -10,6 +11,7 @@ from apps.contacts.views import (
 
 
 urlpatterns = [
+    path("export/", ContactExportView.as_view(), name="contact-export"),
     path("import/delete-imported/", ContactImportDeleteImportedView.as_view(), name="contact-import-delete-imported"),
     path("import/preview/", ContactImportPreviewView.as_view(), name="contact-import-preview"),
     path("import/execute/", ContactImportExecuteView.as_view(), name="contact-import-execute"),
