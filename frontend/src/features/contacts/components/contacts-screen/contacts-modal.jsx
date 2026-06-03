@@ -368,7 +368,7 @@ export function ContactImportModal({
 }) {
   return (
     <div className={styles.modalOverlay} role="presentation">
-      <div className={styles.modal} role="dialog" aria-modal="true" aria-label="Import contacts">
+      <div className={`${styles.modal} ${styles.importModal}`} role="dialog" aria-modal="true" aria-label="Import contacts">
         <div className={styles.modalHeader}>
           <div>
             <p className={styles.eyebrow}>Contacts</p>
@@ -380,7 +380,7 @@ export function ContactImportModal({
           </button>
         </div>
 
-        <div className={styles.modalBody}>
+        <div className={`${styles.modalBody} ${styles.importModalBody}`}>
           <label className={styles.field}>
             <span>Excel file</span>
             <input type="file" accept=".xlsx,.xlsm" onChange={onFileChange} />
