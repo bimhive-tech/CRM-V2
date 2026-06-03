@@ -967,7 +967,14 @@ export function PipelineScreen({ user }) {
                         <div className={styles.columnContent}>
                           {(itemsByStatus[statusItem.id] || []).length ? (
                             <div
-                              className={`${styles.contactStack} ${dropStatusId === statusItem.id ? styles.contactDropActive : ""}`}
+                              className={`${styles.contactStack} ${draggingCardId !== null ? styles.contactStackDragging : ""} ${dropStatusId === statusItem.id ? styles.contactDropActive : ""}`}
+                              onDragEnter={(event) => {
+                                if (draggingCardId === null) {
+                                  return;
+                                }
+                                event.preventDefault();
+                                setDropStatusId(statusItem.id);
+                              }}
                               onDragOver={(event) => {
                                 if (draggingCardId === null) {
                                   return;
@@ -994,7 +1001,7 @@ export function PipelineScreen({ user }) {
                               {(itemsByStatus[statusItem.id] || []).map((item) => (
                                 <article
                                   key={item.id}
-                                  className={styles.contactCard}
+                                  className={`${styles.contactCard} ${draggingCardId === item.id ? styles.contactCardDragging : ""} ${draggingCardId !== null && draggingCardId !== item.id ? styles.contactCardMuted : ""}`}
                                   draggable
                                   onDragStart={(event) => {
                                     event.stopPropagation();
@@ -1043,7 +1050,14 @@ export function PipelineScreen({ user }) {
                             </div>
                           ) : (
                             <div
-                              className={`${styles.columnEmpty} ${dropStatusId === statusItem.id ? styles.contactDropActive : ""}`}
+                              className={`${styles.columnEmpty} ${draggingCardId !== null ? styles.contactStackDragging : ""} ${dropStatusId === statusItem.id ? styles.contactDropActive : ""}`}
+                              onDragEnter={(event) => {
+                                if (draggingCardId === null) {
+                                  return;
+                                }
+                                event.preventDefault();
+                                setDropStatusId(statusItem.id);
+                              }}
                               onDragOver={(event) => {
                                 if (draggingCardId === null) {
                                   return;

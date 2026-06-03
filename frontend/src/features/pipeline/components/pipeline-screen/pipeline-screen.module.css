@@ -431,6 +431,7 @@
 }
 
 .contactStack {
+  position: relative;
   display: flex;
   flex: 1;
   flex-direction: column;
@@ -440,6 +441,11 @@
   padding-right: 4px;
   scrollbar-width: thin;
   scrollbar-color: color-mix(in oklch, var(--accent) 45%, var(--border)) transparent;
+  transition:
+    background 180ms ease,
+    box-shadow 180ms ease,
+    padding 180ms ease,
+    transform 180ms ease;
 }
 
 .contactStack::-webkit-scrollbar {
@@ -468,6 +474,34 @@
   border-radius: 10px;
   background: var(--surface);
   cursor: grab;
+  transition:
+    transform 180ms ease,
+    opacity 180ms ease,
+    box-shadow 180ms ease,
+    border-color 180ms ease,
+    background 180ms ease;
+}
+
+.contactStackDragging::before {
+  content: "";
+  display: block;
+  min-height: 10px;
+  border-radius: 8px;
+  background: transparent;
+  transition:
+    min-height 180ms ease,
+    background 180ms ease,
+    box-shadow 180ms ease;
+}
+
+.contactCardDragging {
+  opacity: 0.38;
+  transform: rotate(1.2deg) scale(0.98);
+  box-shadow: var(--shadow-lift);
+}
+
+.contactCardMuted {
+  opacity: 0.72;
 }
 
 .contactCardHeader {
@@ -525,10 +559,20 @@
 
 .contactDropActive {
   border-color: var(--accent);
-  background: var(--accent-tint);
+  background: color-mix(in srgb, var(--accent) 10%, var(--surface) 90%);
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--accent) 45%, transparent),
+    0 0 0 3px color-mix(in srgb, var(--accent) 10%, transparent);
+}
+
+.contactDropActive::before {
+  min-height: 22px;
+  background: color-mix(in srgb, var(--accent) 18%, var(--surface) 82%);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 55%, transparent);
 }
 
 .columnEmpty {
+  position: relative;
   display: flex;
   flex: 1;
   flex-direction: column;
@@ -541,6 +585,11 @@
   border-radius: 10px;
   background: transparent;
   text-align: center;
+  transition:
+    background 180ms ease,
+    border-color 180ms ease,
+    box-shadow 180ms ease,
+    transform 180ms ease;
 }
 
 .addColumnCard {
