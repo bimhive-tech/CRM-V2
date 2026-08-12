@@ -905,6 +905,11 @@ function DirectoryScreen({ user, mode = "contacts" }) {
   }
 
   function openCreateContactModal() {
+    if (!companyOptions.length) {
+      setStatusMessage({ error: "Create a company first before you can add a contact.", success: "" });
+      return;
+    }
+
     const defaultPipelineId = filters.pipelineId !== "All pipelines" ? filters.pipelineId : "";
 
     setContactForm({
@@ -1285,7 +1290,7 @@ function DirectoryScreen({ user, mode = "contacts" }) {
                 <span>Add company</span>
               </button>
             ) : (
-              <button className={styles.primaryButton} type="button" onClick={openCreateContactModal} disabled={!companyOptions.length}>
+              <button className={styles.primaryButton} type="button" onClick={openCreateContactModal}>
                 <PlusIcon />
                 <span>Add contact</span>
               </button>
