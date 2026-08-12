@@ -817,10 +817,6 @@
   overflow: visible;
 }
 
-.importModal {
-  overflow: visible;
-}
-
 .modalBody {
   display: flex;
   flex-direction: column;
@@ -828,7 +824,6 @@
   padding: 20px;
 }
 
-.importModalBody,
 .exportModalBody {
   overflow: visible;
 }

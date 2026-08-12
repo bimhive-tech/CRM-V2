@@ -10,3 +10,6 @@ backend/staticfiles/
 frontend/.next/
 frontend/node_modules/
 frontend/out/
+
+# Database backups (contain production data / secrets)
+backups/
